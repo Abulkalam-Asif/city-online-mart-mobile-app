@@ -31,7 +31,8 @@ export default HomeSearchSection;
 const styles = StyleSheet.create({
   container: {
     paddingHorizontal: 16,
-    paddingVertical: 8,
+    paddingTop: 16,
+    paddingBottom: 8,
     flexDirection: "row",
     alignItems: "center",
     gap: 12,

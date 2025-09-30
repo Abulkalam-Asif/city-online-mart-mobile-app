@@ -74,4 +74,144 @@ export const tempProducts: {
       },
     ],
   },
+  {
+    Category: {
+      Id: 3,
+      Name: "Noodle & Sauces",
+    },
+    Products: [
+      {
+        Id: 5,
+        MainImageUrl: require("@/temp/home/products/5.webp"),
+        Name: "Special Ispaghol Chilka 10 gram - اسپغول چھلکا",
+        Price: 85,
+        OldPrice: 100,
+      },
+      {
+        Id: 6,
+        MainImageUrl: require("@/temp/home/products/6.webp"),
+        Name: "Lays Paprika 50g",
+        Price: 85,
+        OldPrice: 100,
+      },
+      {
+        Id: 7,
+        MainImageUrl: require("@/temp/home/products/7.webp"),
+        Name: "Maxim's Creamy Choclate Fudge Toffee Pouch 500gm - 100+ Pcs",
+        Price: 500,
+        OldPrice: 400,
+      },
+      {
+        Id: 8,
+        MainImageUrl: require("@/temp/home/products/8.webp"),
+        Name: "Candyland NOW Chocolate",
+        Price: 60,
+      },
+    ],
+  },
+  {
+    Category: {
+      Id: 4,
+      Name: "Achaar",
+    },
+    Products: [
+      {
+        Id: 5,
+        MainImageUrl: require("@/temp/home/products/5.webp"),
+        Name: "Special Ispaghol Chilka 10 gram - اسپغول چھلکا",
+        Price: 85,
+        OldPrice: 100,
+      },
+      {
+        Id: 6,
+        MainImageUrl: require("@/temp/home/products/6.webp"),
+        Name: "Lays Paprika 50g",
+        Price: 85,
+        OldPrice: 100,
+      },
+      {
+        Id: 7,
+        MainImageUrl: require("@/temp/home/products/7.webp"),
+        Name: "Maxim's Creamy Choclate Fudge Toffee Pouch 500gm - 100+ Pcs",
+        Price: 500,
+        OldPrice: 400,
+      },
+      {
+        Id: 8,
+        MainImageUrl: require("@/temp/home/products/8.webp"),
+        Name: "Candyland NOW Chocolate",
+        Price: 60,
+      },
+    ],
+  },
+  {
+    Category: {
+      Id: 5,
+      Name: "Tea & Coffee",
+    },
+    Products: [
+      {
+        Id: 5,
+        MainImageUrl: require("@/temp/home/products/5.webp"),
+        Name: "Special Ispaghol Chilka 10 gram - اسپغول چھلکا",
+        Price: 85,
+        OldPrice: 100,
+      },
+      {
+        Id: 6,
+        MainImageUrl: require("@/temp/home/products/6.webp"),
+        Name: "Lays Paprika 50g",
+        Price: 85,
+        OldPrice: 100,
+      },
+      {
+        Id: 7,
+        MainImageUrl: require("@/temp/home/products/7.webp"),
+        Name: "Maxim's Creamy Choclate Fudge Toffee Pouch 500gm - 100+ Pcs",
+        Price: 500,
+        OldPrice: 400,
+      },
+      {
+        Id: 8,
+        MainImageUrl: require("@/temp/home/products/8.webp"),
+        Name: "Candyland NOW Chocolate",
+        Price: 60,
+      },
+    ],
+  },
+  {
+    Category: {
+      Id: 6,
+      Name: "Baking & Desserts",
+    },
+    Products: [
+      {
+        Id: 5,
+        MainImageUrl: require("@/temp/home/products/5.webp"),
+        Name: "Special Ispaghol Chilka 10 gram - اسپغول چھلکا",
+        Price: 85,
+        OldPrice: 100,
+      },
+      {
+        Id: 6,
+        MainImageUrl: require("@/temp/home/products/6.webp"),
+        Name: "Lays Paprika 50g",
+        Price: 85,
+        OldPrice: 100,
+      },
+      {
+        Id: 7,
+        MainImageUrl: require("@/temp/home/products/7.webp"),
+        Name: "Maxim's Creamy Choclate Fudge Toffee Pouch 500gm - 100+ Pcs",
+        Price: 500,
+        OldPrice: 400,
+      },
+      {
+        Id: 8,
+        MainImageUrl: require("@/temp/home/products/8.webp"),
+        Name: "Candyland NOW Chocolate",
+        Price: 60,
+      },
+    ],
+  },
 ];

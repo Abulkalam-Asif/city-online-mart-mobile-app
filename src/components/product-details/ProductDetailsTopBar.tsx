@@ -2,18 +2,17 @@ import { Share, StyleSheet, View } from "react-native";
 import React, { useState } from "react";
 import { Entypo, Feather, FontAwesome6 } from "@expo/vector-icons";
 import IconButton from "../general/IconButton";
-import { useNavigation } from "expo-router";
+import { router } from "expo-router";
 
 const ProductDetailsTopBar = () => {
   const [isFavorite, setIsFavorite] = useState(false);
-  const navigation = useNavigation();
 
   return (
     <View style={styles.container}>
       <IconButton
         icon={<FontAwesome6 name="chevron-left" size={24} color={"#000"} />}
         onPress={() => {
-          navigation.goBack();
+          router.back();
         }}
       />
       <View style={styles.rightSection}>

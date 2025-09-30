@@ -116,7 +116,10 @@ const CustomTabBar: React.FC<BottomTabBarProps> = ({
               accessibilityState={isFocused ? { selected: true } : {}}
               accessibilityLabel={options.tabBarAccessibilityLabel}
               onPress={onPress}
-              style={styles.tabItem}>
+              style={({ pressed }) => [
+                styles.tabItem,
+                pressed && styles.tabItemPressed,
+              ]}>
               {getTabIcon(route.name, isFocused)}
               <Text
                 style={[
@@ -145,14 +148,11 @@ const styles = StyleSheet.create({
     paddingHorizontal: 10,
   },
   tabBar: {
-    width: "90%",
     maxWidth: 450,
     flexDirection: "row",
     backgroundColor: "white",
     height: 70,
     borderRadius: 36,
-    paddingHorizontal: 8,
-    paddingVertical: 8,
     shadowColor: "#000",
     shadowOffset: {
       width: 0,
@@ -166,6 +166,11 @@ const styles = StyleSheet.create({
     flex: 1,
     alignItems: "center",
     justifyContent: "center",
+    padding: 8,
+  },
+  tabItemPressed: {
+    backgroundColor: "rgba(0, 0, 0, 0.05)",
+    borderRadius: 40,
   },
   tabLabel: {
     fontSize: 10,
