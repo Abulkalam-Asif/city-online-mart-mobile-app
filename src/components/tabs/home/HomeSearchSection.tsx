@@ -3,11 +3,18 @@ import React from "react";
 import { theme } from "@/src/constants/theme";
 import { FontAwesome6 } from "@expo/vector-icons";
 
-const HomeSearchSection: React.FC = () => {
+type HomeSearchSectionProps = {
+  openSidebarHandler: () => void;
+};
+
+const HomeSearchSection: React.FC<HomeSearchSectionProps> = ({
+  openSidebarHandler,
+}: HomeSearchSectionProps) => {
   return (
     <View style={styles.container}>
       <Pressable
-        style={({ pressed }) => [styles.icon, pressed && styles.iconPressed]}>
+        style={({ pressed }) => [styles.icon, pressed && styles.iconPressed]}
+        onPress={openSidebarHandler}>
         <FontAwesome6 name="bars" size={20} color={"#fff"} />
       </Pressable>
       <TextInput placeholder="Search the store" style={styles.textInput} />

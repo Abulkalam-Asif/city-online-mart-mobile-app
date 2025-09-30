@@ -1,4 +1,4 @@
-import { StyleSheet, Text, TouchableOpacity, View } from "react-native";
+import { StyleSheet, Text, Pressable, View } from "react-native";
 import React from "react";
 import { Image } from "expo-image";
 import { theme } from "@/src/constants/theme";
@@ -24,12 +24,13 @@ const CategoryCard = ({
   backgroundColor,
 }: CategoryCardProps) => {
   return (
-    <TouchableOpacity style={styles.card} activeOpacity={0.7}>
+    <Pressable
+      style={({ pressed }) => [styles.card, pressed && styles.cardPressed]}>
       <View style={[styles.imageContainer, { backgroundColor }]}>
         <Image source={imageSource} style={styles.image} />
       </View>
       <Text style={styles.nameText}>{name}</Text>
-    </TouchableOpacity>
+    </Pressable>
   );
 };
 
@@ -42,6 +43,9 @@ const styles = StyleSheet.create({
     gap: 8,
     width: 90,
     height: 120,
+  },
+  cardPressed: {
+    opacity: 0.7,
   },
   imageContainer: {
     borderRadius: 16,

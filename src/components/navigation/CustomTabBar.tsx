@@ -1,12 +1,5 @@
 import React from "react";
-import {
-  View,
-  Text,
-  TouchableOpacity,
-  StyleSheet,
-  Pressable,
-  Linking,
-} from "react-native";
+import { View, Text, StyleSheet, Pressable, Linking } from "react-native";
 import { BottomTabBarProps } from "@react-navigation/bottom-tabs";
 import MaterialIcons from "@expo/vector-icons/MaterialIcons";
 import MaterialCommunityIcons from "@expo/vector-icons/MaterialCommunityIcons";
@@ -117,7 +110,7 @@ const CustomTabBar: React.FC<BottomTabBarProps> = ({
           };
 
           return (
-            <TouchableOpacity
+            <Pressable
               key={route.key}
               accessibilityRole="button"
               accessibilityState={isFocused ? { selected: true } : {}}
@@ -132,7 +125,7 @@ const CustomTabBar: React.FC<BottomTabBarProps> = ({
                 ]}>
                 {label}
               </Text>
-            </TouchableOpacity>
+            </Pressable>
           );
         })}
       </View>

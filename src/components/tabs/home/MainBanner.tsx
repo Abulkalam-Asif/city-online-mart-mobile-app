@@ -1,12 +1,5 @@
 import React, { useState } from "react";
-import {
-  StyleSheet,
-  View,
-  Modal,
-  Pressable,
-  Dimensions,
-  TouchableOpacity,
-} from "react-native";
+import { StyleSheet, View, Modal, Dimensions, Pressable } from "react-native";
 import { Image } from "expo-image";
 import { Ionicons } from "@expo/vector-icons";
 import { useMainBanner } from "@/src/hooks/useBanners";
@@ -41,9 +34,9 @@ const MainBanner = () => {
       <Pressable style={styles.overlay} onPress={handleClose}>
         <View style={styles.bannerContainer}>
           {/* Close Button */}
-          <TouchableOpacity style={styles.closeButton} onPress={handleClose}>
+          <Pressable style={styles.closeButton} onPress={handleClose}>
             <Ionicons name="close" size={24} color="#fff" />
-          </TouchableOpacity>
+          </Pressable>
 
           {/* Banner Image */}
           <Pressable onPress={handleBannerPress} style={styles.imageContainer}>

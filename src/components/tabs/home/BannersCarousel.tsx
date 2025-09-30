@@ -1,10 +1,4 @@
-import {
-  Dimensions,
-  StyleSheet,
-  Text,
-  TouchableOpacity,
-  View,
-} from "react-native";
+import { Dimensions, StyleSheet, Text, Pressable, View } from "react-native";
 import Carousel from "react-native-reanimated-carousel";
 import { Image } from "expo-image";
 import { CONSTANTS } from "@/src/constants/contants";
@@ -12,7 +6,7 @@ import { CONSTANTS } from "@/src/constants/contants";
 import { IBanner } from "@/src/types/banner";
 import { theme } from "@/src/constants/theme";
 import { useRef, useState } from "react";
-import BannerAnimatedDots from "./BannerAnimatedDots";
+import CarouselAnimatedDots from "../../general/CarouselAnimatedDots";
 import { tempBanners } from "@/temp/home/banners/tempBanners";
 
 const width = Dimensions.get("window").width;
@@ -26,14 +20,6 @@ const BannersCarousel = () => {
 
   const [currentIndex, setCurrentIndex] = useState(0);
   const carouselRef = useRef<any>(null);
-
-  // Handle dot click navigation
-  const handleDotPress = (index: number) => {
-    setCurrentIndex(index);
-    if (carouselRef.current) {
-      carouselRef.current.scrollTo({ index, animated: true });
-    }
-  };
 
   // if (loadingBannersData) {
   //   return <Text>Loading banners...</Text>;
@@ -57,17 +43,18 @@ const BannersCarousel = () => {
           parallaxScrollingOffset: 40,
         }}
         renderItem={({ item }: { item: IBanner; index: number }) => (
-          <TouchableOpacity
-            style={[styles.imageContainer, { width: cardWidth - cardSpacing }]}
-            activeOpacity={0.8}>
+          <Pressable
+            style={[styles.imageContainer, { width: cardWidth - cardSpacing }]}>
             <Image source={item.PictureUrl} style={styles.image} />
-          </TouchableOpacity>
+          </Pressable>
         )}
       />
-      <BannerAnimatedDots
+      <CarouselAnimatedDots
         bannersCount={bannersData ? bannersData.length : 0}
         currentIndex={currentIndex}
-        handleDotPress={handleDotPress}
+        setCurrentIndex={setCurrentIndex}
+        carouselRef={carouselRef}
+        horizontalPosition="flex-start"
       />
     </View>
   );
@@ -83,7 +70,7 @@ const styles = StyleSheet.create({
     fontFamily: theme.fonts.semi_bold,
     fontSize: 16,
     marginBottom: 8,
-    paddingLeft: 24,
+    paddingLeft: 20,
     color: "#fff",
   },
   imageContainer: {

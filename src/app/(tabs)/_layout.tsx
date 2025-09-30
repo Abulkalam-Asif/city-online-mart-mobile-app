@@ -1,6 +1,5 @@
 import { Tabs } from "expo-router";
 import React from "react";
-import { theme } from "@/src/constants/theme";
 import CustomTabBar from "@/src/components/navigation/CustomTabBar";
 
 export default function TabsLayout() {
@@ -8,7 +7,6 @@ export default function TabsLayout() {
     <Tabs
       tabBar={(props) => <CustomTabBar {...props} />}
       screenOptions={{
-        // tabBarActiveTintColor: theme.colors.primary,
         headerShown: false,
       }}>
       <Tabs.Screen

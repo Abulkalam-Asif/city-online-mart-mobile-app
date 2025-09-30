@@ -5,15 +5,9 @@ type IconButtonProps = {
   icon: React.ReactNode;
   onPress?: () => void;
   size?: number;
-  color?: string;
 };
 
-const IconButton = ({
-  icon,
-  onPress,
-  size = 44,
-  color = "rgba(0, 0, 0, 0.1)",
-}: IconButtonProps) => {
+const IconButton = ({ icon, onPress, size = 44 }: IconButtonProps) => {
   const scaleAnim = useRef(new Animated.Value(1)).current;
   const rippleAnim = useRef(new Animated.Value(0)).current;
 
@@ -80,7 +74,7 @@ const IconButton = ({
               width: size,
               height: size,
               borderRadius: size / 2,
-              backgroundColor: color,
+              backgroundColor: "rgba(0, 0, 0, 0.3)",
               transform: [{ scale: rippleScale }],
               opacity: rippleOpacity,
             },

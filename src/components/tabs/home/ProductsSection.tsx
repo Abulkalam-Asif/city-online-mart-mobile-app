@@ -1,10 +1,4 @@
-import {
-  StyleSheet,
-  View,
-  ScrollView,
-  Text,
-  TouchableOpacity,
-} from "react-native";
+import { StyleSheet, View, ScrollView, Text } from "react-native";
 import React from "react";
 import { theme } from "@/src/constants/theme";
 import ProductCard from "./ProductCard";
@@ -22,7 +16,7 @@ const ProductsSection = ({
   products,
 }: ProductsSectionProps) => {
   return (
-    <View style={[styles.container]}>
+    <View style={styles.container}>
       <Text style={styles.titleText}>{category.Name}</Text>
       <ScrollView
         horizontal
@@ -34,11 +28,7 @@ const ProductsSection = ({
         {products &&
           products.length > 0 &&
           products?.map((product) => (
-            <ProductCard
-              key={product.Id}
-              product={product}
-              category={category}
-            />
+            <ProductCard key={product.Id} product={product} />
           ))}
       </ScrollView>
     </View>
@@ -55,12 +45,12 @@ const styles = StyleSheet.create({
     fontFamily: theme.fonts.semi_bold,
     fontSize: 16,
     marginBottom: 12,
-    paddingHorizontal: 24,
+    paddingHorizontal: 20,
   },
   scrollContent: {
     flexDirection: "row",
     gap: 12,
-    paddingHorizontal: 24,
+    paddingHorizontal: 20,
     paddingVertical: 20,
   },
 });

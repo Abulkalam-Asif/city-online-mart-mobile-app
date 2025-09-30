@@ -1,0 +1,100 @@
+import { IProductDetails } from "@/src/types";
+
+export const tempProductDetails: IProductDetails = {
+  Id: 1,
+  Name: "Velo Berry Frost 10mg نشے کی پڑیا",
+  ManufacturerName: "",
+  FullDescription:
+    "Velo Berry Frost 10mg is a refreshing and flavorful nicotine pouch that offers a delightful berry taste with a cool menthol finish. Each pouch contains 10mg of nicotine, providing a satisfying experience for users seeking a moderate nicotine strength. The Berry Frost flavor combines the sweetness of ripe berries with the invigorating sensation of menthol, creating a perfect balance for those who enjoy fruity and minty flavors. These pouches are designed for discreet use, allowing users to enjoy their nicotine experience without the need for smoking or vaping.",
+  ApprovedRatingSum: 4,
+  ApprovedTotalReviews: 1,
+  DisplayOrder: 0,
+  Price: 1200,
+  OldPrice: 1500,
+  DisableBuyButton: false,
+  DisableWishlistButton: false,
+  HasDiscounts: false,
+  Discounts: [],
+  Images: [
+    {
+      Id: 20,
+      ImageUrl: require("@/temp/home/product-details/1.png"),
+      DisplayOrder: 1,
+    },
+    {
+      Id: 21,
+      ImageUrl: require("@/temp/home/product-details/2.png"),
+      DisplayOrder: 2,
+    },
+  ],
+  StockInfo: {
+    InStock: true,
+    StockQuantity: 10000,
+    StockAvailability: "In Stock",
+    ManageInventoryMethod: 1,
+    ManageInventoryMethodName: "ManageStock",
+  },
+  MinimumQuantity: 1,
+  MaximumQuantity: 10000,
+  AllowedQuantities: null,
+  RelatedProducts: [
+    {
+      Id: 1,
+      MainImageUrl: require("@/temp/home/products/1.webp"),
+      Name: "Mango Tang Jar 750g",
+      Price: 123,
+      OldPrice: 200,
+    },
+    {
+      Id: 2,
+      MainImageUrl: require("@/temp/home/products/2.webp"),
+      Name: "Orange Tang Jar 750g",
+      Price: 200,
+    },
+    {
+      Id: 3,
+      MainImageUrl: require("@/temp/home/products/3.webp"),
+      Name: "Rooh Afza 800 ml",
+      Price: 150,
+      OldPrice: 250,
+    },
+    {
+      Id: 4,
+      MainImageUrl: require("@/temp/home/products/4.webp"),
+      Name: "Dry aloo bukhara irrani 250 gram- خشک آلو بخارہ",
+      Price: 300,
+      OldPrice: 400,
+    },
+  ],
+  CrossSellProducts: [
+    {
+      Id: 5,
+      MainImageUrl: require("@/temp/home/products/5.webp"),
+      Name: "Special Ispaghol Chilka 10 gram - اسپغول چھلکا",
+      Price: 85,
+      OldPrice: 100,
+    },
+    {
+      Id: 6,
+      MainImageUrl: require("@/temp/home/products/6.webp"),
+      Name: "Lays Paprika 50g",
+      Price: 85,
+      OldPrice: 100,
+    },
+    {
+      Id: 7,
+      MainImageUrl: require("@/temp/home/products/7.webp"),
+      Name: "Maxim's Creamy Choclate Fudge Toffee Pouch 500gm - 100+ Pcs",
+      Price: 500,
+      OldPrice: 400,
+    },
+    {
+      Id: 8,
+      MainImageUrl: require("@/temp/home/products/8.webp"),
+      Name: "Candyland NOW Chocolate",
+      Price: 60,
+    },
+  ],
+  Manufacturers: [],
+  IsNew: true,
+};

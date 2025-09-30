@@ -90,7 +90,7 @@ const styles = StyleSheet.create({
     justifyContent: "space-between",
     alignItems: "center",
     marginBottom: 12,
-    paddingHorizontal: 24,
+    paddingHorizontal: 20,
   },
   sectionTitleText: {
     fontSize: 16,
@@ -103,7 +103,7 @@ const styles = StyleSheet.create({
     color: theme.colors.secondary,
   },
   scrollContent: {
-    paddingHorizontal: 24,
+    paddingHorizontal: 20,
     flexDirection: "row",
     gap: 20,
   },

@@ -21,15 +21,7 @@ export default function RootLayout() {
             }}>
             <Stack.Screen name="index" />
             <Stack.Screen name="(tabs)" />
-            <Stack.Screen
-              name="product-details"
-              options={{
-                presentation: "transparentModal",
-                headerShown: false,
-                animation: "none",
-                animationDuration: 250,
-              }}
-            />
+            <Stack.Screen name="product-details" />
           </Stack>
         </SafeAreaView>
       </SafeAreaProvider>

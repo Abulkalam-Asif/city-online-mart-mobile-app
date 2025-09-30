@@ -1,13 +1,20 @@
-import { StyleSheet, View, ScrollView, Text } from "react-native";
+import { StyleSheet, View, ScrollView, Text, Pressable } from "react-native";
 import React from "react";
 import { theme } from "@/src/constants/theme";
 import { Image } from "expo-image";
+import { router } from "expo-router";
 import { tempBestPrices } from "@/temp/home/bestPrices/tempBestPrices";
+import { IProduct } from "@/src/types";
 
-type BestPricesSectionProps = {};
-
-const BestPricesSection = ({}: BestPricesSectionProps) => {
+const BestPricesSection = () => {
   const bestPricesData = tempBestPrices;
+
+  const handleCardPress = (product: IProduct) => {
+    router.push({
+      pathname: "/product-details",
+      params: { id: String(product.Id) },
+    });
+  };
 
   return (
     <View style={styles.container}>
@@ -16,12 +23,15 @@ const BestPricesSection = ({}: BestPricesSectionProps) => {
         horizontal
         showsHorizontalScrollIndicator={false}
         contentContainerStyle={styles.scrollContent}>
-        {bestPricesData.map((card) => {
+        {bestPricesData.map((card: IProduct) => {
           const discountPercentage = card.OldPrice
             ? Math.round(((card.OldPrice - card.Price) / card.OldPrice) * 100)
             : 0;
           return (
-            <View key={card.Id} style={styles.card}>
+            <Pressable
+              onPress={() => handleCardPress(card)}
+              key={card.Id}
+              style={styles.card}>
               <Image
                 key={card.Id}
                 source={card.MainImageUrl}
@@ -36,7 +46,7 @@ const BestPricesSection = ({}: BestPricesSectionProps) => {
                   Save Rs. {card.OldPrice - card.Price}
                 </Text>
               )}
-            </View>
+            </Pressable>
           );
         })}
       </ScrollView>
@@ -54,10 +64,10 @@ const styles = StyleSheet.create({
     fontFamily: theme.fonts.semi_bold,
     fontSize: 16,
     marginBottom: 8,
-    paddingLeft: 24,
+    paddingLeft: 20,
   },
   scrollContent: {
-    paddingHorizontal: 24,
+    paddingHorizontal: 20,
     flexDirection: "row",
     gap: 20,
   },

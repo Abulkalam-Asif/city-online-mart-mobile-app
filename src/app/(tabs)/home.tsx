@@ -1,5 +1,5 @@
 import { ScrollView, StyleSheet } from "react-native";
-import React from "react";
+import React, { useState } from "react";
 import BannersCarousel from "@/src/components/tabs/home/BannersCarousel";
 import HomeSearchSection from "@/src/components/tabs/home/HomeSearchSection";
 import CategoriesSection from "@/src/components/tabs/home/categories-section/CategoriesSection";
@@ -11,6 +11,7 @@ import { theme } from "@/src/constants/theme";
 import HomeTopBg from "@/src/components/tabs/home/HomeTopBg";
 import { tempCategories } from "@/temp/home/categories/tempCategories";
 import { tempProducts } from "@/temp/home/products/tempProducts";
+import Sidebar from "@/src/components/tabs/home/Sidebar";
 
 const HomeScreen = () => {
   const categories = tempCategories;
@@ -23,13 +24,15 @@ const HomeScreen = () => {
   //   return <></>;
   // }
 
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+
   return (
     <>
       <ScrollView
         style={styles.container}
         contentContainerStyle={styles.containerContent}>
         <HomeTopBg />
-        <HomeSearchSection />
+        <HomeSearchSection openSidebarHandler={() => setIsSidebarOpen(true)} />
         <BannersCarousel />
         <BestPricesSection />
         <CategoriesSection
@@ -61,6 +64,10 @@ const HomeScreen = () => {
 
       {/* Main Banner Modal - Shows on app start */}
       {/* <MainBanner /> */}
+      <Sidebar
+        isOpen={isSidebarOpen}
+        closeSidebarHandler={() => setIsSidebarOpen(false)}
+      />
     </>
   );
 };

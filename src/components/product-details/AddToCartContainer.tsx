@@ -25,42 +25,36 @@ const AddToCartContainer = ({
         </View>
       )}
 
-      <View style={styles.quantityCartContainer}>
+      <View style={styles.addToCartSection}>
         {quantityInCart > 0 && (
-          <View style={styles.setQuantityView}>
+          <View style={styles.quantitySection}>
             <Pressable
               style={({ pressed }) => [
-                styles.changeQuantityButton,
-                pressed && styles.changeQuantityButtonPressed,
+                styles.quantityChangeButton,
+                pressed && styles.quantityChangeButtonPressed,
               ]}
-              onPress={() =>
-                setQuantityInCart(quantityInCart > 0 ? quantityInCart - 1 : 0)
-              }>
-              <FontAwesome6 name="minus" size={16} color="#000" />
+              onPress={() => setQuantityInCart(quantityInCart - 1)}>
+              <FontAwesome6 size={20} name="minus" />
             </Pressable>
             <Text style={styles.quantityText}>{quantityInCart}</Text>
             <Pressable
               style={({ pressed }) => [
-                styles.changeQuantityButton,
-                pressed && styles.changeQuantityButtonPressed,
+                styles.quantityChangeButton,
+                pressed && styles.quantityChangeButtonPressed,
               ]}
               onPress={() => setQuantityInCart(quantityInCart + 1)}>
-              <FontAwesome6 name="plus" size={16} color="#000" />
+              <FontAwesome6 size={20} name="plus" />
             </Pressable>
           </View>
         )}
-
         <Pressable
-          style={styles.addToCartButton}
-          onPress={() => {
-            if (quantityInCart === 0) {
-              setQuantityInCart(1);
-            } else {
-              // Navigate to cart screen logic here
-            }
-          }}>
+          style={({ pressed }) => [
+            styles.addToCartButton,
+            pressed && styles.addToCartButtonPressed,
+          ]}
+          onPress={() => setQuantityInCart(1)}>
           <Text style={styles.addToCartText}>
-            {quantityInCart === 0 ? "Add to Cart" : "View Cart"}
+            {quantityInCart === 0 ? "Add to Cart" : `View cart`}
           </Text>
         </Pressable>
       </View>
@@ -72,12 +66,10 @@ export default AddToCartContainer;
 
 const styles = StyleSheet.create({
   container: {
-    paddingHorizontal: 12,
-    paddingVertical: 12,
-    backgroundColor: "#fff",
+    paddingHorizontal: 20,
+    paddingVertical: 20,
     flexDirection: "column",
     alignItems: "center",
-    boxShadow: "0px -4px 6px 0 rgba(0, 0, 0, 0.1)",
     gap: 8,
   },
 
@@ -89,50 +81,54 @@ const styles = StyleSheet.create({
   },
   amountText: {
     fontSize: 16,
-    fontFamily: theme.fonts.regular,
+    fontFamily: theme.fonts.semi_bold,
   },
   amountValueText: {
     fontSize: 16,
     fontFamily: theme.fonts.semi_bold,
-    color: theme.colors.primary,
+    color: theme.colors.secondary,
   },
 
-  quantityCartContainer: {
+  addToCartSection: {
     flexDirection: "row",
-    alignItems: "center",
-    gap: 12,
+    gap: 8,
   },
-  setQuantityView: {
+  quantitySection: {
     flexDirection: "row",
-    justifyContent: "space-between",
     alignItems: "center",
-    borderWidth: 1,
-    borderColor: "#ccc",
-    borderRadius: 10,
     flex: 1,
+    borderWidth: 1,
+    borderColor: theme.colors.background,
+    borderRadius: 30,
   },
-  changeQuantityButton: {
-    padding: 16,
-    borderRadius: 10,
+  quantityChangeButton: {
+    flex: 1,
+    flexDirection: "row",
+    justifyContent: "center",
+    padding: 11,
+    borderRadius: 30,
   },
-  changeQuantityButtonPressed: {
-    backgroundColor: "#eee",
+  quantityChangeButtonPressed: {
+    backgroundColor: theme.colors.background,
   },
   quantityText: {
-    fontSize: 16,
     fontFamily: theme.fonts.medium,
-  },
-
-  addToCartButton: {
-    backgroundColor: theme.colors.primary,
-    paddingVertical: 12,
-    borderRadius: 10,
     flex: 1,
+    textAlign: "center",
+    fontSize: 18,
+  },
+  addToCartButton: {
+    flex: 1,
+    backgroundColor: theme.colors.primary,
+    paddingVertical: 10,
+    borderRadius: 30,
+  },
+  addToCartButtonPressed: {
+    opacity: 0.8,
   },
   addToCartText: {
-    textAlign: "center",
     color: "#fff",
-    fontFamily: theme.fonts.medium,
-    fontSize: 16,
+    textAlign: "center",
+    fontFamily: theme.fonts.semi_bold,
   },
 });

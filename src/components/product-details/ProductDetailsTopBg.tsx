@@ -4,7 +4,7 @@ import { theme } from "@/src/constants/theme";
 
 const { width, height } = Dimensions.get("window");
 
-const HomeTopBg = () => {
+const ProductDetailsTopBg = () => {
   return (
     <>
       <View
@@ -18,12 +18,12 @@ const HomeTopBg = () => {
   );
 };
 
-export default HomeTopBg;
+export default ProductDetailsTopBg;
 
 const styles = StyleSheet.create({
   container: {
     width: "120%",
-    backgroundColor: theme.colors.primary,
+    backgroundColor: theme.colors.primary_light,
     position: "absolute",
     top: 0,
     left: "-10%",

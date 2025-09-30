@@ -1,23 +1,17 @@
-import {
-  Pressable,
-  StyleSheet,
-  Text,
-  TouchableOpacity,
-  View,
-} from "react-native";
+import { Pressable, StyleSheet, Text, View } from "react-native";
 import React, { useState } from "react";
 import { Image } from "expo-image";
 import { theme } from "@/src/constants/theme";
 import { FontAwesome6 } from "@expo/vector-icons";
 import { router } from "expo-router";
-import { ICategory, IProduct } from "@/src/types";
+import { IProduct } from "@/src/types";
 
 type Props = {
   product: IProduct;
-  category: ICategory;
+  hasBackground?: boolean;
 };
 
-const ProductCard = ({ product, category }: Props) => {
+const ProductCard = ({ product, hasBackground = false }: Props) => {
   const [quantityInCart, setQuantityInCart] = useState(0);
 
   const handleProductPress = () => {
@@ -28,9 +22,8 @@ const ProductCard = ({ product, category }: Props) => {
   };
 
   return (
-    <TouchableOpacity
-      style={styles.card}
-      activeOpacity={1}
+    <Pressable
+      style={[styles.card, hasBackground && styles.cardBackground]}
       onPress={handleProductPress}>
       {product.OldPrice && product.OldPrice > product.Price && (
         <Text style={styles.discountText}>
@@ -43,7 +36,6 @@ const ProductCard = ({ product, category }: Props) => {
           style={styles.image}
         />
       </View>
-      <Text style={styles.categoryNameText}>{category.Name}</Text>
       <Text style={styles.nameText} numberOfLines={2} ellipsizeMode="tail">
         {product.Name}
       </Text>
@@ -86,7 +78,7 @@ const ProductCard = ({ product, category }: Props) => {
           </Text>
         </Pressable>
       </View>
-    </TouchableOpacity>
+    </Pressable>
   );
 };
 
@@ -100,6 +92,9 @@ const styles = StyleSheet.create({
     padding: 10,
     width: 180,
     position: "relative",
+  },
+  cardBackground: {
+    backgroundColor: theme.colors.background_3,
   },
   discountText: {
     position: "absolute",
@@ -124,11 +119,6 @@ const styles = StyleSheet.create({
     width: 80,
     height: 80,
     objectFit: "contain",
-  },
-  categoryNameText: {
-    fontSize: 8,
-    fontFamily: theme.fonts.medium,
-    color: theme.colors.primary,
   },
   nameText: {
     fontSize: 10,

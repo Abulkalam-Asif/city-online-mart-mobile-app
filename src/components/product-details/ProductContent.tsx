@@ -1,13 +1,13 @@
-import { ScrollView, Share, StyleSheet, Text, View } from "react-native";
-import React, { useState } from "react";
-import { Image } from "expo-image";
+import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
+import React, { useEffect, useState } from "react";
 import { theme } from "@/src/constants/theme";
 import { IProductDetails } from "@/src/types";
 import AddToCartContainer from "./AddToCartContainer";
-import IconButton from "../general/IconButton";
-import { Entypo, Feather } from "@expo/vector-icons";
-import BoughtTogether from "./BoughtTogether";
-import SimilarItems from "./SimilarItems";
+import ImagesCarousel from "./ImagesCarousel";
+import ProductDetailsTopBg from "./ProductDetailsTopBg";
+import ProductDetailsTopBar from "./ProductDetailsTopBar";
+import { Entypo, FontAwesome6 } from "@expo/vector-icons";
+import ProductsSection from "./ProductsSection";
 
 type ProductContentProps = {
   product: IProductDetails | undefined;
@@ -16,19 +16,33 @@ type ProductContentProps = {
 
 const ProductContent = ({ product, isLoading }: ProductContentProps) => {
   const [quantityInCart, setQuantityInCart] = useState(0);
-  const [isFavorite, setIsFavorite] = useState(false);
   const [isShowMoreDescription, setIsShowMoreDescription] = useState(false);
+  const [productsDisplayType, setProductsDisplayType] = useState<
+    "similar" | "bought_together"
+  >("similar");
+
+  useEffect(() => {
+    if (quantityInCart === 0) {
+      setProductsDisplayType("similar");
+    } else {
+      setProductsDisplayType("bought_together");
+    }
+  }, [quantityInCart]);
 
   return (
     <>
       {isLoading ? (
-        <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
+        <ScrollView
+          style={styles.container}
+          showsVerticalScrollIndicator={false}>
           <View style={styles.loadingContainer}>
             <Text style={styles.loadingText}>Loading product...</Text>
           </View>
         </ScrollView>
       ) : !product ? (
-        <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
+        <ScrollView
+          style={styles.container}
+          showsVerticalScrollIndicator={false}>
           <View style={styles.loadingContainer}>
             <Text style={styles.loadingText}>Product not found</Text>
           </View>
@@ -36,61 +50,48 @@ const ProductContent = ({ product, isLoading }: ProductContentProps) => {
       ) : (
         <>
           <ScrollView
-            style={styles.content}
-            showsVerticalScrollIndicator={false}>
-              
-            <View style={styles.topContentContainer}>
-              {/* Product Image */}
-              <View style={styles.imageContainer}>
-                <Image
-                  source={{
-                    uri:
-                      product.MainImageUrl ||
-                      product.ThumbnailUrl ||
-                      product.Images[0]?.ImageUrl,
-                  }}
-                  style={styles.productImage}
-                />
-              </View>
+            style={styles.container}
+            showsVerticalScrollIndicator={false}
+            contentContainerStyle={styles.containerContent}>
+            <ProductDetailsTopBg />
 
-              {/* Product Name Section */}
-              <View style={styles.productNameSection}>
-                <Text
-                  style={styles.productNameText}
-                  numberOfLines={2}
-                  ellipsizeMode="tail">
-                  {/* Product name here Product name here Product name here */}
-                  {product.Name}
+            <ProductDetailsTopBar />
+            <ImagesCarousel images={product.Images} />
+
+            <View style={styles.productNameSection}>
+              <Text
+                style={styles.productNameText}
+                numberOfLines={2}
+                ellipsizeMode="tail">
+                {/* Product name here Product name here Product name here */}
+                {product.Name}
+              </Text>
+              <Pressable
+                style={({ pressed }) => [
+                  styles.ratingSectionButton,
+                  pressed && styles.ratingSectionButtonPressed,
+                ]}>
+                <Entypo name="star" size={18} color={"#FFBB22"} />
+                <Text style={styles.ratingText}>
+                  {product.ApprovedRatingSum} ({product.ApprovedTotalReviews}{" "}
+                  Review)
                 </Text>
-                <IconButton
-                  icon={
-                    <Entypo
-                      name={isFavorite ? "heart" : "heart-outlined"}
-                      size={24}
-                      color={isFavorite ? "red" : "black"}
-                    />
-                  }
-                  onPress={() => setIsFavorite(!isFavorite)}
+                <FontAwesome6
+                  name="chevron-right"
+                  size={16}
+                  color={theme.colors.text_secondary}
                 />
-                <IconButton
-                  icon={<Feather name="share-2" size={22} />}
-                  onPress={() => {
-                    Share.share({
-                      message: `Check out this product: ${product.Name}`,
-                      url: product.MainImageUrl,
-                    });
-                  }}
-                />
-              </View>
+              </Pressable>
+            </View>
 
+            <View style={styles.topContentContainer}>
               {/* Price Section */}
               <View style={styles.priceSection}>
-                <Text style={styles.rs}>Rs.</Text>
-                <Text style={styles.currentPriceText}> {product.Price}</Text>
+                <Text style={styles.currentPriceText}>Rs. {product.Price}</Text>
                 <Text style={styles.oldPriceText}>Rs. {product.OldPrice}</Text>
                 <Text style={styles.discountTag}>
                   Rs.{" "}
-                  {product.OldPrice - product.Price > 0
+                  {product.OldPrice && product.OldPrice - product.Price > 0
                     ? product.OldPrice - product.Price
                     : 0}{" "}
                   off
@@ -101,9 +102,7 @@ const ProductContent = ({ product, isLoading }: ProductContentProps) => {
                     style={[
                       styles.stockText,
                       {
-                        color: product.StockInfo.InStock
-                          ? theme.colors.primary
-                          : "red",
+                        color: product.StockInfo.InStock ? "#6E37B2" : "red",
                       },
                     ]}>
                     {product.StockInfo.StockAvailability}
@@ -112,12 +111,18 @@ const ProductContent = ({ product, isLoading }: ProductContentProps) => {
               </View>
             </View>
 
+            <AddToCartContainer
+              quantityInCart={quantityInCart}
+              setQuantityInCart={setQuantityInCart}
+              price={product.Price}
+            />
+
             <View style={styles.descriptionContainer}>
-              <Text style={styles.aboutProductText}>About this product</Text>
+              <Text style={styles.descriptionTitleText}>Description</Text>
               <Text style={styles.descriptionText}>
                 {isShowMoreDescription ? (
                   <>
-                    {product.ShortDescription}
+                    {product.FullDescription}
                     <Text
                       style={styles.showLessMoreText}
                       onPress={() => setIsShowMoreDescription(false)}>
@@ -126,10 +131,10 @@ const ProductContent = ({ product, isLoading }: ProductContentProps) => {
                   </>
                 ) : (
                   <>
-                    {product.ShortDescription.length > 100
-                      ? product.ShortDescription.substring(0, 100) + "... "
-                      : product.ShortDescription}
-                    {product.ShortDescription.length > 100 && (
+                    {product.FullDescription.length > 100
+                      ? product.FullDescription.substring(0, 100) + "... "
+                      : product.FullDescription}
+                    {product.FullDescription.length > 100 && (
                       <Text
                         style={styles.showLessMoreText}
                         onPress={() => setIsShowMoreDescription(true)}>
@@ -141,14 +146,19 @@ const ProductContent = ({ product, isLoading }: ProductContentProps) => {
               </Text>
             </View>
 
-            <BoughtTogether />
-            <SimilarItems />
+            <ProductsSection
+              sectionTitle={
+                productsDisplayType === "similar"
+                  ? "Similar products"
+                  : "Frequently bought together"
+              }
+              products={
+                productsDisplayType === "similar"
+                  ? product.RelatedProducts
+                  : product.CrossSellProducts
+              }
+            />
           </ScrollView>
-          <AddToCartContainer
-            quantityInCart={quantityInCart}
-            setQuantityInCart={setQuantityInCart}
-            price={product.Price}
-          />
         </>
       )}
     </>
@@ -158,71 +168,75 @@ const ProductContent = ({ product, isLoading }: ProductContentProps) => {
 export default ProductContent;
 
 const styles = StyleSheet.create({
-  content: {
+  container: {
     flex: 1,
-  },
-  
-  topContentContainer: {
-    paddingHorizontal: 16,
     backgroundColor: "#fff",
-    paddingTop: 20,
   },
-  imageContainer: {
-    alignItems: "center",
-    marginTop: 20,
-    marginBottom: 40,
+  containerContent: {
     position: "relative",
-  },
-  productImage: {
-    width: 200,
-    height: 200,
+    paddingBottom: 20,
   },
 
   productNameSection: {
     flexDirection: "row",
-    alignItems: "center",
-    marginBottom: 8,
+    alignItems: "flex-start",
+    gap: 8,
+    paddingLeft: 20,
+    paddingRight: 10,
+    paddingTop: 20,
   },
   productNameText: {
     fontSize: 18,
+    lineHeight: 24,
     color: theme.colors.text,
     fontFamily: theme.fonts.semi_bold,
     flex: 1,
   },
+  ratingSectionButton: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+    height: 28,
+    paddingHorizontal: 10,
+  },
+  ratingSectionButtonPressed: {
+    backgroundColor: "rgba(0, 0, 0, 0.05)",
+    borderRadius: 14,
+  },
+  ratingText: {
+    color: theme.colors.text,
+    fontFamily: theme.fonts.medium,
+    fontSize: 12,
+  },
 
+  topContentContainer: {
+    paddingHorizontal: 20,
+    marginTop: 10,
+  },
   priceSection: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 4,
-  },
-  rs: {
-    fontSize: 16,
-    fontFamily: theme.fonts.medium,
-    color: theme.colors.text_secondary,
+    gap: 10,
   },
   currentPriceText: {
-    fontSize: 20,
-    fontFamily: theme.fonts.medium,
-    color: theme.colors.text,
-    marginRight: 8,
+    fontSize: 16,
+    fontFamily: theme.fonts.semi_bold,
+    color: theme.colors.secondary,
   },
   oldPriceText: {
-    fontSize: 16,
-    color: theme.colors.text_secondary,
+    fontSize: 12,
+    color: "red",
     textDecorationLine: "line-through",
     fontFamily: theme.fonts.regular,
-    marginRight: 8,
   },
   discountTag: {
-    backgroundColor: theme.colors.primary,
-    fontSize: 12,
+    backgroundColor: "#FBBE36",
+    fontSize: 8,
     lineHeight: 16,
-    color: "#fff",
-    fontFamily: theme.fonts.medium,
-    paddingHorizontal: 8,
-    paddingVertical: 3,
-    borderRadius: 4,
-    marginRight: 8,
+    fontFamily: theme.fonts.semi_bold,
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 10,
   },
   stockText: {
     fontSize: 14,
@@ -232,17 +246,15 @@ const styles = StyleSheet.create({
   },
 
   descriptionContainer: {
-    marginTop: 16,
-    padding: 16,
-    backgroundColor: "#fff",
+    paddingHorizontal: 20,
   },
-  aboutProductText: {
+  descriptionTitleText: {
     fontSize: 16,
     fontFamily: theme.fonts.semi_bold,
     marginBottom: 4,
   },
   descriptionText: {
-    fontSize: 14,
+    fontSize: 12,
     color: theme.colors.text_secondary,
     fontFamily: theme.fonts.regular,
   },

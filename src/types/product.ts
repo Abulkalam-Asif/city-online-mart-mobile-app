@@ -16,15 +16,9 @@ export interface IProduct {
 export interface IProductImage {
   Id: number;
   ImageUrl: string;
-  ThumbnailUrl: string;
-  AltText: string;
-  Title: string;
-  DisplayOrder: number;
-}
-
-export interface IProductSpecification {
-  AttributeName: string;
-  AttributeValue: string;
+  ThumbnailUrl?: string;
+  AltText?: string | null;
+  Title?: string | null;
   DisplayOrder: number;
 }
 
@@ -40,22 +34,20 @@ export interface IProductStockInfo {
 // Detailed product info extending the basic interface
 export interface IProductDetails extends IProduct {
   FullDescription: string;
-  ProductCost: number;
+  ManufacturerName: string;
+  ApprovedRatingSum: number;
+  ApprovedTotalReviews: number;
+  DisplayOrder: number;
+  Discounts: any[];
+  RelatedProducts: IProduct[];
+  CrossSellProducts: IProduct[];
+  Manufacturers: any[];
+  IsNew: boolean;
   DisableBuyButton: boolean;
-  Specifications: IProductSpecification[];
   StockInfo: IProductStockInfo;
   MinimumQuantity: number;
-
-  ManufacturerPartNumber: string;
-  Gtin: string;
+  MaximumQuantity: number;
+  AllowedQuantities: number[] | null;
   DisableWishlistButton: boolean;
-  CallForPrice: boolean;
-  CustomerEntersPrice: boolean;
-  MinimumCustomerEnteredPrice: number;
-  MaximumCustomerEnteredPrice: number;
-  Weight: number;
-  Length: number;
-  Width: number;
-  Height: number;
   Images: IProductImage[];
 }

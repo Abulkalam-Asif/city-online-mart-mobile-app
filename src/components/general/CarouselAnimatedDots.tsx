@@ -7,20 +7,35 @@ import Animated, {
   withSpring,
 } from "react-native-reanimated";
 
-type BannerAnimatedDotsProps = {
+type CarouselAnimatedDotsProps = {
   bannersCount: number;
   currentIndex: number;
-  handleDotPress: (index: number) => void;
+  setCurrentIndex: (index: number) => void;
+  carouselRef: React.RefObject<any>;
+  horizontalPosition?: "flex-start" | "center" | "flex-end";
 };
 
-const BannerAnimatedDots = ({
+const CarouselAnimatedDots = ({
   bannersCount,
   currentIndex,
-  handleDotPress,
-}: BannerAnimatedDotsProps) => {
+  carouselRef,
+  setCurrentIndex,
+  horizontalPosition = "center",
+}: CarouselAnimatedDotsProps) => {
+  const handleDotPress = (index: number) => {
+    setCurrentIndex(index);
+    if (carouselRef.current) {
+      carouselRef.current.scrollTo({ index, animated: true });
+    }
+  };
+
   return (
     <>
-      <View style={styles.paginationContainer}>
+      <View
+        style={[
+          styles.paginationContainer,
+          { justifyContent: horizontalPosition },
+        ]}>
         {Array.from({ length: bannersCount }).map((_, index) => (
           <AnimatedDot
             key={index}
@@ -34,7 +49,7 @@ const BannerAnimatedDots = ({
   );
 };
 
-export default BannerAnimatedDots;
+export default CarouselAnimatedDots;
 
 // Create a proper animated dot component
 const AnimatedDot = ({
@@ -46,10 +61,10 @@ const AnimatedDot = ({
   index: number;
   handleDotPress: (index: number) => void;
 }) => {
-  const dotWidth = useSharedValue(isActive ? 36 : 12);
+  const dotWidth = useSharedValue(isActive ? 30 : 10);
 
   useEffect(() => {
-    dotWidth.value = withSpring(isActive ? 36 : 12, {
+    dotWidth.value = withSpring(isActive ? 30 : 10, {
       duration: 500,
     });
   }, [isActive, dotWidth]);
@@ -80,11 +95,11 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     marginTop: 12,
-    paddingLeft: 26,
+    paddingHorizontal: 26,
     gap: 8,
   },
   paginationDot: {
-    height: 12,
-    borderRadius: 6,
+    height: 10,
+    borderRadius: 5,
   },
 });
