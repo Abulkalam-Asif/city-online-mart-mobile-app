@@ -26,8 +26,9 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
-    paddingTop: 8,
+    paddingVertical: 8,
     backgroundColor: "#fff",
+    elevation: 2,
   },
   reviewsText: {
     fontFamily: theme.fonts.semibold,

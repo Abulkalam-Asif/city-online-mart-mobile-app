@@ -109,10 +109,7 @@ const styles = StyleSheet.create({
     paddingBottom: 60,
   },
   stickyHeader: {
-    zIndex: 1,
     backgroundColor: "#fff",
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
     elevation: 2,
   },
 });
