@@ -244,6 +244,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 6,
     paddingVertical: 2,
     borderRadius: 10,
+    color: "black",
   },
   stockText: {
     fontSize: 14,

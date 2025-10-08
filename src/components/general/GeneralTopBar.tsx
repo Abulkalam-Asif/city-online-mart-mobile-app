@@ -5,7 +5,7 @@ import IconButton from "@/src/components/general/IconButton";
 import { router } from "expo-router";
 import { theme } from "@/src/constants/theme";
 
-const ReviewsTopBar = () => {
+const GeneralTopBar = ({ text }: { text: string }) => {
   return (
     <View style={styles.container}>
       <IconButton
@@ -14,12 +14,12 @@ const ReviewsTopBar = () => {
           router.back();
         }}
       />
-      <Text style={styles.reviewsText}>Reviews</Text>
+      <Text style={styles.reviewsText}>{text}</Text>
     </View>
   );
 };
 
-export default ReviewsTopBar;
+export default GeneralTopBar;
 
 const styles = StyleSheet.create({
   container: {
@@ -29,6 +29,7 @@ const styles = StyleSheet.create({
     paddingVertical: 8,
     backgroundColor: "#fff",
     elevation: 2,
+    paddingHorizontal: 16,
   },
   reviewsText: {
     fontFamily: theme.fonts.semibold,

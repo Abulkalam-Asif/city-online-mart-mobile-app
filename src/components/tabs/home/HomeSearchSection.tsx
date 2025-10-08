@@ -17,7 +17,11 @@ const HomeSearchSection: React.FC<HomeSearchSectionProps> = ({
         onPress={openSidebarHandler}>
         <FontAwesome6 name="bars" size={20} color={"#fff"} />
       </Pressable>
-      <TextInput placeholder="Search the store" style={styles.textInput} />
+      <TextInput
+        placeholder="Search the store"
+        style={styles.textInput}
+        placeholderTextColor={theme.colors.placeholder}
+      />
       <Pressable
         style={({ pressed }) => [styles.icon, pressed && styles.iconPressed]}>
         <FontAwesome6 name="bell" size={20} color={"#fff"} />
@@ -38,7 +42,7 @@ const styles = StyleSheet.create({
     gap: 12,
   },
   textInput: {
-    backgroundColor: theme.colors.background,
+    backgroundColor: theme.colors.background_3,
     borderRadius: 24,
     paddingHorizontal: 20,
     paddingVertical: 10,

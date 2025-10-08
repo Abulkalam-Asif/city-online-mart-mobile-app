@@ -1,16 +1,37 @@
-import { StyleSheet, Text, View } from "react-native";
 import React from "react";
+import { FlatList, StyleSheet, View } from "react-native";
+import GeneralTopBar from "@/src/components/general/GeneralTopBar";
+import CartItem from "@/src/components/tabs/cart/CartItem";
+import { tempCartItems } from "@/temp/home/products/tempCartItems";
 
-type Props = {};
+export default function CartScreen() {
+  const cartItems = tempCartItems;
 
-const CartScreen = (props: Props) => {
   return (
-    <View>
-      <Text>Cart</Text>
+    <View style={styles.mainContainer}>
+      <GeneralTopBar text="My Cart" />
+      <FlatList
+        style={styles.container}
+        contentContainerStyle={styles.containerContent}
+        data={cartItems}
+        renderItem={({ item }) => <CartItem item={item} />}
+        keyExtractor={(item) => item.Id.toString()}
+        showsVerticalScrollIndicator={false}
+      />
     </View>
   );
-};
+}
 
-export default CartScreen;
-
-const styles = StyleSheet.create({});
+const styles = StyleSheet.create({
+  mainContainer: {
+    flex: 1,
+    backgroundColor: "#fff",
+  },
+  container: {
+    flex: 1,
+  },
+  containerContent: {
+    paddingVertical: 20,
+    gap: 16,
+  },
+});

@@ -166,11 +166,10 @@ const styles = StyleSheet.create({
     flex: 1,
     alignItems: "center",
     justifyContent: "center",
-    padding: 8,
+    borderRadius: 40,
   },
   tabItemPressed: {
     backgroundColor: "rgba(0, 0, 0, 0.05)",
-    borderRadius: 40,
   },
   tabLabel: {
     fontSize: 10,
