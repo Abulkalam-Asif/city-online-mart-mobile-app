@@ -8,7 +8,7 @@ export const theme = {
     placeholder: "#8d8d8d",
     background: "#E0E0E0",
     background_2: "#FFF1D3",
-    background_3: "#FAFAFA",
+    background_3: "#f8f7f7ff",
   },
   light_colors: [
     "#FFE8B4",

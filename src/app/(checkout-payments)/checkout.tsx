@@ -2,6 +2,8 @@ import React from "react";
 import { ScrollView, StyleSheet, Text, View } from "react-native";
 import GeneralTopBar from "@/src/components/general/GeneralTopBar";
 import { theme } from "@/src/constants/theme";
+import ExpectedDeliveryTimeSection from "@/src/components/checkout-payment/checkout/ExpectedDeliveryTimeSection";
+import PaymentMethodSelectionSection from "@/src/components/checkout-payment/checkout/PaymentMethodSelectionSection";
 
 export default function CheckoutScreen() {
   return (
@@ -14,6 +16,8 @@ export default function CheckoutScreen() {
           Add your delivery address,so that order can be provided to you at good
           time
         </Text>
+        <ExpectedDeliveryTimeSection />
+        <PaymentMethodSelectionSection />
       </ScrollView>
     </View>
   );
