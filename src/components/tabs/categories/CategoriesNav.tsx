@@ -62,8 +62,6 @@ const styles = StyleSheet.create({
   containerContent: {
     alignItems: "center",
     flexDirection: "row",
-    borderBottomWidth: 1,
-    borderBottomColor: theme.colors.placeholder,
   },
 
   categoryButton: {
