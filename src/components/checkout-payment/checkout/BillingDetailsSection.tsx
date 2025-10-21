@@ -111,7 +111,7 @@ const styles = StyleSheet.create({
   },
   amount: {
     fontSize: 12,
-    fontFamily: theme.fonts.semibold,
+    fontFamily: theme.fonts.regular,
     color: theme.colors.text,
   },
   savingsTag: {
