@@ -1,5 +1,5 @@
-import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
-import React, { useState } from "react";
+import { Pressable, ScrollView, StyleSheet, Text, View, Alert } from "react-native";
+import React, { useRef, useState } from "react";
 import { theme } from "@/src/constants/theme";
 import GeneralTopBar from "@/src/components/general/GeneralTopBar";
 import { Image } from "expo-image";
@@ -9,6 +9,8 @@ import {
   Feather,
 } from "@expo/vector-icons";
 import { tempOrders } from "@/temp/orders/tempOrders";
+import ViewShot from "react-native-view-shot";
+import * as MediaLibrary from "expo-media-library";
 
 type OrderStatus = "confirmed" | "completed" | "cancelled";
 
@@ -22,6 +24,7 @@ const OrderDetailsContent = ({
 }: OrderDetailsContentProps) => {
   const [isBillingDetailsExpanded, setIsBillingDetailsExpanded] =
     useState(true);
+  const viewShotRef = useRef<ViewShot>(null);
   const orderData = tempOrders.find((order) => order.id === orderId);
 
   const paymentMethodImage = () => {
@@ -71,13 +74,56 @@ const OrderDetailsContent = ({
   const originalDeliveryFee = 120;
   const totalAmount = 900;
 
+  const handleDownloadOrderSummary = async () => {
+    try {
+      // Request permission to save to gallery
+      const { status } = await MediaLibrary.requestPermissionsAsync();
+      
+      if (status !== "granted") {
+        Alert.alert(
+          "Permission Required",
+          "Please grant permission to save images to your gallery."
+        );
+        return;
+      }
+
+      // Make sure billing details are expanded before capturing
+      if (!isBillingDetailsExpanded) {
+        setIsBillingDetailsExpanded(true);
+        // Wait a bit for the UI to update
+        await new Promise((resolve) => setTimeout(resolve, 300));
+      }
+
+      // Capture the view as an image
+      if (viewShotRef.current && viewShotRef.current.capture) {
+        const uri = await viewShotRef.current.capture();
+        
+        // Save to gallery
+        const asset = await MediaLibrary.createAssetAsync(uri);
+        await MediaLibrary.createAlbumAsync("Orders", asset, false);
+        
+        Alert.alert(
+          "Success",
+          "Order summary has been saved to your gallery!"
+        );
+      }
+    } catch (error) {
+      console.error("Error saving order summary:", error);
+      Alert.alert(
+        "Error",
+        "Failed to save order summary. Please try again."
+      );
+    }
+  };
+
   return (
     <View style={styles.mainContainer}>
       <GeneralTopBar text={`Order #${orderId}`} />
       <ScrollView
         style={styles.container}
         contentContainerStyle={styles.contentContainer}>
-        {/* Order Details Section */}
+        <ViewShot ref={viewShotRef} options={{ format: "jpg", quality: 0.9 }}>
+          {/* Order Details Section */}
         <View style={styles.section}>
           <Text style={styles.sectionTitleText}>Order details</Text>
           <View style={styles.orderDetailsCard}>
@@ -140,7 +186,7 @@ const OrderDetailsContent = ({
         <View style={styles.section}>
           <View style={styles.billingHeader}>
             <Text style={styles.sectionTitleText}>Billing Details</Text>
-            <Pressable style={styles.downloadButton}>
+            <Pressable style={styles.downloadButton} onPress={handleDownloadOrderSummary}>
               <Feather name="download" size={20} color={theme.colors.text} />
             </Pressable>
             <Pressable
@@ -200,6 +246,7 @@ const OrderDetailsContent = ({
             </View>
           )}
         </View>
+        </ViewShot>
       </ScrollView>
 
       {/* Bottom Action Buttons */}
