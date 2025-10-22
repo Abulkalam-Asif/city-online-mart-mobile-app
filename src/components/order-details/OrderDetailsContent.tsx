@@ -18,6 +18,7 @@ import {
 import { tempOrders } from "@/temp/orders/tempOrders";
 import ViewShot from "react-native-view-shot";
 import * as MediaLibrary from "expo-media-library";
+import HiddenCaptureView from "./HiddenCaptureView";
 
 type OrderStatus = "confirmed" | "completed" | "cancelled";
 
@@ -94,14 +95,7 @@ const OrderDetailsContent = ({
         return;
       }
 
-      // Make sure billing details are expanded before capturing
-      if (!isBillingDetailsExpanded) {
-        setIsBillingDetailsExpanded(true);
-        // Wait a bit for the UI to update
-        await new Promise((resolve) => setTimeout(resolve, 300));
-      }
-
-      // Capture the view as an image
+      // Capture the hidden view as an image
       if (viewShotRef.current && viewShotRef.current.capture) {
         const uri = await viewShotRef.current.capture();
 
@@ -128,139 +122,145 @@ const OrderDetailsContent = ({
       <ScrollView
         style={styles.container}
         contentContainerStyle={styles.contentContainer}>
-        <ViewShot ref={viewShotRef} options={{ format: "jpg", quality: 0.9 }}>
-          {/* Order Details Section */}
-          <View style={styles.section}>
-            <Text style={styles.sectionTitleText}>Order details</Text>
-            <View style={styles.orderDetailsCard}>
-              <View style={styles.orderDetailsLeft}>
-                <Text style={styles.orderStatusText}>
-                  Order is{" "}
-                  <Text
-                    style={[styles.statusText, { color: getStatusColor() }]}>
-                    {getStatusText()}
-                  </Text>
-                  {orderData?.status === "in-process" && " and will deliver on"}
+        {/* Order Details Section */}
+        <View style={styles.section}>
+          <Text style={styles.sectionTitleText}>Order details</Text>
+          <View style={styles.orderDetailsCard}>
+            <View style={styles.orderDetailsLeft}>
+              <Text style={styles.orderStatusText}>
+                Order is{" "}
+                <Text style={[styles.statusText, { color: getStatusColor() }]}>
+                  {getStatusText()}
                 </Text>
-                <Text style={styles.deliveryTimeText}>
-                  Friday 26th September 10:00 am
-                </Text>
-              </View>
-              <Image
-                source={require("@/src/assets/rider.png")}
-                style={styles.riderImage}
-              />
-            </View>
-          </View>
-
-          {/* Delivery Address Section */}
-          <View style={styles.section}>
-            <Text style={styles.sectionTitleText}>Delivery Address</Text>
-            <View style={styles.addressCard}>
-              <MaterialCommunityIcons
-                name="map-marker-outline"
-                size={20}
-                color={theme.colors.text_secondary}
-              />
-              <Text style={styles.addressText}>
-                House 360, PU Main Rd, Quaid-i-Azam Campus, Lahore, Pakistan
+                {orderData?.status === "in-process" && " and will deliver on"}
+              </Text>
+              <Text style={styles.deliveryTimeText}>
+                Friday 26th September 10:00 am
               </Text>
             </View>
+            <Image
+              source={require("@/src/assets/rider.png")}
+              style={styles.riderImage}
+            />
           </View>
+        </View>
 
-          {/* Payment Details Section */}
-          <View style={styles.section}>
-            <Text style={styles.sectionTitleText}>Payment details</Text>
-            <View style={styles.paymentCard}>
-              <View style={styles.paymentRow}>
-                <Text style={styles.totalAmountText}>Total Amount</Text>
-                <Text style={styles.paymentAmountText}>Rs. {totalAmount}</Text>
-              </View>
-              <View style={styles.paymentRow}>
-                <View style={styles.paymentMethodRow}>
-                  <Image
-                    source={paymentMethodImage()}
-                    style={styles.paymentMethodImage}
-                  />
-                  <Text style={styles.paymentLabelText}>Payment Method</Text>
-                </View>
-                <Text style={styles.paymentMethodText}>Cash on Delivery</Text>
-              </View>
+        {/* Delivery Address Section */}
+        <View style={styles.section}>
+          <Text style={styles.sectionTitleText}>Delivery Address</Text>
+          <View style={styles.addressCard}>
+            <MaterialCommunityIcons
+              name="map-marker-outline"
+              size={20}
+              color={theme.colors.text_secondary}
+            />
+            <Text style={styles.addressText}>
+              House 360, PU Main Rd, Quaid-i-Azam Campus, Lahore, Pakistan
+            </Text>
+          </View>
+        </View>
+
+        {/* Payment Details Section */}
+        <View style={styles.section}>
+          <Text style={styles.sectionTitleText}>Payment details</Text>
+          <View style={styles.paymentCard}>
+            <View style={styles.paymentRow}>
+              <Text style={styles.totalAmountText}>Total Amount</Text>
+              <Text style={styles.paymentAmountText}>Rs. {totalAmount}</Text>
             </View>
-          </View>
-
-          {/* Billing Details Section */}
-          <View style={styles.section}>
-            <View style={styles.billingHeader}>
-              <Text style={styles.sectionTitleText}>Billing Details</Text>
-              <Pressable
-                style={styles.downloadButton}
-                onPress={handleDownloadOrderSummary}>
-                <Feather name="download" size={20} color={theme.colors.text} />
-              </Pressable>
-              <Pressable
-                style={styles.expandButton}
-                onPress={() =>
-                  setIsBillingDetailsExpanded(!isBillingDetailsExpanded)
-                }>
-                <FontAwesome6
-                  name={
-                    isBillingDetailsExpanded ? "chevron-up" : "chevron-down"
-                  }
-                  size={16}
-                  color={theme.colors.text}
+            <View style={styles.paymentRow}>
+              <View style={styles.paymentMethodRow}>
+                <Image
+                  source={paymentMethodImage()}
+                  style={styles.paymentMethodImage}
                 />
-              </Pressable>
+                <Text style={styles.paymentLabelText}>Payment Method</Text>
+              </View>
+              <Text style={styles.paymentMethodText}>Cash on Delivery</Text>
             </View>
+          </View>
+        </View>
 
-            {isBillingDetailsExpanded && (
-              <View style={styles.billingCard}>
-                <View style={styles.billingRow}>
-                  <View style={styles.leftSection}>
-                    <Text style={styles.billingLabelText}>Subtotal</Text>
-                    {savings > 0 && (
-                      <View style={styles.savingsTag}>
-                        <Text style={styles.savingsText}>
-                          Saved Rs.{savings}
-                        </Text>
-                      </View>
-                    )}
-                  </View>
-                  <Text style={styles.billingAmountText}>Rs. {subtotal}</Text>
-                </View>
+        {/* Billing Details Section */}
+        <View style={styles.section}>
+          <View style={styles.billingHeader}>
+            <Text style={styles.sectionTitleText}>Billing Details</Text>
+            <Pressable
+              style={styles.downloadButton}
+              onPress={handleDownloadOrderSummary}>
+              <Feather name="download" size={20} color={theme.colors.text} />
+            </Pressable>
+            <Pressable
+              style={styles.expandButton}
+              onPress={() =>
+                setIsBillingDetailsExpanded(!isBillingDetailsExpanded)
+              }>
+              <FontAwesome6
+                name={isBillingDetailsExpanded ? "chevron-up" : "chevron-down"}
+                size={16}
+                color={theme.colors.text}
+              />
+            </Pressable>
+          </View>
 
-                <View style={styles.billingRow}>
-                  <Text style={styles.billingLabelText}>Service Fee</Text>
-                  <Text style={styles.billingAmountText}>Rs. {serviceFee}</Text>
-                </View>
-
-                <View style={styles.billingRow}>
-                  <View style={styles.leftSection}>
-                    <Text style={styles.billingLabelText}>Delivery Fee</Text>
-                    <View style={styles.freeDeliveryTag}>
-                      <Text style={styles.freeDeliveryText}>Free Delivery</Text>
+          {isBillingDetailsExpanded && (
+            <View style={styles.billingCard}>
+              <View style={styles.billingRow}>
+                <View style={styles.leftSection}>
+                  <Text style={styles.billingLabelText}>Subtotal</Text>
+                  {savings > 0 && (
+                    <View style={styles.savingsTag}>
+                      <Text style={styles.savingsText}>Saved Rs.{savings}</Text>
                     </View>
-                  </View>
-                  <View style={styles.rightSection}>
-                    {originalDeliveryFee > 0 && (
-                      <Text style={styles.strikethroughPrice}>
-                        Rs. {originalDeliveryFee}
-                      </Text>
-                    )}
+                  )}
+                </View>
+                <Text style={styles.billingAmountText}>Rs. {subtotal}</Text>
+              </View>
+
+              <View style={styles.billingRow}>
+                <Text style={styles.billingLabelText}>Service Fee</Text>
+                <Text style={styles.billingAmountText}>Rs. {serviceFee}</Text>
+              </View>
+
+              <View style={styles.billingRow}>
+                <View style={styles.leftSection}>
+                  <Text style={styles.billingLabelText}>Delivery Fee</Text>
+                  <View style={styles.freeDeliveryTag}>
+                    <Text style={styles.freeDeliveryText}>Free Delivery</Text>
                   </View>
                 </View>
-
-                <View style={styles.separator} />
-
-                <View style={styles.totalRow}>
-                  <Text style={styles.totalAmountText}>Total Amount</Text>
-                  <Text style={styles.totalAmountText}>Rs. {totalAmount}</Text>
+                <View style={styles.rightSection}>
+                  {originalDeliveryFee > 0 && (
+                    <Text style={styles.strikethroughPrice}>
+                      Rs. {originalDeliveryFee}
+                    </Text>
+                  )}
                 </View>
               </View>
-            )}
-          </View>
-        </ViewShot>
+
+              <View style={styles.separator} />
+
+              <View style={styles.totalRow}>
+                <Text style={styles.totalAmountText}>Total Amount</Text>
+                <Text style={styles.totalAmountText}>Rs. {totalAmount}</Text>
+              </View>
+            </View>
+          )}
+        </View>
       </ScrollView>
+
+      {/* Hidden View for Capture */}
+      <HiddenCaptureView
+        viewShotRef={viewShotRef}
+        orderId={orderId}
+        subtotal={subtotal}
+        serviceFee={serviceFee}
+        originalDeliveryFee={originalDeliveryFee}
+        totalAmount={totalAmount}
+        savings={savings}
+        getStatusColor={getStatusColor}
+        getStatusText={getStatusText}
+      />
 
       {/* Bottom Action Buttons */}
       <View style={styles.bottomButtonContainer}>
