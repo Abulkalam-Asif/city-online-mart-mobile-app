@@ -119,11 +119,12 @@ const styles = StyleSheet.create({
     alignItems: "center",
     position: "relative",
     borderRadius: 14,
-    paddingVertical: 24,
+    paddingTop: 30,
+    paddingBottom: 16,
   },
   image: {
-    width: 80,
-    height: 80,
+    width: 60,
+    height: 60,
     objectFit: "contain",
   },
   nameText: {
