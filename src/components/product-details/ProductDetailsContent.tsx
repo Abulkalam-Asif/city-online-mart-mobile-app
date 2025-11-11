@@ -1,7 +1,7 @@
 import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
-import React, { useEffect, useState } from "react";
+import React, { useState, useMemo } from "react";
 import { theme } from "@/src/constants/theme";
-import { IProductDetails } from "@/src/types";
+import { Product } from "@/src/types";
 import AddToCartContainer from "./AddToCartContainer";
 import ImagesCarousel from "./ImagesCarousel";
 import ProductDetailsTopBg from "./ProductDetailsTopBg";
@@ -9,26 +9,54 @@ import ProductDetailsTopBar from "./ProductDetailsTopBar";
 import { Entypo, FontAwesome6 } from "@expo/vector-icons";
 import ProductsSection from "./ProductsSection";
 import { router } from "expo-router";
+import { useInfiniteProductsByIds } from "@/src/hooks/useProducts";
 
 type ProductDetailsContentProps = {
-  product: IProductDetails | undefined;
+  product: Product;
   isLoading: boolean;
 };
 
-const ProductDetailsContent = ({ product, isLoading }: ProductDetailsContentProps) => {
+const ProductDetailsContent = ({
+  product,
+  isLoading,
+}: ProductDetailsContentProps) => {
   const [quantityInCart, setQuantityInCart] = useState(0);
   const [isShowMoreDescription, setIsShowMoreDescription] = useState(false);
-  const [productsDisplayType, setProductsDisplayType] = useState<
-    "similar" | "bought_together"
-  >("similar");
 
-  useEffect(() => {
-    if (quantityInCart === 0) {
-      setProductsDisplayType("similar");
-    } else {
-      setProductsDisplayType("bought_together");
-    }
-  }, [quantityInCart]);
+  // Fetch similar products (always enabled)
+  const {
+    data: similarProductsData,
+    fetchNextPage: fetchNextSimilarPage,
+    hasNextPage: hasNextSimilarPage,
+    isFetchingNextPage: isFetchingNextSimilarPage,
+  } = useInfiniteProductsByIds(
+    product?.similarProductIds || [],
+    "similar",
+    true
+  );
+
+  // Fetch bought together products (only when quantity > 0)
+  const {
+    data: boughtTogetherProductsData,
+    fetchNextPage: fetchNextBoughtTogetherPage,
+    hasNextPage: hasNextBoughtTogetherPage,
+    isFetchingNextPage: isFetchingNextBoughtTogetherPage,
+  } = useInfiniteProductsByIds(
+    product?.boughtTogetherProductIds || [],
+    "bought-together",
+    quantityInCart > 0
+  );
+
+  // Flatten infinite query pages
+  const similarProducts = useMemo(() => {
+    return similarProductsData?.pages.flatMap((page) => page.products) || [];
+  }, [similarProductsData]);
+
+  const boughtTogetherProducts = useMemo(() => {
+    return (
+      boughtTogetherProductsData?.pages.flatMap((page) => page.products) || []
+    );
+  }, [boughtTogetherProductsData]);
 
   return (
     <>
@@ -57,7 +85,7 @@ const ProductDetailsContent = ({ product, isLoading }: ProductDetailsContentProp
             <ProductDetailsTopBg />
 
             <ProductDetailsTopBar />
-            <ImagesCarousel images={product.Images} />
+            <ImagesCarousel images={product.multimedia.images} />
 
             <View style={styles.productNameSection}>
               <Text
@@ -65,7 +93,7 @@ const ProductDetailsContent = ({ product, isLoading }: ProductDetailsContentProp
                 numberOfLines={2}
                 ellipsizeMode="tail">
                 {/* Product name here Product name here Product name here */}
-                {product.Name}
+                {product.info.name}
               </Text>
               <Pressable
                 style={({ pressed }) => [
@@ -75,14 +103,14 @@ const ProductDetailsContent = ({ product, isLoading }: ProductDetailsContentProp
                 onPress={() => {
                   router.push({
                     pathname: "/product-details/reviews",
-                    params: { id: String(product.Id) },
+                    params: { id: product.id },
                   });
                 }}>
                 <Entypo name="star" size={18} color={"#FFBB22"} />
-                <Text style={styles.ratingText}>
+                {/* <Text style={styles.ratingText}>
                   {product.ApprovedRatingSum} ({product.ApprovedTotalReviews}{" "}
                   Review)
-                </Text>
+                </Text> */}
                 <FontAwesome6
                   name="chevron-right"
                   size={16}
@@ -94,7 +122,7 @@ const ProductDetailsContent = ({ product, isLoading }: ProductDetailsContentProp
             <View style={styles.topContentContainer}>
               {/* Price Section */}
               <View style={styles.priceSection}>
-                <Text style={styles.currentPriceText}>Rs. {product.Price}</Text>
+                {/* <Text style={styles.currentPriceText}>Rs. {product.price}</Text>
                 <Text style={styles.oldPriceText}>Rs. {product.OldPrice}</Text>
                 <Text style={styles.discountTag}>
                   Rs.{" "}
@@ -102,9 +130,9 @@ const ProductDetailsContent = ({ product, isLoading }: ProductDetailsContentProp
                     ? product.OldPrice - product.Price
                     : 0}{" "}
                   off
-                </Text>
+                </Text> */}
                 {/* Stock Info */}
-                {product.StockInfo && (
+                {/* {product.StockInfo && (
                   <Text
                     style={[
                       styles.stockText,
@@ -114,14 +142,14 @@ const ProductDetailsContent = ({ product, isLoading }: ProductDetailsContentProp
                     ]}>
                     {product.StockInfo.StockAvailability}
                   </Text>
-                )}
+                )} */}
               </View>
             </View>
 
             <AddToCartContainer
               quantityInCart={quantityInCart}
               setQuantityInCart={setQuantityInCart}
-              price={product.Price}
+              price={product.price}
             />
 
             <View style={styles.descriptionContainer}>
@@ -129,7 +157,7 @@ const ProductDetailsContent = ({ product, isLoading }: ProductDetailsContentProp
               <Text style={styles.descriptionText}>
                 {isShowMoreDescription ? (
                   <>
-                    {product.FullDescription}
+                    {product.info.description}
                     <Text
                       style={styles.showLessMoreText}
                       onPress={() => setIsShowMoreDescription(false)}>
@@ -138,10 +166,10 @@ const ProductDetailsContent = ({ product, isLoading }: ProductDetailsContentProp
                   </>
                 ) : (
                   <>
-                    {product.FullDescription.length > 100
-                      ? product.FullDescription.substring(0, 100) + "... "
-                      : product.FullDescription}
-                    {product.FullDescription.length > 100 && (
+                    {product.info.description.length > 100
+                      ? product.info.description.substring(0, 100) + "... "
+                      : product.info.description}
+                    {product.info.description.length > 100 && (
                       <Text
                         style={styles.showLessMoreText}
                         onPress={() => setIsShowMoreDescription(true)}>
@@ -153,18 +181,27 @@ const ProductDetailsContent = ({ product, isLoading }: ProductDetailsContentProp
               </Text>
             </View>
 
-            <ProductsSection
-              sectionTitle={
-                productsDisplayType === "similar"
-                  ? "Similar products"
-                  : "Frequently bought together"
-              }
-              products={
-                productsDisplayType === "similar"
-                  ? product.RelatedProducts
-                  : product.CrossSellProducts
-              }
-            />
+            {/* Show bought together products only when quantity in cart > 0 */}
+            {quantityInCart > 0 && boughtTogetherProducts.length > 0 && (
+              <ProductsSection
+                sectionTitle="Frequently bought together"
+                products={boughtTogetherProducts}
+                onEndReached={fetchNextBoughtTogetherPage}
+                hasNextPage={hasNextBoughtTogetherPage ?? false}
+                isFetchingNextPage={isFetchingNextBoughtTogetherPage}
+              />
+            )}
+
+            {/* Show similar products if available */}
+            {similarProducts.length > 0 && (
+              <ProductsSection
+                sectionTitle="Similar products"
+                products={similarProducts}
+                onEndReached={fetchNextSimilarPage}
+                hasNextPage={hasNextSimilarPage ?? false}
+                isFetchingNextPage={isFetchingNextSimilarPage}
+              />
+            )}
           </ScrollView>
         </>
       )}

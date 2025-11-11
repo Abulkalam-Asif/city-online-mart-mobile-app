@@ -1,14 +1,14 @@
 import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 import React from "react";
 import { theme } from "@/src/constants/theme";
-import { ICategory } from "@/src/types";
+import { SubCategory } from "@/src/types";
 import SortButton from "./SortButton";
 import BrandsButton from "./BrandsButton";
 
 type SubCategoriesNavProps = {
-  subCategories: ICategory[];
-  currentSubCategoryId: number;
-  setCurrentSubCategoryId: (id: number) => void;
+  subCategories: SubCategory[];
+  currentSubCategoryId: string;
+  setCurrentSubCategoryId: (id: string) => void;
   setBottomSheetType: (type: "sort" | "brands" | null) => void;
   selectedSort: string;
   selectedBrands: number[];
@@ -38,21 +38,21 @@ const SubCategoriesNav = ({
         showsHorizontalScrollIndicator={false}>
         {subCategories.map((subCategory) => (
           <Pressable
-            key={subCategory.Id}
-            onPress={() => setCurrentSubCategoryId(subCategory.Id)}
+            key={subCategory.id}
+            onPress={() => setCurrentSubCategoryId(subCategory.id)}
             style={({ pressed }) => [
               styles.subCategoryButton,
-              currentSubCategoryId === subCategory.Id &&
+              currentSubCategoryId === subCategory.id &&
                 styles.subCategoryButtonSelected,
               pressed && styles.subCategoryButtonPressed,
             ]}>
             <Text
               style={[
                 styles.subCategoryNameText,
-                currentSubCategoryId === subCategory.Id &&
+                currentSubCategoryId === subCategory.id &&
                   styles.selectedSubCategoryText,
               ]}>
-              {subCategory.Name}
+              {subCategory.name}
             </Text>
           </Pressable>
         ))}

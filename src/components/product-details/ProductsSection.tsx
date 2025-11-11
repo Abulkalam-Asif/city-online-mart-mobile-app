@@ -1,29 +1,57 @@
-import { ScrollView, StyleSheet, Text, View } from "react-native";
+import {
+  FlatList,
+  StyleSheet,
+  Text,
+  View,
+  ActivityIndicator,
+} from "react-native";
 import React from "react";
 import { theme } from "@/src/constants/theme";
 import ProductCard from "../tabs/home/ProductCard";
-import { IProduct } from "@/src/types";
+import { Product } from "@/src/types";
 
-type SimilarProductsProps = {
-  sectionTitle?: string;
-  products: IProduct[];
+type ProductsSectionProps = {
+  sectionTitle: string;
+  products: Product[];
+  onEndReached: () => void;
+  hasNextPage: boolean;
+  isFetchingNextPage: boolean;
 };
 
-const ProductsSection = ({ sectionTitle, products }: SimilarProductsProps) => {
+const ProductsSection = ({
+  sectionTitle,
+  products,
+  onEndReached,
+  hasNextPage,
+  isFetchingNextPage,
+}: ProductsSectionProps) => {
+  const renderFooter = () => {
+    if (!isFetchingNextPage) return null;
+    return (
+      <View style={styles.footerLoader}>
+        <ActivityIndicator size="small" color={theme.colors.primary} />
+      </View>
+    );
+  };
+
   return (
     <View style={styles.container}>
       <Text style={styles.titleText}>{sectionTitle}</Text>
-      <ScrollView
+      <FlatList
         horizontal
-        showsHorizontalScrollIndicator={true}
-        contentContainerStyle={styles.scrollContent}>
-        {products.map((product) => (
-          <ProductCard
-            key={product.Id}
-            product={product}
-          />
-        ))}
-      </ScrollView>
+        data={products}
+        keyExtractor={(item) => item.id}
+        renderItem={({ item }) => <ProductCard product={item} />}
+        showsHorizontalScrollIndicator={false}
+        contentContainerStyle={styles.scrollContent}
+        onEndReached={() => {
+          if (hasNextPage && !isFetchingNextPage) {
+            onEndReached();
+          }
+        }}
+        onEndReachedThreshold={0.5}
+        ListFooterComponent={renderFooter}
+      />
     </View>
   );
 };
@@ -38,11 +66,15 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontFamily: theme.fonts.semibold,
     paddingHorizontal: 20,
+    marginBottom: 10,
   },
   scrollContent: {
-    flexDirection: "row",
     gap: 12,
     paddingHorizontal: 20,
-    paddingVertical: 10,
+  },
+  footerLoader: {
+    paddingHorizontal: 12,
+    justifyContent: "center",
+    alignItems: "center",
   },
 });

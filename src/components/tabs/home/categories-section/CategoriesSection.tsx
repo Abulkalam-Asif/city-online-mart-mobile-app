@@ -1,39 +1,19 @@
 import { StyleSheet, View, ScrollView, Text, Pressable } from "react-native";
 import React from "react";
 import CategoryCard, { CategoryCardLoading } from "./CategoryCard";
-import { ICategory } from "@/src/types";
 import { theme } from "@/src/constants/theme";
+import { useGetCategoriesForHomepage } from "@/src/hooks/useCategories";
+import Loading from "@/src/components/common/Loading";
 
-type CategoriesSectionProps = {
-  categories: ICategory[] | undefined;
-  loadingCategories: boolean;
-};
-
-const CategoriesSection = ({
-  categories,
-  loadingCategories,
-}: CategoriesSectionProps) => {
-  if (loadingCategories) {
-    return (
-      <View style={styles.container}>
-        <Text style={styles.sectionTitleText}>Categories</Text>
-        {Array.from({ length: 2 }).map((_, index) => (
-          <View key={index} style={styles.scrollContent}>
-            {Array.from({ length: 3 }).map((_, idx) => (
-              <CategoryCardLoading key={idx} />
-            ))}
-          </View>
-        ))}
-      </View>
-    );
-  }
+const CategoriesSection = () => {
+  const {
+    data: categories,
+    isLoading: loadingCategories,
+    error,
+  } = useGetCategoriesForHomepage();
 
   if (!categories || categories.length === 0) {
-    return (
-      <View style={styles.container}>
-        <Text>No categories found. Data: {JSON.stringify(categories)}</Text>
-      </View>
-    );
+    return null;
   }
 
   const getColumnsFromCategories = () => {
@@ -54,23 +34,27 @@ const CategoriesSection = ({
           <Text style={styles.viewAllText}>View All</Text>
         </Pressable>
       </View>
-      <ScrollView
-        horizontal
-        showsHorizontalScrollIndicator={false}
-        contentContainerStyle={styles.scrollContent}>
-        {categoryColumns.map((column, columnIndex) => (
-          <View key={columnIndex} style={styles.column}>
-            {column.map((category) => (
-              <CategoryCard
-                key={category.Id}
-                imageSource={category.PictureUrl}
-                name={category.Name}
-                backgroundColor={theme.colors.background_2}
-              />
-            ))}
-          </View>
-        ))}
-      </ScrollView>
+      {loadingCategories ? (
+        <Loading />
+      ) : (
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          contentContainerStyle={styles.scrollContent}>
+          {categoryColumns.map((column, columnIndex) => (
+            <View key={columnIndex} style={styles.column}>
+              {column.map((category) => (
+                <CategoryCard
+                  key={category.id}
+                  imageSource={category.image}
+                  name={category.name}
+                  backgroundColor={theme.colors.background_2}
+                />
+              ))}
+            </View>
+          ))}
+        </ScrollView>
+      )}
     </View>
   );
 };

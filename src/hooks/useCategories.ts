@@ -1,30 +1,33 @@
 import { useQuery } from "@tanstack/react-query";
-import categoryService from "../services/CategoryService";
 import { queryKeys } from "../lib/react-query";
+import { categoryService } from "../services/categoryService";
 
 // Hook for fetching all categories
-export function useCategories() {
+export function useGetAllCategories() {
   return useQuery({
-    queryKey: [...queryKeys.categories],
-    queryFn: () => categoryService.getCategories(),
-    staleTime: 1000 * 60 * 5, // 5 minutes
+    queryKey: queryKeys.categories.lists(),
+    queryFn: () => categoryService.getAllCategories(),
+    staleTime: 1000 * 60 * 5, // 5 minutes - categories don't change often
   });
 }
 
-// Hook for fetching a single category
-export function useCategory(id: number) {
+// Hook for fetching categories for homepage
+export function useGetCategoriesForHomepage() {
   return useQuery({
-    queryKey: queryKeys.category(id),
-    queryFn: () => categoryService.getCategory(id),
-    enabled: !!id, // Only fetch if id is provided
+    queryKey: queryKeys.categories.lists(),
+    queryFn: () =>
+      categoryService.getAllCategories({
+        isActive: true,
+        showOnHomepage: true,
+      }),
+    staleTime: 1000 * 60 * 5, // 5 minutes - categories don't change often
   });
 }
 
-// Hook for fetching products in a category
-export function useCategoryProducts(id: number) {
+export function useGetAllCategoriesWithSubCategories() {
   return useQuery({
-    queryKey: queryKeys.categoryProducts(id),
-    queryFn: () => categoryService.getCategoryProducts(id),
-    enabled: !!id,
+    queryKey: queryKeys.categories.list({ withSubCategories: true }),
+    queryFn: () => categoryService.getAllCategoriesWithSubCategories(),
+    staleTime: 1000 * 60 * 5, // 5 minutes - categories don't change often
   });
 }

@@ -4,11 +4,12 @@ import { Image } from "expo-image";
 import { theme } from "@/src/constants/theme";
 import { FontAwesome6 } from "@expo/vector-icons";
 import { router } from "expo-router";
-import { IProduct } from "@/src/types";
+import { Product } from "@/src/types";
 import { useSinglePress } from "@/src/hooks/useSinglePress";
+import { productService } from "@/src/services/productService";
 
 type Props = {
-  product: IProduct;
+  product: Product;
   cardWidth?: number | `${number}%`;
 };
 
@@ -21,9 +22,23 @@ const ProductCard = ({ product, cardWidth = 150 }: Props) => {
 
     router.push({
       pathname: "/product-details",
-      params: { id: String(product.Id) },
+      params: { id: product.id },
     });
   };
+
+  // Calculate discount information
+  const hasDiscount =
+    product.discountPercentage && product.discountPercentage > 0;
+  const originalPrice = product.price;
+  const discountedPrice = hasDiscount
+    ? Math.round(
+        originalPrice - (originalPrice * product.discountPercentage!) / 100
+      )
+    : originalPrice;
+  const savingsAmount = hasDiscount ? originalPrice - discountedPrice : 0;
+
+  // Get primary image (first image in array)
+  const primaryImage = product.multimedia?.images?.[0] || "";
 
   return (
     <Pressable
@@ -34,25 +49,26 @@ const ProductCard = ({ product, cardWidth = 150 }: Props) => {
         },
       ]}
       onPress={handleProductPress}>
-      {product.OldPrice && product.OldPrice > product.Price && (
-        <Text style={styles.discountText}>
-          Rs. {product.OldPrice - product.Price} off
-        </Text>
-      )}
+      {productService.isMarkAsNewValid(
+        product.info.markAsNewStartDate,
+        product.info.markAsNewEndDate
+      ) ? (
+        <Text style={styles.newText}>New</Text>
+      ) : null}
+      {hasDiscount ? (
+        <Text style={styles.discountText}>Rs. {savingsAmount} off</Text>
+      ) : null}
       <View style={styles.imageContainer}>
-        <Image
-          source={product.MainImageUrl || product.ThumbnailUrl}
-          style={styles.image}
-        />
+        <Image source={primaryImage} style={styles.image} />
       </View>
       <Text style={styles.nameText} numberOfLines={2} ellipsizeMode="tail">
-        {product.Name}
+        {product.info.name}
       </Text>
       <View style={styles.priceContainer}>
-        <Text style={styles.priceText}>Rs. {product.Price}</Text>
-        {product.OldPrice && (
-          <Text style={styles.oldPriceText}>Rs. {product.OldPrice}</Text>
-        )}
+        <Text style={styles.priceText}>Rs. {discountedPrice}</Text>
+        {hasDiscount ? (
+          <Text style={styles.oldPriceText}>Rs. {originalPrice}</Text>
+        ) : null}
       </View>
       <View style={styles.addToCartSection}>
         {quantityInCart > 0 && (
@@ -101,6 +117,18 @@ const styles = StyleSheet.create({
     position: "relative",
     backgroundColor: theme.colors.background_3,
   },
+  newText: {
+    position: "absolute",
+    top: 8,
+    left: 8,
+    backgroundColor: theme.colors.tag,
+    color: "white",
+    borderRadius: 20,
+    paddingHorizontal: 10,
+    lineHeight: 20,
+    fontSize: 10,
+    fontFamily: theme.fonts.medium,
+  },
   discountText: {
     position: "absolute",
     top: 8,
@@ -108,7 +136,7 @@ const styles = StyleSheet.create({
     backgroundColor: theme.colors.background,
     borderRadius: 20,
     paddingHorizontal: 10,
-    paddingVertical: 2,
+    lineHeight: 20,
     color: theme.colors.primary,
     fontSize: 10,
     fontFamily: theme.fonts.medium,

@@ -27,7 +27,10 @@ const CategoryCard = ({
     <Pressable
       style={({ pressed }) => [styles.card, pressed && styles.cardPressed]}>
       <View style={[styles.imageContainer, { backgroundColor }]}>
-        <Image source={imageSource} style={styles.image} />
+        <Image
+          source={imageSource || require("@/src/assets/default-image.png")}
+          style={styles.image}
+        />
       </View>
       <Text style={styles.nameText}>{name}</Text>
     </Pressable>

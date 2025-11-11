@@ -12,9 +12,9 @@ import HomeTopBg from "@/src/components/tabs/home/HomeTopBg";
 import { tempCategories } from "@/temp/home/categories/tempCategories";
 import { tempProducts } from "@/temp/home/products/tempProducts";
 import Sidebar from "@/src/components/tabs/home/Sidebar";
+import { useGetCategoriesForHomepage } from "@/src/hooks/useCategories";
 
 const HomeScreen = () => {
-  const categories = tempCategories;
   // const { data: categories, isLoading: loadingCategories } = useCategories();
   // const { data: categoryProductsData, isLoading: loadingCategoryProducts } =
   //   useCategoryProducts(1);
@@ -35,11 +35,8 @@ const HomeScreen = () => {
         <HomeSearchSection openSidebarHandler={() => setIsSidebarOpen(true)} />
         <BannersCarousel />
         <BestPricesSection />
-        <CategoriesSection
-          categories={categories}
-          // loadingCategories={loadingCategories}
-          loadingCategories={false}
-        />
+        <CategoriesSection />
+        {/* 
         <ProductsSection
           // sectionTitle={categoryProductsData.Category.Name}
           // sectionTagline={categoryProductsData.Category.Description}
@@ -59,7 +56,7 @@ const HomeScreen = () => {
           category={tempProducts[1].Category}
           products={tempProducts[1].Products}
           sectionBackgroundColor={theme.extra_light_colors[1]}
-        />
+        /> */}
       </ScrollView>
 
       {/* Main Banner Modal - Shows on app start */}

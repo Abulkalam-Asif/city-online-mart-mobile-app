@@ -14,8 +14,10 @@ export const queryClient = new QueryClient({
         Math.min(1000 * 2 ** attemptIndex, 30000),
       // Don't refetch on window focus (mobile doesn't need this)
       refetchOnWindowFocus: false,
-      // Refetch on reconnect is useful for mobile
-      refetchOnReconnect: "always",
+      // Refetch on reconnect only if stale
+      refetchOnReconnect: true,
+      // Don't refetch on mount if data is fresh
+      refetchOnMount: true,
     },
     mutations: {
       // Retry failed mutations once
@@ -24,14 +26,143 @@ export const queryClient = new QueryClient({
   },
 });
 
-// Query keys factory for consistent key management
+/**
+ * Query Keys Factory
+ *
+ * Best Practices:
+ * 1. Use hierarchical structure: [domain, entity, ...details]
+ * 2. Most general keys first, specific details later
+ * 3. Use functions for dynamic keys
+ * 4. Keep consistent ordering for similar queries
+ *
+ * Examples:
+ * - ["products"] - Matches ALL product queries
+ * - ["products", "list"] - All product lists
+ * - ["products", "list", "category", "123"] - Specific category list
+ * - ["products", "detail", "456"] - Single product detail
+ */
 export const queryKeys = {
-  categories: ["categories"] as const,
-  category: (id: number) => ["categories", id] as const,
-  categoryProducts: (id: number) => ["categories", id, "products"] as const,
+  // ========================================
+  // CATEGORIES
+  // ========================================
+  categories: {
+    // Base key - invalidates ALL category queries
+    all: ["categories"] as const,
 
-  product: (id: number) => ["products", id] as const,
+    // List variations
+    lists: () => [...queryKeys.categories.all, "list"] as const,
+    list: (filters?: { withSubCategories?: boolean }) =>
+      [...queryKeys.categories.lists(), filters] as const,
 
-  slideBanners: ["slideBanners"] as const,
-  mainBanner: ["mainBanner"] as const,
+    // Single category detail
+    details: () => [...queryKeys.categories.all, "detail"] as const,
+    detail: (id: string) => [...queryKeys.categories.details(), id] as const,
+  },
+
+  // ========================================
+  // PRODUCTS
+  // ========================================
+  products: {
+    // Base key - invalidates ALL product queries
+    all: ["products"] as const,
+
+    // Lists (paginated or infinite scroll)
+    lists: () => [...queryKeys.products.all, "list"] as const,
+
+    // By category (infinite scroll)
+    byCategory: (categoryId: string) =>
+      [...queryKeys.products.lists(), "category", categoryId] as const,
+    byCategoryInfinite: (categoryId: string) =>
+      [...queryKeys.products.byCategory(categoryId), "infinite"] as const,
+
+    // By subcategory (infinite scroll)
+    bySubCategory: (parentCategoryId: string, subCategoryId: string) =>
+      [
+        ...queryKeys.products.lists(),
+        "subcategory",
+        parentCategoryId,
+        subCategoryId,
+      ] as const,
+    bySubCategoryInfinite: (parentCategoryId: string, subCategoryId: string) =>
+      [
+        ...queryKeys.products.bySubCategory(parentCategoryId, subCategoryId),
+        "infinite",
+      ] as const,
+
+    // By IDs (for similar products, bought together, etc.)
+    byIds: (productIds: string[], type: "similar" | "bought-together") =>
+      [
+        ...queryKeys.products.lists(),
+        "byIds",
+        type,
+        productIds.join(","),
+      ] as const,
+    byIdsInfinite: (
+      productIds: string[],
+      type: "similar" | "bought-together"
+    ) => [...queryKeys.products.byIds(productIds, type), "infinite"] as const,
+
+    // Special lists
+    featured: () => [...queryKeys.products.lists(), "featured"] as const,
+    new: () => [...queryKeys.products.lists(), "new"] as const,
+    onSale: () => [...queryKeys.products.lists(), "onSale"] as const,
+
+    // Search
+    search: (query: string, filters?: Record<string, any>) =>
+      [...queryKeys.products.lists(), "search", query, filters] as const,
+
+    // Single product detail
+    details: () => [...queryKeys.products.all, "detail"] as const,
+    detail: (id: string) => [...queryKeys.products.details(), id] as const,
+
+    // Product reviews
+    reviews: (productId: string) =>
+      [...queryKeys.products.detail(productId), "reviews"] as const,
+  },
+
+  // ========================================
+  // BANNERS
+  // ========================================
+  banners: {
+    // Base key - invalidates ALL banner queries
+    all: ["banners"] as const,
+
+    // By placement
+    byPlacement: (placement: string) =>
+      [...queryKeys.banners.all, "placement", placement] as const,
+
+    // Special banners
+    slides: () => [...queryKeys.banners.all, "slides"] as const,
+    main: () => [...queryKeys.banners.all, "main"] as const,
+  },
+
+  // ========================================
+  // ORDERS
+  // ========================================
+  orders: {
+    // Base key - invalidates ALL order queries
+    all: ["orders"] as const,
+
+    // Lists
+    lists: () => [...queryKeys.orders.all, "list"] as const,
+    byStatus: (status: string) =>
+      [...queryKeys.orders.lists(), "status", status] as const,
+
+    // Single order detail
+    details: () => [...queryKeys.orders.all, "detail"] as const,
+    detail: (id: string) => [...queryKeys.orders.details(), id] as const,
+  },
+
+  // ========================================
+  // USER/CUSTOMER
+  // ========================================
+  user: {
+    // Base key
+    all: ["user"] as const,
+
+    // User data
+    profile: () => [...queryKeys.user.all, "profile"] as const,
+    addresses: () => [...queryKeys.user.all, "addresses"] as const,
+    wishlist: () => [...queryKeys.user.all, "wishlist"] as const,
+  },
 };
