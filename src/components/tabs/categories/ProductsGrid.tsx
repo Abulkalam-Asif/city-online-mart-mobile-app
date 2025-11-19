@@ -1,13 +1,8 @@
-import {
-  Dimensions,
-  FlatList,
-  StyleSheet,
-  View,
-  ActivityIndicator,
-} from "react-native";
+import { FlatList, StyleSheet, View, ActivityIndicator } from "react-native";
 import React from "react";
 import { Product } from "@/src/types";
 import ProductCard from "@/src/components/tabs/home/ProductCard";
+import { getResponsiveValue } from "@/src/utils/getResponsiveValue";
 
 type ProductsGridProps = {
   products: Product[];
@@ -17,8 +12,6 @@ type ProductsGridProps = {
   hasNextPage?: boolean;
   isFetchingNextPage?: boolean;
 };
-
-const { width } = Dimensions.get("window");
 
 const ProductsGrid = ({
   products,
@@ -67,7 +60,10 @@ const ProductsGrid = ({
   const renderProduct = ({ item }: { item: Product }) => (
     <ProductCard
       product={item}
-      cardWidth={width > 500 ? (width - 64) / 3 : (width - 48) / 2}
+      cardWidth={getResponsiveValue<number>(
+        (width) => (width - 48) / 2,
+        (width) => (width - 64) / 3
+      )}
     />
   );
 
@@ -86,7 +82,7 @@ const ProductsGrid = ({
         data={sortedProducts}
         renderItem={renderProduct}
         keyExtractor={(item) => item.id}
-        numColumns={width > 500 ? 3 : 2}
+        numColumns={getResponsiveValue<number>(2, 3)}
         columnWrapperStyle={styles.row}
         contentContainerStyle={styles.listContent}
         showsVerticalScrollIndicator={false}

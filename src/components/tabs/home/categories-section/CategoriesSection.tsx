@@ -1,17 +1,36 @@
-import { StyleSheet, View, ScrollView, Text, Pressable } from "react-native";
+import {
+  StyleSheet,
+  View,
+  ScrollView,
+  Text,
+  TouchableOpacity,
+} from "react-native";
 import React from "react";
-import CategoryCard, { CategoryCardLoading } from "./CategoryCard";
+import CategoryCard from "./CategoryCard";
 import { theme } from "@/src/constants/theme";
 import { useGetCategoriesForHomepage } from "@/src/hooks/useCategories";
 import Loading from "@/src/components/common/Loading";
+import { router } from "expo-router";
+import { getResponsiveValue } from "@/src/utils/getResponsiveValue";
 
 const CategoriesSection = () => {
   const {
     data: categories,
     isLoading: loadingCategories,
-    error,
+    error: errorGettingCategories,
   } = useGetCategoriesForHomepage();
 
+  // In case of error, we simply don't render the section
+  if (errorGettingCategories) {
+    return null;
+  }
+
+  // Show loading state
+  if (loadingCategories) {
+    return <Loading />;
+  }
+
+  // If no categories, don't render the section
   if (!categories || categories.length === 0) {
     return null;
   }
@@ -30,31 +49,31 @@ const CategoriesSection = () => {
     <View style={styles.container}>
       <View style={styles.sectionHeader}>
         <Text style={styles.sectionTitleText}>Categories</Text>
-        <Pressable onPress={() => {}}>
+        <TouchableOpacity
+          onPress={() => {
+            router.push("/categories");
+          }}
+          activeOpacity={0.8}>
           <Text style={styles.viewAllText}>View All</Text>
-        </Pressable>
+        </TouchableOpacity>
       </View>
-      {loadingCategories ? (
-        <Loading />
-      ) : (
-        <ScrollView
-          horizontal
-          showsHorizontalScrollIndicator={false}
-          contentContainerStyle={styles.scrollContent}>
-          {categoryColumns.map((column, columnIndex) => (
-            <View key={columnIndex} style={styles.column}>
-              {column.map((category) => (
-                <CategoryCard
-                  key={category.id}
-                  imageSource={category.image}
-                  name={category.name}
-                  backgroundColor={theme.colors.background_2}
-                />
-              ))}
-            </View>
-          ))}
-        </ScrollView>
-      )}
+      <ScrollView
+        horizontal
+        showsHorizontalScrollIndicator={false}
+        contentContainerStyle={styles.scrollContent}>
+        {categoryColumns.map((column, columnIndex) => (
+          <View key={columnIndex} style={styles.column}>
+            {column.map((category) => (
+              <CategoryCard
+                key={category.id}
+                imageSource={category.image}
+                name={category.name}
+                backgroundColor={theme.colors.background_2}
+              />
+            ))}
+          </View>
+        ))}
+      </ScrollView>
     </View>
   );
 };
@@ -90,5 +109,9 @@ const styles = StyleSheet.create({
   column: {
     flexDirection: "column",
     gap: 16,
+    width: getResponsiveValue(
+      (width) => (width - 112) / 4,
+      (width) => (width - 184) / 7
+    ),
   },
 });

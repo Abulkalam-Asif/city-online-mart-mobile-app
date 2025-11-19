@@ -2,20 +2,12 @@ import { StyleSheet, Text, Pressable, View } from "react-native";
 import React from "react";
 import { Image } from "expo-image";
 import { theme } from "@/src/constants/theme";
+import { getResponsiveValue } from "@/src/utils/getResponsiveValue";
 
 type CategoryCardProps = {
   name: string;
-  imageSource: string | undefined;
+  imageSource?: string;
   backgroundColor?: string;
-};
-
-export const CategoryCardLoading = () => {
-  return (
-    <View style={styles.card}>
-      <View style={[styles.imageLoading]} />
-      <View style={[styles.textLoading]} />
-    </View>
-  );
 };
 
 const CategoryCard = ({
@@ -28,8 +20,13 @@ const CategoryCard = ({
       style={({ pressed }) => [styles.card, pressed && styles.cardPressed]}>
       <View style={[styles.imageContainer, { backgroundColor }]}>
         <Image
-          source={imageSource || require("@/src/assets/default-image.png")}
+          source={
+            imageSource
+              ? { uri: imageSource }
+              : require("@/src/assets/default-image.png")
+          }
           style={styles.image}
+          contentFit="contain"
         />
       </View>
       <Text style={styles.nameText}>{name}</Text>
@@ -44,8 +41,6 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "flex-start",
     gap: 8,
-    width: 60,
-    height: 90,
   },
   cardPressed: {
     opacity: 0.7,
@@ -59,25 +54,12 @@ const styles = StyleSheet.create({
     borderColor: theme.colors.secondary,
   },
   image: {
-    width: 44,
-    height: 44,
-    objectFit: "contain",
-  },
-  imageLoading: {
-    backgroundColor: theme.colors.background,
-    borderRadius: 15,
-    width: 84,
-    height: 84,
-  },
-  textLoading: {
-    backgroundColor: theme.colors.background,
-    borderRadius: 4,
-    width: 60,
-    height: 12,
+    width: "100%",
+    aspectRatio: 1,
   },
   nameText: {
-    fontSize: 8,
-    lineHeight: 12,
+    fontSize: getResponsiveValue<number>(8, 12),
+    lineHeight: getResponsiveValue<number>(12, 16),
     fontFamily: theme.fonts.regular,
     color: theme.colors.text,
     textAlign: "center",

@@ -4,15 +4,12 @@ import BannersCarousel from "@/src/components/tabs/home/BannersCarousel";
 import HomeSearchSection from "@/src/components/tabs/home/HomeSearchSection";
 import CategoriesSection from "@/src/components/tabs/home/categories-section/CategoriesSection";
 import BestPricesSection from "@/src/components/tabs/home/categories-section/BestPricesSection";
-import ProductsSection from "@/src/components/tabs/home/ProductsSection";
+// import ProductsSection from "@/src/components/tabs/home/ProductsSection";
 // import MainBanner from "@/src/components/tabs/home/MainBanner";
-import { theme } from "@/src/constants/theme";
+// import { theme } from "@/src/constants/theme";
 // import { useCategories, useCategoryProducts } from "@/src/hooks/useCategories";
 import HomeTopBg from "@/src/components/tabs/home/HomeTopBg";
-import { tempCategories } from "@/temp/home/categories/tempCategories";
-import { tempProducts } from "@/temp/home/products/tempProducts";
 import Sidebar from "@/src/components/tabs/home/Sidebar";
-import { useGetCategoriesForHomepage } from "@/src/hooks/useCategories";
 
 const HomeScreen = () => {
   // const { data: categories, isLoading: loadingCategories } = useCategories();

@@ -73,10 +73,9 @@ export const categoryService = {
       const categories = snapshot.docs.map((doc) =>
         firestoreToCategory(doc.id, doc.data())
       );
-
       return categories;
     } catch (error) {
-      console.error("Error fetching categories:", error);
+      console.error("Error fetching categories at [getAllCategories]: ", error);
       throw error;
     }
   },
