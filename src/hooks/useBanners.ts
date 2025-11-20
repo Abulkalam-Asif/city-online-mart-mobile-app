@@ -10,3 +10,12 @@ export function useGetPopupBanner() {
     staleTime: 1000 * 60 * 5, // 5 minutes
   });
 }
+
+// Hook for fetching homepage banners
+export function useGetHomepageBanners() {
+  return useQuery({
+    queryKey: queryKeys.banners.homepage,
+    queryFn: () => bannerService.getHomepageBanners(),
+    staleTime: 1000 * 60 * 5, // 5 minutes
+  });
+}

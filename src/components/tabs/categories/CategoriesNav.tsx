@@ -1,5 +1,5 @@
-import { Pressable, ScrollView, StyleSheet, Text } from "react-native";
-import React from "react";
+import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
+import React, { useEffect, useRef } from "react";
 import { theme } from "@/src/constants/theme";
 import { Category } from "@/src/types";
 
@@ -8,6 +8,7 @@ type CategoriesNavProps = {
   currentCategoryId: string;
   setCurrentCategoryId: (id: string) => void;
   setCurrentSubCategoryId: (id: string) => void;
+  shouldAutoScroll?: React.RefObject<boolean>;
 };
 
 const CategoriesNav = ({
@@ -15,35 +16,77 @@ const CategoriesNav = ({
   currentCategoryId,
   setCurrentCategoryId,
   setCurrentSubCategoryId,
+  shouldAutoScroll,
 }: CategoriesNavProps) => {
+  const scrollViewRef = useRef<ScrollView>(null);
+  const itemRefs = useRef<{ [key: string]: View | null }>({});
+
+  // Auto-scroll to selected category (only when from deep link)
+  useEffect(() => {
+    if (
+      shouldAutoScroll?.current &&
+      currentCategoryId &&
+      scrollViewRef.current
+    ) {
+      const selectedItemRef = itemRefs.current[currentCategoryId];
+
+      if (selectedItemRef) {
+        // Small delay to ensure layout is complete
+        setTimeout(() => {
+          selectedItemRef.measureLayout(
+            scrollViewRef.current as any,
+            (x, y, width, height) => {
+              // Scroll to position the item at the left edge
+              // Add small offset (10px) for visual breathing room
+              scrollViewRef.current?.scrollTo({
+                x: Math.max(0, x - 10),
+                animated: true,
+              });
+            },
+            () => {}
+          );
+        }, 100);
+      }
+    }
+  }, [currentCategoryId, categories, shouldAutoScroll]);
+
   return (
     <ScrollView
+      ref={scrollViewRef}
       style={styles.container}
       contentContainerStyle={styles.containerContent}
       horizontal
       showsHorizontalScrollIndicator={false}>
       {categories.map((category) => (
-        <Pressable
+        <View
           key={category.id}
-          onPress={() => {
-            setCurrentCategoryId(category.id);
-            setCurrentSubCategoryId(
-              (category.subCategories && category.subCategories[0]?.id) || ""
-            );
+          ref={(ref) => {
+            itemRefs.current[category.id] = ref;
           }}
-          style={({ pressed }) => [
-            styles.categoryButton,
-            currentCategoryId === category.id && styles.categoryButtonSelected,
-            pressed && styles.categoryButtonPressed,
-          ]}>
-          <Text
-            style={[
-              styles.categoryNameText,
-              currentCategoryId === category.id && styles.selectedCategoryText,
+          collapsable={false}>
+          <Pressable
+            onPress={() => {
+              setCurrentCategoryId(category.id);
+              setCurrentSubCategoryId(
+                (category.subCategories && category.subCategories[0]?.id) || ""
+              );
+            }}
+            style={({ pressed }) => [
+              styles.categoryButton,
+              currentCategoryId === category.id &&
+                styles.categoryButtonSelected,
+              pressed && styles.categoryButtonPressed,
             ]}>
-            {category.name}
-          </Text>
-        </Pressable>
+            <Text
+              style={[
+                styles.categoryNameText,
+                currentCategoryId === category.id &&
+                  styles.selectedCategoryText,
+              ]}>
+              {category.name}
+            </Text>
+          </Pressable>
+        </View>
       ))}
     </ScrollView>
   );

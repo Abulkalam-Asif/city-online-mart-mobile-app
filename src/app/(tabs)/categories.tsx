@@ -5,7 +5,7 @@ import {
   Text,
   RefreshControl,
 } from "react-native";
-import React, { useState, useMemo, useEffect } from "react";
+import React, { useState, useMemo, useEffect, useRef } from "react";
 import CategoriesHeader from "@/src/components/tabs/categories/CategoriesHeader";
 import CategoriesNav from "@/src/components/tabs/categories/CategoriesNav";
 import SubCategoriesNav from "@/src/components/tabs/categories/SubCategoriesNav";
@@ -43,8 +43,12 @@ const CategoriesScreen = () => {
   const [currentCategoryId, setCurrentCategoryId] = useState("");
   const [currentSubCategoryId, setCurrentSubCategoryId] = useState("");
 
+  // Track if we should auto-scroll (from deep link)
+  const shouldAutoScroll = useRef(false);
+
   useEffect(() => {
     if (searchParamCategoryId) {
+      shouldAutoScroll.current = true; // Enable auto-scroll for deep link navigation
       const parsedCategoryId = parseCategoryId(searchParamCategoryId);
       // Set category and subcategory based on parsed result
       if (parsedCategoryId.isSubCategory) {
@@ -232,6 +236,7 @@ const CategoriesScreen = () => {
             currentCategoryId={currentCategoryId}
             setCurrentCategoryId={setCurrentCategoryId}
             setCurrentSubCategoryId={setCurrentSubCategoryId}
+            shouldAutoScroll={shouldAutoScroll}
           />
           <SubCategoriesNav
             subCategories={
@@ -243,6 +248,7 @@ const CategoriesScreen = () => {
             setBottomSheetType={setBottomSheetType}
             selectedSort={selectedSort}
             selectedBrands={selectedBrands}
+            shouldAutoScroll={shouldAutoScroll}
           />
         </View>
 

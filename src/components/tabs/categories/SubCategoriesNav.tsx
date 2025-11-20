@@ -1,5 +1,5 @@
 import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
-import React from "react";
+import React, { useEffect, useRef } from "react";
 import { theme } from "@/src/constants/theme";
 import { SubCategory } from "@/src/types";
 import SortButton from "./SortButton";
@@ -12,6 +12,7 @@ type SubCategoriesNavProps = {
   setBottomSheetType: (type: "sort" | "brands" | null) => void;
   selectedSort: string;
   selectedBrands: number[];
+  shouldAutoScroll?: React.RefObject<boolean>;
 };
 
 const SubCategoriesNav = ({
@@ -21,7 +22,43 @@ const SubCategoriesNav = ({
   setBottomSheetType,
   selectedSort,
   selectedBrands,
+  shouldAutoScroll,
 }: SubCategoriesNavProps) => {
+  const scrollViewRef = useRef<ScrollView>(null);
+  const itemRefs = useRef<{ [key: string]: View | null }>({});
+
+  // Auto-scroll to selected subcategory (only when from deep link)
+  useEffect(() => {
+    if (
+      shouldAutoScroll?.current &&
+      currentSubCategoryId &&
+      scrollViewRef.current
+    ) {
+      const selectedItemRef = itemRefs.current[currentSubCategoryId];
+
+      if (selectedItemRef) {
+        // Longer delay for subcategories to ensure layout is complete
+        setTimeout(() => {
+          selectedItemRef.measureLayout(
+            scrollViewRef.current as any,
+            (x, y, width, height) => {
+              // Scroll to position the item at the left edge
+              // Add small offset (10px) for visual breathing room
+              scrollViewRef.current?.scrollTo({
+                x: Math.max(0, x - 10),
+                animated: true,
+              });
+            },
+            () => {}
+          );
+        }, 300); // Increased delay for subcategories
+
+        // Reset flag after scrolling
+        shouldAutoScroll.current = false;
+      }
+    }
+  }, [currentSubCategoryId, subCategories, shouldAutoScroll]);
+
   return (
     <View style={styles.container}>
       <SortButton
@@ -33,28 +70,35 @@ const SubCategoriesNav = ({
         selectedBrands={selectedBrands}
       />
       <ScrollView
+        ref={scrollViewRef}
         contentContainerStyle={styles.containerContent}
         horizontal
         showsHorizontalScrollIndicator={false}>
         {subCategories.map((subCategory) => (
-          <Pressable
+          <View
             key={subCategory.id}
-            onPress={() => setCurrentSubCategoryId(subCategory.id)}
-            style={({ pressed }) => [
-              styles.subCategoryButton,
-              currentSubCategoryId === subCategory.id &&
-                styles.subCategoryButtonSelected,
-              pressed && styles.subCategoryButtonPressed,
-            ]}>
-            <Text
-              style={[
-                styles.subCategoryNameText,
+            ref={(ref) => {
+              itemRefs.current[subCategory.id] = ref;
+            }}
+            collapsable={false}>
+            <Pressable
+              onPress={() => setCurrentSubCategoryId(subCategory.id)}
+              style={({ pressed }) => [
+                styles.subCategoryButton,
                 currentSubCategoryId === subCategory.id &&
-                  styles.selectedSubCategoryText,
+                  styles.subCategoryButtonSelected,
+                pressed && styles.subCategoryButtonPressed,
               ]}>
-              {subCategory.name}
-            </Text>
-          </Pressable>
+              <Text
+                style={[
+                  styles.subCategoryNameText,
+                  currentSubCategoryId === subCategory.id &&
+                    styles.selectedSubCategoryText,
+                ]}>
+                {subCategory.name}
+              </Text>
+            </Pressable>
+          </View>
         ))}
       </ScrollView>
     </View>
