@@ -7,6 +7,7 @@ import useMyFonts from "../hooks/useMyFonts";
 import { queryClient } from "../lib/react-query";
 import { theme } from "../constants/theme";
 import { ModalProvider } from "../contexts/ModalContext";
+import { ModalPortal } from "../components/common/ModalPortal";
 
 export default function RootLayout() {
   const fontsLoaded = useMyFonts();
@@ -24,6 +25,7 @@ export default function RootLayout() {
               <Stack.Screen name="index" />
               <Stack.Screen name="(tabs)" />
             </Stack>
+            <ModalPortal />
           </SafeAreaView>
         </ModalProvider>
       </SafeAreaProvider>

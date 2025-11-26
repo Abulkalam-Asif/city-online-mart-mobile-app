@@ -1,14 +1,14 @@
-import React, { useEffect, useState } from "react";
-import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
+import OrderSuccessModal from "@/src/components/checkout-payment/payments/OrderSuccessModal";
+import PaymentOption from "@/src/components/checkout-payment/payments/PaymentOption";
 import GeneralTopBar from "@/src/components/general/GeneralTopBar";
 import { theme } from "@/src/constants/theme";
-import PaymentOption from "@/src/components/checkout-payment/payments/PaymentOption";
-import { useGetActivePaymentMethods } from "@/src/hooks/usePaymentMethods";
-import { usePlaceOrder } from "@/src/hooks/useOrders";
+import { useModal } from "@/src/contexts/ModalContext";
 import { useCart, useClearCart } from "@/src/hooks/useCart";
-import { PaymentMethod } from "@/src/types";
-import { router } from "expo-router";
-import { Alert } from "react-native";
+import { usePlaceOrder } from "@/src/hooks/useOrders";
+import { useGetActivePaymentMethods } from "@/src/hooks/usePaymentMethods";
+import { updateOrderWithPaymentProof, uploadPaymentProof } from "@/src/utils/uploadPaymentProof";
+import React, { useEffect, useState } from "react";
+import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 
 const mockCustomerId = "customer123"; // In real app, get from auth context
 const mockDeliveryAddress = "123 Test Street, Test City"; // In real app, from checkout form
@@ -32,6 +32,10 @@ export default function PaymentsScreen() {
   const [selectedMethod, setSelectedMethod] = useState<string>("");
   const [isChecked, setChecked] = useState(false);
   const [screenshot, setScreenshot] = useState<string | null>(null);
+  const [cartCleared, setCartCleared] = useState(false);
+
+  // Modal context
+  const { showModal } = useModal();
 
   // Fetch active payment methods
   const { data: paymentMethods, isLoading: paymentMethodsLoading } = useGetActivePaymentMethods();
@@ -47,31 +51,37 @@ export default function PaymentsScreen() {
 
   // Handle successful order placement
   useEffect(() => {
-    if (placeOrderMutation.isSuccess) {
-      // Clear the cart after successful order
-      clearCartMutation.mutate();
+    const handleOrderSuccess = async () => {
+      if (placeOrderMutation.isSuccess && !cartCleared) {
+        const orderId = placeOrderMutation.data;
 
-      Alert.alert(
-        "Order Placed Successfully!",
-        `Your order has been placed. Order ID: ${placeOrderMutation.data}`,
-        [
-          {
-            text: "View Orders",
-            onPress: () => router.push("/profile/orders"),
-          },
-        ]
-      );
-    }
-  }, [placeOrderMutation.isSuccess, placeOrderMutation.data, clearCartMutation]);
+        // Upload payment proof if screenshot exists
+        if (screenshot) {
+          try {
+            const downloadUrl = await uploadPaymentProof(screenshot, orderId);
+            await updateOrderWithPaymentProof(orderId, downloadUrl);
+          } catch (error) {
+            console.error('Failed to upload payment proof:', error);
+            // Don't fail the order for upload errors - order is already placed
+          }
+        }
+
+        // Clear the cart after successful order (only once)
+        clearCartMutation.mutate();
+        setCartCleared(true);
+
+        // Show success modal
+        showModal("order-success", <OrderSuccessModal orderId={orderId} />);
+      }
+    };
+
+    handleOrderSuccess();
+  }, [placeOrderMutation.isSuccess, placeOrderMutation.data, cartCleared, screenshot, showModal]);
 
   // Handle order placement error
   useEffect(() => {
     if (placeOrderMutation.isError) {
-      Alert.alert(
-        "Order Failed",
-        "There was an error placing your order. Please try again.",
-        [{ text: "OK" }]
-      );
+      alert("There was an error placing your order. Please try again.");
     }
   }, [placeOrderMutation.isError]);
 
@@ -181,7 +191,7 @@ export default function PaymentsScreen() {
               total,
               paymentMethod: selectedPaymentMethod,
               deliveryAddress: mockDeliveryAddress,
-              proofOfPaymentUrl: screenshot || undefined,
+              proofOfPaymentUrl: undefined, // Will be uploaded after order placement
             });
           }}
           disabled={isProceedDisabled}>
@@ -193,6 +203,7 @@ export default function PaymentsScreen() {
     </View>
   );
 }
+
 
 const styles = StyleSheet.create({
   mainContainer: {
