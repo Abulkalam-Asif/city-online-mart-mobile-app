@@ -2,18 +2,25 @@ import { Pressable, StyleSheet, Text, View } from "react-native";
 import React from "react";
 import { theme } from "@/src/constants/theme";
 import { FontAwesome6 } from "@expo/vector-icons";
+import { useAddToCart, useUpdateCartItem } from "@/src/hooks/useCart";
+import { router } from "expo-router";
 
 type AddToCartContainerProps = {
+  productId: string;
+  productName: string;
   quantityInCart: number;
-  setQuantityInCart: (quantity: number) => void;
   price: number;
 };
 
 const AddToCartContainer = ({
+  productId,
+  productName,
   quantityInCart,
-  setQuantityInCart,
   price,
 }: AddToCartContainerProps) => {
+  // Cart mutations
+  const addToCartMutation = useAddToCart();
+  const updateCartItemMutation = useUpdateCartItem();
   return (
     <View style={styles.container}>
       {quantityInCart > 0 && (
@@ -33,7 +40,20 @@ const AddToCartContainer = ({
                 styles.quantityChangeButton,
                 pressed && styles.quantityChangeButtonPressed,
               ]}
-              onPress={() => setQuantityInCart(quantityInCart - 1)}>
+              onPress={() => {
+                if (quantityInCart > 1) {
+                  updateCartItemMutation.mutate({
+                    productId,
+                    quantity: quantityInCart - 1
+                  });
+                } else {
+                  // If quantity is 1, remove the item
+                  updateCartItemMutation.mutate({
+                    productId,
+                    quantity: 0
+                  });
+                }
+              }}>
               <FontAwesome6 size={20} name="minus" />
             </Pressable>
             <Text style={styles.quantityText}>{quantityInCart}</Text>
@@ -42,7 +62,12 @@ const AddToCartContainer = ({
                 styles.quantityChangeButton,
                 pressed && styles.quantityChangeButtonPressed,
               ]}
-              onPress={() => setQuantityInCart(quantityInCart + 1)}>
+              onPress={() => {
+                updateCartItemMutation.mutate({
+                  productId,
+                  quantity: quantityInCart + 1
+                });
+              }}>
               <FontAwesome6 size={20} name="plus" />
             </Pressable>
           </View>
@@ -52,7 +77,20 @@ const AddToCartContainer = ({
             styles.addToCartButton,
             pressed && styles.addToCartButtonPressed,
           ]}
-          onPress={() => setQuantityInCart(1)}>
+          onPress={() => {
+            if (quantityInCart === 0) {
+              // Add to cart for first time
+              addToCartMutation.mutate({
+                productId,
+                productName,
+                unitPrice: price,
+                batchId: `batch_${productId}`,
+              });
+            } else {
+              // Navigate to cart
+              router.push("/cart");
+            }
+          }}>
           <Text style={styles.addToCartText}>
             {quantityInCart === 0 ? "Add to Cart" : `View cart`}
           </Text>

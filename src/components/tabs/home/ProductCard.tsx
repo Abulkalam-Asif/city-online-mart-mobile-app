@@ -1,5 +1,5 @@
 import { Pressable, StyleSheet, Text, View } from "react-native";
-import React, { useState } from "react";
+import React, { useMemo } from "react";
 import { Image } from "expo-image";
 import { theme } from "@/src/constants/theme";
 import { FontAwesome6 } from "@expo/vector-icons";
@@ -7,6 +7,7 @@ import { router } from "expo-router";
 import { Product } from "@/src/types";
 import { useSinglePress } from "@/src/hooks/useSinglePress";
 import { productService } from "@/src/services/productService";
+import { useCart, useAddToCart, useUpdateCartItem } from "@/src/hooks/useCart";
 
 type Props = {
   product: Product;
@@ -14,8 +15,21 @@ type Props = {
 };
 
 const ProductCard = ({ product, cardWidth = 150 }: Props) => {
-  const [quantityInCart, setQuantityInCart] = useState(0);
   const canPress = useSinglePress();
+
+  // Get cart data
+  const { data: cart } = useCart();
+
+  // Cart mutations
+  const addToCartMutation = useAddToCart();
+  const updateCartItemMutation = useUpdateCartItem();
+
+  // Check if product is in cart and get quantity
+  const cartItem = useMemo(() => {
+    return cart?.items.find(item => item.productId === product.id);
+  }, [cart, product.id]);
+
+  const quantityInCart = cartItem?.quantity || 0;
 
   const handleProductPress = () => {
     if (!canPress()) return;
@@ -78,7 +92,20 @@ const ProductCard = ({ product, cardWidth = 150 }: Props) => {
                 styles.quantityChangeButton,
                 pressed && styles.quantityChangeButtonPressed,
               ]}
-              onPress={() => setQuantityInCart(quantityInCart - 1)}>
+              onPress={() => {
+                if (quantityInCart > 1) {
+                  updateCartItemMutation.mutate({
+                    productId: product.id,
+                    quantity: quantityInCart - 1
+                  });
+                } else {
+                  // If quantity is 1, remove the item
+                  updateCartItemMutation.mutate({
+                    productId: product.id,
+                    quantity: 0
+                  });
+                }
+              }}>
               <FontAwesome6 name="minus" />
             </Pressable>
             <Text style={styles.quantityText}>{quantityInCart}</Text>
@@ -87,7 +114,12 @@ const ProductCard = ({ product, cardWidth = 150 }: Props) => {
                 styles.quantityChangeButton,
                 pressed && styles.quantityChangeButtonPressed,
               ]}
-              onPress={() => setQuantityInCart(quantityInCart + 1)}>
+              onPress={() => {
+                updateCartItemMutation.mutate({
+                  productId: product.id,
+                  quantity: quantityInCart + 1
+                });
+              }}>
               <FontAwesome6 name="plus" />
             </Pressable>
           </View>
@@ -97,7 +129,20 @@ const ProductCard = ({ product, cardWidth = 150 }: Props) => {
             styles.addToCartButton,
             pressed && styles.addToCartButtonPressed,
           ]}
-          onPress={() => setQuantityInCart(1)}>
+          onPress={() => {
+            if (quantityInCart === 0) {
+              // Add to cart for first time
+              addToCartMutation.mutate({
+                productId: product.id,
+                productName: product.info.name,
+                unitPrice: product.price,
+                batchId: `batch_${product.id}`, // Use a default batch ID
+              });
+            } else {
+              // Navigate to cart
+              router.push("/cart");
+            }
+          }}>
           <Text style={styles.addToCartText}>
             {quantityInCart === 0 ? "Add to Cart" : `View cart`}
           </Text>

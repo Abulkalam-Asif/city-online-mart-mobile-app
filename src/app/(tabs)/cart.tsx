@@ -1,39 +1,102 @@
-import React, { useState } from "react";
+import React from "react";
 import { FlatList, Pressable, StyleSheet, Text, View } from "react-native";
 import GeneralTopBar from "@/src/components/general/GeneralTopBar";
 import CartItem from "@/src/components/tabs/cart/CartItem";
-import { tempCartItems } from "@/temp/home/products/tempCartItems";
 import { theme } from "@/src/constants/theme";
 import { router } from "expo-router";
+import { useCart, useUpdateCartItem, useRemoveFromCart, useClearCart, useAddToCart } from "@/src/hooks/useCart";
 
 export default function CartScreen() {
   const isLoggedIn = true;
-  const [cartItems, setCartItems] = useState(tempCartItems);
+
+  // Fetch cart data
+  const { data: cart, isLoading, error } = useCart();
+
+  // Cart mutations
+  const addToCartMutation = useAddToCart();
+  const updateCartItemMutation = useUpdateCartItem();
+  const removeFromCartMutation = useRemoveFromCart();
+  const clearCartMutation = useClearCart();
 
   const handleQuantityChange = (id: number, newQuantity: number) => {
-    setCartItems((prevItems) =>
-      prevItems.map((cartItem) =>
-        cartItem.Id === id ? { ...cartItem, quantity: newQuantity } : cartItem
-      )
-    );
+    // Find the actual productId from the transformed item
+    const item = cart?.items.find((_, index) => index + 1 === id);
+    if (item) {
+      updateCartItemMutation.mutate({ productId: item.productId, quantity: newQuantity });
+    }
   };
 
   const handleRemoveItem = (id: number) => {
-    setCartItems((prevItems) =>
-      prevItems.filter((cartItem) => cartItem.Id !== id)
-    );
+    // Find the actual productId from the transformed item
+    const item = cart?.items.find((_, index) => index + 1 === id);
+    if (item) {
+      removeFromCartMutation.mutate(item.productId);
+    }
   };
+
+  const handleClearCart = () => {
+    clearCartMutation.mutate();
+  };
+
+  if (isLoading) {
+    return (
+      <View style={styles.mainContainer}>
+        <GeneralTopBar text="My Cart" />
+        <View style={styles.loadingContainer}>
+          <Text style={styles.loadingText}>Loading cart...</Text>
+        </View>
+      </View>
+    );
+  }
+
+  if (error) {
+    return (
+      <View style={styles.mainContainer}>
+        <GeneralTopBar text="My Cart" />
+        <View style={styles.errorContainer}>
+          <Text style={styles.errorText}>Failed to load cart</Text>
+        </View>
+      </View>
+    );
+  }
+
+  // Transform cart items to match CartItem component expectations
+  const cartItems = cart?.items.map((item, index) => ({
+    Id: index + 1, // Temporary ID for component
+    MainImageUrl: require("@/src/assets/default-image.png"), // Placeholder
+    Name: item.productName,
+    Price: item.unitPrice,
+    OldPrice: undefined, // Could be added later
+    quantity: item.quantity,
+    discount: undefined,
+    productId: item.productId, // Keep original ID for operations
+  })) || [];
 
   return (
     <View style={styles.mainContainer}>
       <GeneralTopBar text="My Cart" />
       <View style={styles.infoContainer}>
         <Text style={styles.itemsCountText}>{cartItems.length} items</Text>
-        <Pressable
-          onPress={() => setCartItems([])}
-          style={({ pressed }) => [pressed && styles.clearCartButtonPressed]}>
-          <Text style={styles.clearCartText}>Clear All Items</Text>
-        </Pressable>
+        <View style={styles.buttonRow}>
+          <Pressable
+            onPress={() => addToCartMutation.mutate({
+              productId: `product${Date.now()}`,
+              productName: `Test Product ${cartItems.length + 1}`,
+              unitPrice: Math.floor(Math.random() * 500) + 100,
+              batchId: `batch${Date.now()}`,
+            })}
+            style={({ pressed }) => [
+              styles.addItemButton,
+              pressed && styles.addItemButtonPressed,
+            ]}>
+            <Text style={styles.addItemText}>Add Test Item</Text>
+          </Pressable>
+          <Pressable
+            onPress={handleClearCart}
+            style={({ pressed }) => [pressed && styles.clearCartButtonPressed]}>
+            <Text style={styles.clearCartText}>Clear All</Text>
+          </Pressable>
+        </View>
       </View>
       <FlatList
         style={styles.container}
@@ -60,11 +123,7 @@ export default function CartScreen() {
         <View style={styles.amountRow}>
           <Text style={styles.amountLabel}>Amount</Text>
           <Text style={styles.amountValue}>
-            Rs.{" "}
-            {cartItems.reduce(
-              (total, item) => total + item.Price * item.quantity,
-              0
-            )}
+            Rs. {cart?.total || 0}
           </Text>
         </View>
 
@@ -99,8 +158,6 @@ const styles = StyleSheet.create({
   },
 
   infoContainer: {
-    flexDirection: "row",
-    justifyContent: "space-between",
     paddingHorizontal: 20,
     paddingVertical: 20,
   },
@@ -108,6 +165,28 @@ const styles = StyleSheet.create({
     fontSize: 12,
     fontFamily: theme.fonts.medium,
     color: theme.colors.text,
+    marginBottom: 10,
+  },
+  buttonRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    gap: 10,
+  },
+  addItemButton: {
+    backgroundColor: theme.colors.primary,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 6,
+    flex: 1,
+  },
+  addItemButtonPressed: {
+    opacity: 0.8,
+  },
+  addItemText: {
+    fontSize: 12,
+    fontFamily: theme.fonts.medium,
+    color: "#fff",
+    textAlign: "center",
   },
   clearCartButtonPressed: {
     opacity: 0.6,
@@ -171,5 +250,25 @@ const styles = StyleSheet.create({
   },
   proceedButtonPressed: {
     opacity: 0.8,
+  },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  loadingText: {
+    fontSize: 16,
+    fontFamily: theme.fonts.medium,
+    color: theme.colors.text_secondary,
+  },
+  errorContainer: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  errorText: {
+    fontSize: 16,
+    fontFamily: theme.fonts.medium,
+    color: "red",
   },
 });

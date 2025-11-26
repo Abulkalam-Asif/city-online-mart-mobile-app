@@ -1,5 +1,5 @@
 import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
-import React, { useState, useMemo } from "react";
+import React, { useMemo } from "react";
 import { theme } from "@/src/constants/theme";
 import { Product } from "@/src/types";
 import AddToCartContainer from "./AddToCartContainer";
@@ -10,6 +10,7 @@ import { Entypo, FontAwesome6 } from "@expo/vector-icons";
 import ProductsSection from "./ProductsSection";
 import { router } from "expo-router";
 import { useInfiniteProductsByIds } from "@/src/hooks/useProducts";
+import { useCart } from "@/src/hooks/useCart";
 
 type ProductDetailsContentProps = {
   product: Product;
@@ -20,8 +21,17 @@ const ProductDetailsContent = ({
   product,
   isLoading,
 }: ProductDetailsContentProps) => {
-  const [quantityInCart, setQuantityInCart] = useState(0);
-  const [isShowMoreDescription, setIsShowMoreDescription] = useState(false);
+  const [isShowMoreDescription, setIsShowMoreDescription] = React.useState(false);
+
+  // Get cart data
+  const { data: cart } = useCart();
+
+  // Check if product is in cart
+  const cartItem = useMemo(() => {
+    return cart?.items.find(item => item.productId === product?.id);
+  }, [cart, product?.id]);
+
+  const quantityInCart = cartItem?.quantity || 0;
 
   // Fetch similar products (always enabled)
   const {
@@ -147,8 +157,9 @@ const ProductDetailsContent = ({
             </View>
 
             <AddToCartContainer
+              productId={product.id}
+              productName={product.info.name}
               quantityInCart={quantityInCart}
-              setQuantityInCart={setQuantityInCart}
               price={product.price}
             />
 

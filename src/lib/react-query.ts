@@ -129,6 +129,21 @@ export const queryKeys = {
   },
 
   // ========================================
+  // PAYMENT METHODS
+  // ========================================
+  paymentMethods: {
+    // Base key - invalidates ALL payment method queries
+    all: ["paymentMethods"] as const,
+
+    // Active payment methods
+    active: () => [...queryKeys.paymentMethods.all, "active"] as const,
+
+    // Single payment method detail
+    details: () => [...queryKeys.paymentMethods.all, "detail"] as const,
+    detail: (id: string) => [...queryKeys.paymentMethods.details(), id] as const,
+  },
+
+  // ========================================
   // ORDERS
   // ========================================
   orders: {
@@ -143,6 +158,17 @@ export const queryKeys = {
     // Single order detail
     details: () => [...queryKeys.orders.all, "detail"] as const,
     detail: (id: string) => [...queryKeys.orders.details(), id] as const,
+  },
+
+  // ========================================
+  // CART
+  // ========================================
+  cart: {
+    // Base key - invalidates ALL cart queries
+    all: ["cart"] as const,
+
+    // Current user's cart
+    current: () => [...queryKeys.cart.all, "current"] as const,
   },
 
   // ========================================
