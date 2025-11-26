@@ -36,7 +36,7 @@ const USE_EMULATOR = true;
 // - iOS Simulator: use "localhost" or "127.0.0.1"
 // - Android Emulator: use "10.0.2.2" (special alias for host machine's localhost)
 // - Physical Device: use your computer's local IP address (e.g., "192.168.1.x")
-const EMULATOR_HOST = "10.0.2.2"; // Change to your computer's IP if using physical device
+const EMULATOR_HOST = "192.168.100.104"; // my macbook
 
 if (USE_EMULATOR) {
   const isEmulatorConnected = {

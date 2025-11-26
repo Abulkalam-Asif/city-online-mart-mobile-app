@@ -1,6 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { queryKeys } from "../lib/react-query";
-import { categoryService } from "../services/categoryService";
+import { categoryService } from "../services/CategoryService";
 
 // Hook for fetching all categories
 export function useGetAllCategories() {
