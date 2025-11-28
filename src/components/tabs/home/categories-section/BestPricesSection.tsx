@@ -9,10 +9,10 @@ import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 const BestPricesSection = () => {
   const { data: bestPricesData, isLoading, error } = useBestPriceProducts(6);
 
-  const handleCardPress = (product: IProduct) => {
+  const handleCardPress = (originalProduct: any) => {
     router.push({
       pathname: "/product-details",
-      params: { id: String(product.Id) },
+      params: { id: originalProduct.id }, // Use the original Firestore document ID
     });
   };
 
@@ -37,8 +37,8 @@ const BestPricesSection = () => {
   }
 
   // Transform ProductWithDiscount to IProduct format
-  const transformedProducts: IProduct[] = bestPricesData.map((product, index) => ({
-    Id: parseInt(product.id) || index + 1, // Fallback to index if id is not numeric
+  const transformedProducts: IProduct[] = bestPricesData.map((product) => ({
+    Id: product.id, // Use the actual Firestore document ID
     Name: product.info.name,
     MainImageUrl: product.multimedia.images[0] || require("@/src/assets/default-image.png"),
     Price: product.price - product.savings, // Discounted price
@@ -52,7 +52,8 @@ const BestPricesSection = () => {
         horizontal
         showsHorizontalScrollIndicator={false}
         contentContainerStyle={styles.scrollContent}>
-        {transformedProducts.map((product) => {
+        {transformedProducts.map((product, index) => {
+          const originalProduct = bestPricesData[index]; // Get the original product data
           const discountPercentage = product.OldPrice
             ? Math.round(((product.OldPrice - product.Price) / product.OldPrice) * 100)
             : 0;
@@ -60,7 +61,7 @@ const BestPricesSection = () => {
 
           return (
             <Pressable
-              onPress={() => handleCardPress(product)}
+              onPress={() => handleCardPress(originalProduct)}
               key={product.Id}
               style={styles.card}>
               <Image

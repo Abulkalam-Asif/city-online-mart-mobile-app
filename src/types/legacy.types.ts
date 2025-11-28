@@ -2,7 +2,7 @@
 // These will be removed once all components are migrated to use the new Product type
 
 export interface IProduct {
-  Id: number;
+  Id: string;
   Name: string;
   MainImageUrl?: any;
   ThumbnailUrl?: any;
