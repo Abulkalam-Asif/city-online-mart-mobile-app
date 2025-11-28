@@ -12,6 +12,7 @@ import {
 } from "firebase/firestore";
 import { Order, OrderItem, PaymentMethod } from "../types";
 import { db } from "@/firebaseConfig";
+import { generateOrderId } from "../utils/orderIdGenerator";
 
 const ORDERS_COLLECTION = "ORDERS";
 const CUSTOMERS_COLLECTION = "CUSTOMERS";
@@ -57,8 +58,9 @@ export const orderService = {
       // Start batch write for atomicity
       const batch = writeBatch(db);
 
-      // Create order document
-      const orderRef = doc(collection(db, ORDERS_COLLECTION));
+      // Generate custom order ID
+      const orderId = generateOrderId();
+      const orderRef = doc(db, ORDERS_COLLECTION, orderId);
 
       // Filter out undefined values for Firestore
       const filteredOrderData = Object.fromEntries(
@@ -70,7 +72,7 @@ export const orderService = {
 
       const orderDoc = {
         ...filteredOrderData,
-        id: orderRef.id,
+        id: orderId,
         status: "pending",
         paymentStatus,
         statusHistory: [
@@ -111,8 +113,8 @@ export const orderService = {
       // }
 
       await batch.commit();
-      console.log("Order placed successfully:", orderRef.id);
-      return orderRef.id;
+      console.log("Order placed successfully:", orderId);
+      return orderId;
     } catch (error) {
       console.error("Error placing order at [placeOrder]:", error);
       throw error;
