@@ -1,30 +1,11 @@
-import {
-  doc,
-  getDoc,
-  setDoc,
-  updateDoc,
-  deleteField,
-  Timestamp,
-} from "firebase/firestore";
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Cart, CartItem } from "../types";
-import { db } from "@/firebaseConfig";
 
-const CARTS_COLLECTION = "CARTS";
+// Storage key for cart data
+const CART_STORAGE_KEY = '@cart_data';
 
 // For now, using a hardcoded customer ID since auth is not implemented
 const CURRENT_CUSTOMER_ID = "customer123";
-
-// Helper function to convert Firestore data to Cart
-const firestoreToCart = (id: string, data: any): Cart => {
-  return {
-    id,
-    customerId: data.customerId || "",
-    items: data.items || [],
-    total: data.total || 0,
-    itemCount: data.itemCount || 0,
-    lastUpdated: data.lastUpdated?.toDate() || new Date(),
-  };
-};
 
 // Helper function to calculate cart totals
 const calculateCartTotals = (items: CartItem[]) => {
@@ -33,14 +14,45 @@ const calculateCartTotals = (items: CartItem[]) => {
   return { total, itemCount };
 };
 
+// Helper function to get cart from AsyncStorage
+const getStoredCart = async (): Promise<Cart | null> => {
+  try {
+    const cartJson = await AsyncStorage.getItem(CART_STORAGE_KEY);
+    if (cartJson) {
+      const cartData = JSON.parse(cartJson);
+      // Convert date strings back to Date objects
+      cartData.lastUpdated = new Date(cartData.lastUpdated);
+      cartData.items = cartData.items.map((item: any) => ({
+        ...item,
+        addedAt: new Date(item.addedAt)
+      }));
+      return cartData;
+    }
+    return null;
+  } catch (error) {
+    console.error('Error reading cart from storage:', error);
+    return null;
+  }
+};
+
+// Helper function to save cart to AsyncStorage
+const saveCart = async (cart: Cart): Promise<void> => {
+  try {
+    const cartJson = JSON.stringify(cart);
+    await AsyncStorage.setItem(CART_STORAGE_KEY, cartJson);
+  } catch (error) {
+    console.error('Error saving cart to storage:', error);
+    throw error;
+  }
+};
+
 export const cartService = {
   // Get cart for current customer
   async getCart(): Promise<Cart | null> {
     try {
-      const cartRef = doc(db, CARTS_COLLECTION, CURRENT_CUSTOMER_ID);
-      const cartSnap = await getDoc(cartRef);
+      const storedCart = await getStoredCart();
 
-      if (!cartSnap.exists()) {
+      if (!storedCart) {
         // Return empty cart if none exists
         return {
           id: CURRENT_CUSTOMER_ID,
@@ -52,7 +64,7 @@ export const cartService = {
         };
       }
 
-      return firestoreToCart(cartSnap.id, cartSnap.data());
+      return storedCart;
     } catch (error) {
       console.error("Error fetching cart at [getCart]:", error);
       throw error;
@@ -62,14 +74,16 @@ export const cartService = {
   // Add item to cart
   async addToCart(productId: string, productName: string, unitPrice: number, quantity: number = 1, batchId: string, imageUrl: string = ""): Promise<void> {
     try {
-      const cartRef = doc(db, CARTS_COLLECTION, CURRENT_CUSTOMER_ID);
-      const cartSnap = await getDoc(cartRef);
+      const cart = await getStoredCart() || {
+        id: CURRENT_CUSTOMER_ID,
+        customerId: CURRENT_CUSTOMER_ID,
+        items: [],
+        total: 0,
+        itemCount: 0,
+        lastUpdated: new Date(),
+      };
 
-      let items: CartItem[] = [];
-
-      if (cartSnap.exists()) {
-        items = cartSnap.data()?.items || [];
-      }
+      let items: CartItem[] = cart.items || [];
 
       // Check if item already exists
       const existingItemIndex = items.findIndex(item => item.productId === productId);
@@ -93,14 +107,16 @@ export const cartService = {
 
       const { total, itemCount } = calculateCartTotals(items);
 
-      await setDoc(cartRef, {
+      const updatedCart: Cart = {
+        id: CURRENT_CUSTOMER_ID,
         customerId: CURRENT_CUSTOMER_ID,
         items,
         total,
         itemCount,
-        lastUpdated: Timestamp.now(),
-      });
+        lastUpdated: new Date(),
+      };
 
+      await saveCart(updatedCart);
       console.log("Item added to cart successfully");
     } catch (error) {
       console.error("Error adding item to cart at [addToCart]:", error);
@@ -111,14 +127,13 @@ export const cartService = {
   // Update item quantity in cart
   async updateCartItem(productId: string, quantity: number): Promise<void> {
     try {
-      const cartRef = doc(db, CARTS_COLLECTION, CURRENT_CUSTOMER_ID);
-      const cartSnap = await getDoc(cartRef);
+      const cart = await getStoredCart();
 
-      if (!cartSnap.exists()) {
+      if (!cart) {
         throw new Error("Cart not found");
       }
 
-      let items: CartItem[] = cartSnap.data()?.items || [];
+      let items: CartItem[] = cart.items || [];
       const itemIndex = items.findIndex(item => item.productId === productId);
 
       if (itemIndex === -1) {
@@ -134,13 +149,15 @@ export const cartService = {
 
       const { total, itemCount } = calculateCartTotals(items);
 
-      await updateDoc(cartRef, {
+      const updatedCart: Cart = {
+        ...cart,
         items,
         total,
         itemCount,
-        lastUpdated: Timestamp.now(),
-      });
+        lastUpdated: new Date(),
+      };
 
+      await saveCart(updatedCart);
       console.log("Cart item updated successfully");
     } catch (error) {
       console.error("Error updating cart item at [updateCartItem]:", error);
@@ -151,25 +168,26 @@ export const cartService = {
   // Remove item from cart
   async removeFromCart(productId: string): Promise<void> {
     try {
-      const cartRef = doc(db, CARTS_COLLECTION, CURRENT_CUSTOMER_ID);
-      const cartSnap = await getDoc(cartRef);
+      const cart = await getStoredCart();
 
-      if (!cartSnap.exists()) {
+      if (!cart) {
         return; // Cart doesn't exist, nothing to remove
       }
 
-      let items: CartItem[] = cartSnap.data()?.items || [];
+      let items: CartItem[] = cart.items || [];
       items = items.filter(item => item.productId !== productId);
 
       const { total, itemCount } = calculateCartTotals(items);
 
-      await updateDoc(cartRef, {
+      const updatedCart: Cart = {
+        ...cart,
         items,
         total,
         itemCount,
-        lastUpdated: Timestamp.now(),
-      });
+        lastUpdated: new Date(),
+      };
 
+      await saveCart(updatedCart);
       console.log("Item removed from cart successfully");
     } catch (error) {
       console.error("Error removing item from cart at [removeFromCart]:", error);
@@ -180,15 +198,16 @@ export const cartService = {
   // Clear entire cart
   async clearCart(): Promise<void> {
     try {
-      const cartRef = doc(db, CARTS_COLLECTION, CURRENT_CUSTOMER_ID);
-      await setDoc(cartRef, {
+      const emptyCart: Cart = {
+        id: CURRENT_CUSTOMER_ID,
         customerId: CURRENT_CUSTOMER_ID,
         items: [],
         total: 0,
         itemCount: 0,
-        lastUpdated: Timestamp.now(),
-      });
+        lastUpdated: new Date(),
+      };
 
+      await saveCart(emptyCart);
       console.log("Cart cleared successfully");
     } catch (error) {
       console.error("Error clearing cart at [clearCart]:", error);
