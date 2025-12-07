@@ -6,14 +6,17 @@ import { useModal } from "@/src/contexts/ModalContext";
 import { useCart, useClearCart } from "@/src/hooks/useCart";
 import { usePlaceOrder } from "@/src/hooks/useOrders";
 import { useGetActivePaymentMethods } from "@/src/hooks/usePaymentMethods";
-import { updateOrderWithPaymentProof, uploadPaymentProof } from "@/src/utils/uploadPaymentProof";
+import {
+  updateOrderWithPaymentProof,
+  uploadPaymentProof,
+} from "@/src/utils/uploadPaymentProof";
 import { calculateOrderDiscount } from "@/src/utils/orderDiscounts";
 import { generateOrderId } from "@/src/utils/orderIdGenerator";
 import React, { useEffect, useState } from "react";
 import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
+import { useLocalSearchParams } from "expo-router";
 
 const mockCustomerId = "customer123"; // In real app, get from auth context
-const mockDeliveryAddress = "123 Test Street, Test City"; // In real app, from checkout form
 
 const getDisplayName = (type: string) => {
   switch (type) {
@@ -31,6 +34,11 @@ const getDisplayName = (type: string) => {
 };
 
 export default function PaymentsScreen() {
+  // Get delivery address from navigation params
+  const { deliveryAddress } = useLocalSearchParams<{
+    deliveryAddress?: string;
+  }>();
+
   const [selectedMethod, setSelectedMethod] = useState<string>("");
   const [isChecked, setChecked] = useState(false);
   const [screenshot, setScreenshot] = useState<string | null>(null);
@@ -40,7 +48,8 @@ export default function PaymentsScreen() {
   const { showModal } = useModal();
 
   // Fetch active payment methods
-  const { data: paymentMethods, isLoading: paymentMethodsLoading } = useGetActivePaymentMethods();
+  const { data: paymentMethods, isLoading: paymentMethodsLoading } =
+    useGetActivePaymentMethods();
 
   // Fetch cart data
   const { data: cart, isLoading: cartLoading } = useCart();
@@ -63,7 +72,7 @@ export default function PaymentsScreen() {
             const downloadUrl = await uploadPaymentProof(screenshot, orderId);
             await updateOrderWithPaymentProof(orderId, downloadUrl);
           } catch (error) {
-            console.error('Failed to upload payment proof:', error);
+            console.error("Failed to upload payment proof:", error);
             // Don't fail the order for upload errors - order is already placed
           }
         }
@@ -78,7 +87,14 @@ export default function PaymentsScreen() {
     };
 
     handleOrderSuccess();
-  }, [placeOrderMutation.isSuccess, placeOrderMutation.data, cartCleared, screenshot, showModal]);
+  }, [
+    placeOrderMutation.isSuccess,
+    placeOrderMutation.data,
+    cartCleared,
+    screenshot,
+    showModal,
+    clearCartMutation,
+  ]);
 
   // Handle order placement error
   useEffect(() => {
@@ -102,7 +118,7 @@ export default function PaymentsScreen() {
         style={styles.container}
         contentContainerStyle={styles.contentContainer}>
         <Text style={styles.payWithText}>Pay with</Text>
-        {(paymentMethodsLoading || cartLoading) ? (
+        {paymentMethodsLoading || cartLoading ? (
           <Text style={styles.loadingText}>Loading...</Text>
         ) : (
           paymentMethods?.map((method) => {
@@ -139,10 +155,16 @@ export default function PaymentsScreen() {
                 {method.accountDetails && (
                   <>
                     {method.accountDetails.bankName && (
-                      <Text style={styles.accountText}>{method.accountDetails.bankName}</Text>
+                      <Text style={styles.accountText}>
+                        {method.accountDetails.bankName}
+                      </Text>
                     )}
-                    <Text style={styles.accountText}>Account Number: {method.accountDetails.accountNumber}</Text>
-                    <Text style={styles.accountText}>Account Title: {method.accountDetails.accountTitle}</Text>
+                    <Text style={styles.accountText}>
+                      Account Number: {method.accountDetails.accountNumber}
+                    </Text>
+                    <Text style={styles.accountText}>
+                      Account Title: {method.accountDetails.accountTitle}
+                    </Text>
                   </>
                 )}
               </PaymentOption>
@@ -159,13 +181,18 @@ export default function PaymentsScreen() {
             isProceedDisabled && styles.proceedButtonDisabled,
           ]}
           onPress={async () => {
-            console.log('🚀 Proceed button pressed');
-            console.log('📋 Selected method:', selectedMethod);
-            console.log('🛒 Cart:', cart);
-            console.log('💳 Payment methods:', paymentMethods);
+            console.log("🚀 Proceed button pressed");
+            console.log("📋 Selected method:", selectedMethod);
+            console.log("🛒 Cart:", cart);
+            console.log("💳 Payment methods:", paymentMethods);
 
-            if (!selectedMethod || !paymentMethods || !cart || cart.items.length === 0) {
-              console.log('❌ Checkout validation failed');
+            if (
+              !selectedMethod ||
+              !paymentMethods ||
+              !cart ||
+              cart.items.length === 0
+            ) {
+              console.log("❌ Checkout validation failed");
               return;
             }
 
@@ -174,11 +201,11 @@ export default function PaymentsScreen() {
             );
 
             if (!selectedPaymentMethod) {
-              console.log('❌ Payment method not found');
+              console.log("❌ Payment method not found");
               return;
             }
 
-            console.log('✅ Starting checkout process...');
+            console.log("✅ Starting checkout process...");
 
             try {
               // Generate order ID first
@@ -187,38 +214,52 @@ export default function PaymentsScreen() {
               // Upload payment proof if screenshot exists
               let proofOfPaymentUrl: string | undefined;
               if (screenshot) {
-                proofOfPaymentUrl = await uploadPaymentProof(screenshot, orderId);
+                proofOfPaymentUrl = await uploadPaymentProof(
+                  screenshot,
+                  orderId
+                );
               }
 
               // Convert cart items to order items format
-              const orderItems = cart.items.map(item => ({
+              const orderItems = cart.items.map((item) => ({
                 productId: item.productId,
                 productName: item.productName,
                 quantity: item.quantity,
                 unitPrice: item.unitPrice,
                 discount: 0, // Could be calculated from product discounts
                 subtotal: item.unitPrice * item.quantity,
-                batchId: item.batchId,
               }));
 
               // Calculate order totals
               const cartTotalAfterProductDiscounts = cart.total; // cart.total already includes product discounts
               const deliveryFee = 100; // In real app, calculate based on location/delivery options
 
-              console.log('🔍 About to calculate order discount...');
+              console.log("🔍 About to calculate order discount...");
               // Calculate order-level discount (applied to subtotal after product discounts)
-              const { discountAmount: orderDiscount, discountName } = await calculateOrderDiscount(cartTotalAfterProductDiscounts);
-              console.log('✅ Order discount calculation completed');
+              const { discountAmount: orderDiscount, discountName } =
+                await calculateOrderDiscount(cartTotalAfterProductDiscounts);
+              console.log("✅ Order discount calculation completed");
 
               // Subtotal for display should be after order discount (consistent with cart screen)
-              const subtotalForDisplay = cartTotalAfterProductDiscounts - orderDiscount;
+              const subtotalForDisplay =
+                cartTotalAfterProductDiscounts - orderDiscount;
 
-              console.log('🛒 Checkout calculation:');
-              console.log('📦 Cart total (after product discounts):', cartTotalAfterProductDiscounts);
-              console.log('💰 Order discount applied:', orderDiscount, discountName ? `(${discountName})` : '');
-              console.log('📊 Subtotal for display (after order discount):', subtotalForDisplay);
-              console.log('🚚 Delivery fee:', deliveryFee);
-              console.log('💵 Final total:', subtotalForDisplay + deliveryFee);
+              console.log("🛒 Checkout calculation:");
+              console.log(
+                "📦 Cart total (after product discounts):",
+                cartTotalAfterProductDiscounts
+              );
+              console.log(
+                "💰 Order discount applied:",
+                orderDiscount,
+                discountName ? `(${discountName})` : ""
+              );
+              console.log(
+                "📊 Subtotal for display (after order discount):",
+                subtotalForDisplay
+              );
+              console.log("🚚 Delivery fee:", deliveryFee);
+              console.log("💵 Final total:", subtotalForDisplay + deliveryFee);
 
               const total = subtotalForDisplay + deliveryFee;
 
@@ -230,13 +271,13 @@ export default function PaymentsScreen() {
                 deliveryFee,
                 total,
                 paymentMethod: selectedPaymentMethod,
-                deliveryAddress: mockDeliveryAddress,
+                deliveryAddress: deliveryAddress || "Address not provided", // Use actual address from checkout
                 proofOfPaymentUrl,
                 orderId, // Use pre-generated ID
               });
             } catch (error) {
-              console.error('Failed to process order:', error);
-              alert('Failed to process order. Please try again.');
+              console.error("Failed to process order:", error);
+              alert("Failed to process order. Please try again.");
             }
           }}
           disabled={isProceedDisabled}>
@@ -248,7 +289,6 @@ export default function PaymentsScreen() {
     </View>
   );
 }
-
 
 const styles = StyleSheet.create({
   mainContainer: {

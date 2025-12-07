@@ -3,16 +3,10 @@ export interface CartItem {
   productName: string;
   quantity: number;
   unitPrice: number;
-  batchId: string;
   imageUrl: string;
-  addedAt: Date;
 }
 
 export interface Cart {
-  id: string;
-  customerId: string;
   items: CartItem[];
   total: number;
-  itemCount: number;
-  lastUpdated: Date;
 }

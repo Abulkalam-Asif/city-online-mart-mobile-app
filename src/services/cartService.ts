@@ -1,17 +1,15 @@
-import AsyncStorage from '@react-native-async-storage/async-storage';
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import { Cart, CartItem } from "../types";
 
 // Storage key for cart data
-const CART_STORAGE_KEY = '@cart_data';
+const CART_STORAGE_KEY = "@cart_data";
 
-// For now, using a hardcoded customer ID since auth is not implemented
-const CURRENT_CUSTOMER_ID = "customer123";
-
-// Helper function to calculate cart totals
-const calculateCartTotals = (items: CartItem[]) => {
-  const total = items.reduce((sum, item) => sum + (item.unitPrice * item.quantity), 0);
-  const itemCount = items.reduce((sum, item) => sum + item.quantity, 0);
-  return { total, itemCount };
+// Helper function to calculate cart total
+const calculateCartTotal = (items: CartItem[]) => {
+  return items.reduce(
+    (sum, item) => sum + item.unitPrice * item.quantity,
+    0
+  );
 };
 
 // Helper function to get cart from AsyncStorage
@@ -20,17 +18,11 @@ const getStoredCart = async (): Promise<Cart | null> => {
     const cartJson = await AsyncStorage.getItem(CART_STORAGE_KEY);
     if (cartJson) {
       const cartData = JSON.parse(cartJson);
-      // Convert date strings back to Date objects
-      cartData.lastUpdated = new Date(cartData.lastUpdated);
-      cartData.items = cartData.items.map((item: any) => ({
-        ...item,
-        addedAt: new Date(item.addedAt)
-      }));
       return cartData;
     }
     return null;
   } catch (error) {
-    console.error('Error reading cart from storage:', error);
+    console.error("Error reading cart from storage:", error);
     return null;
   }
 };
@@ -41,7 +33,7 @@ const saveCart = async (cart: Cart): Promise<void> => {
     const cartJson = JSON.stringify(cart);
     await AsyncStorage.setItem(CART_STORAGE_KEY, cartJson);
   } catch (error) {
-    console.error('Error saving cart to storage:', error);
+    console.error("Error saving cart to storage:", error);
     throw error;
   }
 };
@@ -51,16 +43,11 @@ export const cartService = {
   async getCart(): Promise<Cart | null> {
     try {
       const storedCart = await getStoredCart();
-
       if (!storedCart) {
         // Return empty cart if none exists
         return {
-          id: CURRENT_CUSTOMER_ID,
-          customerId: CURRENT_CUSTOMER_ID,
           items: [],
           total: 0,
-          itemCount: 0,
-          lastUpdated: new Date(),
         };
       }
 
@@ -72,21 +59,25 @@ export const cartService = {
   },
 
   // Add item to cart
-  async addToCart(productId: string, productName: string, unitPrice: number, quantity: number = 1, batchId: string, imageUrl: string = ""): Promise<void> {
+  async addToCart(
+    productId: string,
+    productName: string,
+    unitPrice: number,
+    quantity: number = 1,
+    imageUrl: string = ""
+  ): Promise<void> {
     try {
-      const cart = await getStoredCart() || {
-        id: CURRENT_CUSTOMER_ID,
-        customerId: CURRENT_CUSTOMER_ID,
+      const cart = (await getStoredCart()) || {
         items: [],
         total: 0,
-        itemCount: 0,
-        lastUpdated: new Date(),
       };
 
       let items: CartItem[] = cart.items || [];
 
       // Check if item already exists
-      const existingItemIndex = items.findIndex(item => item.productId === productId);
+      const existingItemIndex = items.findIndex(
+        (item) => item.productId === productId
+      );
 
       if (existingItemIndex >= 0) {
         // Update quantity
@@ -98,26 +89,19 @@ export const cartService = {
           productName,
           quantity,
           unitPrice,
-          batchId,
           imageUrl,
-          addedAt: new Date(),
         };
         items.push(newItem);
       }
 
-      const { total, itemCount } = calculateCartTotals(items);
+      const total = calculateCartTotal(items);
 
       const updatedCart: Cart = {
-        id: CURRENT_CUSTOMER_ID,
-        customerId: CURRENT_CUSTOMER_ID,
         items,
         total,
-        itemCount,
-        lastUpdated: new Date(),
       };
 
       await saveCart(updatedCart);
-      console.log("Item added to cart successfully");
     } catch (error) {
       console.error("Error adding item to cart at [addToCart]:", error);
       throw error;
@@ -134,7 +118,7 @@ export const cartService = {
       }
 
       let items: CartItem[] = cart.items || [];
-      const itemIndex = items.findIndex(item => item.productId === productId);
+      const itemIndex = items.findIndex((item) => item.productId === productId);
 
       if (itemIndex === -1) {
         throw new Error("Item not found in cart");
@@ -147,18 +131,15 @@ export const cartService = {
         items[itemIndex].quantity = quantity;
       }
 
-      const { total, itemCount } = calculateCartTotals(items);
+      const total = calculateCartTotal(items);
 
       const updatedCart: Cart = {
         ...cart,
         items,
         total,
-        itemCount,
-        lastUpdated: new Date(),
       };
 
       await saveCart(updatedCart);
-      console.log("Cart item updated successfully");
     } catch (error) {
       console.error("Error updating cart item at [updateCartItem]:", error);
       throw error;
@@ -175,22 +156,22 @@ export const cartService = {
       }
 
       let items: CartItem[] = cart.items || [];
-      items = items.filter(item => item.productId !== productId);
+      items = items.filter((item) => item.productId !== productId);
 
-      const { total, itemCount } = calculateCartTotals(items);
+      const total = calculateCartTotal(items);
 
       const updatedCart: Cart = {
         ...cart,
         items,
         total,
-        itemCount,
-        lastUpdated: new Date(),
       };
 
       await saveCart(updatedCart);
-      console.log("Item removed from cart successfully");
     } catch (error) {
-      console.error("Error removing item from cart at [removeFromCart]:", error);
+      console.error(
+        "Error removing item from cart at [removeFromCart]:",
+        error
+      );
       throw error;
     }
   },
@@ -199,16 +180,11 @@ export const cartService = {
   async clearCart(): Promise<void> {
     try {
       const emptyCart: Cart = {
-        id: CURRENT_CUSTOMER_ID,
-        customerId: CURRENT_CUSTOMER_ID,
         items: [],
         total: 0,
-        itemCount: 0,
-        lastUpdated: new Date(),
       };
 
       await saveCart(emptyCart);
-      console.log("Cart cleared successfully");
     } catch (error) {
       console.error("Error clearing cart at [clearCart]:", error);
       throw error;

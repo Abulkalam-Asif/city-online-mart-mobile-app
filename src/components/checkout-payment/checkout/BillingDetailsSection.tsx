@@ -16,11 +16,12 @@ const BillingDetailsSection = () => {
     const calculateDiscount = async () => {
       if (cart?.total) {
         try {
-          const { discountAmount, discountName: name } = await calculateOrderDiscount(cart.total);
+          const { discountAmount, discountName: name } =
+            await calculateOrderDiscount(cart.total);
           setOrderDiscount(discountAmount);
           setDiscountName(name);
         } catch (error) {
-          console.error('Failed to calculate order discount:', error);
+          console.error("Failed to calculate order discount:", error);
           setOrderDiscount(0);
           setDiscountName(undefined);
         }
@@ -36,9 +37,8 @@ const BillingDetailsSection = () => {
   // Calculate totals from real cart items
   const cartTotal = cart?.total || 0;
   const subtotal = cartTotal - orderDiscount; // Subtotal after order discount
-  const serviceFee = 20;
-  const deliveryFee = 0; // Free delivery
-  const originalDeliveryFee = 120;
+  const serviceFee = 0;
+  const deliveryFee = 0;
   const totalAmount = subtotal + serviceFee + deliveryFee;
 
   return (
@@ -51,7 +51,9 @@ const BillingDetailsSection = () => {
             {orderDiscount > 0 && (
               <View style={styles.discountTag}>
                 <Text style={styles.discountText}>
-                  {discountName ? `${discountName} applied` : 'Discount applied'}
+                  {discountName
+                    ? `${discountName} applied`
+                    : "Discount applied"}
                 </Text>
               </View>
             )}
@@ -74,16 +76,12 @@ const BillingDetailsSection = () => {
         <View style={styles.billingRow}>
           <View style={styles.leftSection}>
             <Text style={styles.labelText}>Delivery Fee</Text>
-            <View style={styles.freeDeliveryTag}>
+            {/* <View style={styles.freeDeliveryTag}>
               <Text style={styles.freeDeliveryText}>Free Delivery</Text>
-            </View>
+            </View> */}
           </View>
           <View style={styles.rightSection}>
-            {originalDeliveryFee > 0 && (
-              <Text style={styles.strikethroughPrice}>
-                Rs. {originalDeliveryFee}
-              </Text>
-            )}
+            <Text style={styles.amount}>Rs. {deliveryFee}</Text>
           </View>
         </View>
 
@@ -168,12 +166,6 @@ const styles = StyleSheet.create({
     fontSize: 10,
     fontFamily: theme.fonts.semibold,
     color: "#fff",
-  },
-  strikethroughPrice: {
-    fontSize: 12,
-    fontFamily: theme.fonts.regular,
-    color: theme.colors.text_secondary,
-    textDecorationLine: "line-through",
   },
   separator: {
     height: 1,

@@ -46,13 +46,13 @@ const AddToCartContainer = ({
                 if (quantityInCart > 1) {
                   updateCartItemMutation.mutate({
                     productId,
-                    quantity: quantityInCart - 1
+                    quantity: quantityInCart - 1,
                   });
                 } else {
                   // If quantity is 1, remove the item
                   updateCartItemMutation.mutate({
                     productId,
-                    quantity: 0
+                    quantity: 0,
                   });
                 }
               }}>
@@ -67,7 +67,7 @@ const AddToCartContainer = ({
               onPress={() => {
                 updateCartItemMutation.mutate({
                   productId,
-                  quantity: quantityInCart + 1
+                  quantity: quantityInCart + 1,
                 });
               }}>
               <FontAwesome6 size={20} name="plus" />
@@ -86,7 +86,6 @@ const AddToCartContainer = ({
                 productId,
                 productName,
                 unitPrice: price,
-                batchId: `batch_${productId}`,
                 imageUrl,
               });
             } else {

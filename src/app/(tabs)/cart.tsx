@@ -1,12 +1,25 @@
 import React, { useEffect, useState } from "react";
-import { FlatList, Pressable, StyleSheet, Text, View } from "react-native";
+import {
+  Alert,
+  FlatList,
+  Pressable,
+  StyleSheet,
+  Text,
+  View,
+} from "react-native";
 import GeneralTopBar from "@/src/components/general/GeneralTopBar";
 import CartItem from "@/src/components/tabs/cart/CartItem";
 import EmptyCart from "@/src/components/tabs/cart/EmptyCart";
 import { theme } from "@/src/constants/theme";
 import { router } from "expo-router";
-import { useCart, useUpdateCartItem, useRemoveFromCart, useClearCart } from "@/src/hooks/useCart";
+import {
+  useCart,
+  useUpdateCartItem,
+  useRemoveFromCart,
+  useClearCart,
+} from "@/src/hooks/useCart";
 import { calculateOrderDiscount } from "@/src/utils/orderDiscounts";
+import Loading from "@/src/components/common/Loading";
 
 export default function CartScreen() {
   const isLoggedIn = true;
@@ -28,11 +41,12 @@ export default function CartScreen() {
     const calculateDiscount = async () => {
       if (cart?.total) {
         try {
-          const { discountAmount, discountName: name } = await calculateOrderDiscount(cart.total);
+          const { discountAmount, discountName: name } =
+            await calculateOrderDiscount(cart.total);
           setOrderDiscount(discountAmount);
           setDiscountName(name);
         } catch (error) {
-          console.error('Failed to calculate order discount:', error);
+          console.error("Failed to calculate order discount:", error);
           setOrderDiscount(0);
           setDiscountName(undefined);
         }
@@ -49,7 +63,16 @@ export default function CartScreen() {
     // Find the actual productId from the transformed item
     const item = cart?.items.find((_, index) => index + 1 === id);
     if (item) {
-      updateCartItemMutation.mutate({ productId: item.productId, quantity: newQuantity });
+      updateCartItemMutation.mutate({
+        productId: item.productId,
+        quantity: newQuantity,
+      },
+        {
+          onError: (error) => {
+            Alert.alert('Error', error.message || 'Failed to update cart item');
+          },
+        }
+      );
     }
   };
 
@@ -57,20 +80,31 @@ export default function CartScreen() {
     // Find the actual productId from the transformed item
     const item = cart?.items.find((_, index) => index + 1 === id);
     if (item) {
-      removeFromCartMutation.mutate(item.productId);
+      removeFromCartMutation.mutate(item.productId,
+        {
+          onError: (error) => {
+            Alert.alert('Error', error.message || 'Failed to remove cart item');
+          },
+        }
+      );
     }
   };
 
   const handleClearCart = () => {
-    clearCartMutation.mutate();
+    clearCartMutation.mutate(undefined,
+      {
+        onError: (error) => {
+          Alert.alert('Error', error.message || 'Failed to clear cart');
+        },
+      });
   };
 
   if (isLoading) {
     return (
       <View style={styles.mainContainer}>
         <GeneralTopBar text="My Cart" />
-        <View style={styles.loadingContainer}>
-          <Text style={styles.loadingText}>Loading cart...</Text>
+        <View style={styles.centeringContainer}>
+          <Loading text="Loading cart..." />
         </View>
       </View>
     );
@@ -80,7 +114,7 @@ export default function CartScreen() {
     return (
       <View style={styles.mainContainer}>
         <GeneralTopBar text="My Cart" />
-        <View style={styles.errorContainer}>
+        <View style={styles.centeringContainer}>
           <Text style={styles.errorText}>Failed to load cart</Text>
         </View>
       </View>
@@ -88,16 +122,17 @@ export default function CartScreen() {
   }
 
   // Transform cart items to match CartItem component expectations
-  const cartItems = cart?.items.map((item, index) => ({
-    Id: index + 1, // Temporary ID for component
-    MainImageUrl: item.imageUrl || require("@/src/assets/default-image.png"), // Use stored image or placeholder
-    Name: item.productName,
-    Price: item.unitPrice,
-    OldPrice: undefined, // Could be added later
-    quantity: item.quantity,
-    discount: undefined,
-    productId: item.productId, // Keep original ID for operations
-  })) || [];
+  const cartItems =
+    cart?.items.map((item, index) => ({
+      Id: index + 1, // Temporary ID for component
+      MainImageUrl: item.imageUrl || require("@/src/assets/default-image.png"), // Use stored image or placeholder
+      Name: item.productName,
+      Price: item.unitPrice,
+      OldPrice: undefined, // Could be added later
+      quantity: item.quantity,
+      discount: undefined,
+      productId: item.productId, // Keep original ID for operations
+    })) || [];
 
   // Check if cart meets minimum order requirement
   const cartTotal = cart?.total || 0;
@@ -121,7 +156,9 @@ export default function CartScreen() {
             <View style={styles.buttonRow}>
               <Pressable
                 onPress={handleClearCart}
-                style={({ pressed }) => [pressed && styles.clearCartButtonPressed]}>
+                style={({ pressed }) => [
+                  pressed && styles.clearCartButtonPressed,
+                ]}>
                 <Text style={styles.clearCartText}>Clear All</Text>
               </Pressable>
             </View>
@@ -143,34 +180,29 @@ export default function CartScreen() {
           <View style={styles.summaryContainer}>
             <View style={styles.minimumOrderRow}>
               <Text style={styles.minimumOrderText}>Minimum Order Price: </Text>
-              <Text style={[styles.minimumOrderText, styles.minimumOrderValueText]}>
+              <Text
+                style={[styles.minimumOrderText, styles.minimumOrderValueText]}>
                 1500
               </Text>
             </View>
 
             <View style={styles.amountRow}>
               <Text style={styles.amountLabel}>Subtotal</Text>
-              <Text style={styles.amountValue}>
-                Rs. {cart?.total || 0}
-              </Text>
+              <Text style={styles.amountValue}>Rs. {cart?.total || 0}</Text>
             </View>
 
             {orderDiscount > 0 && (
               <View style={styles.amountRow}>
                 <Text style={styles.discountLabel}>
-                  Order Discount{discountName ? ` (${discountName})` : ''}
+                  Order Discount{discountName ? ` (${discountName})` : ""}
                 </Text>
-                <Text style={styles.discountValue}>
-                  -Rs. {orderDiscount}
-                </Text>
+                <Text style={styles.discountValue}>-Rs. {orderDiscount}</Text>
               </View>
             )}
 
             <View style={[styles.amountRow, styles.totalRow]}>
               <Text style={styles.totalLabel}>Total</Text>
-              <Text style={styles.totalValue}>
-                Rs. {finalTotal}
-              </Text>
+              <Text style={styles.totalValue}>Rs. {finalTotal}</Text>
             </View>
 
             <Pressable
@@ -189,14 +221,17 @@ export default function CartScreen() {
                 }
               }}
               disabled={!canProceedToCheckout}>
-              <Text style={[
-                styles.proceedButtonText,
-                !canProceedToCheckout && styles.proceedButtonTextDisabled
-              ]}>
+              <Text
+                style={[
+                  styles.proceedButtonText,
+                  !canProceedToCheckout && styles.proceedButtonTextDisabled,
+                ]}>
                 {isLoggedIn
-                  ? (canProceedToCheckout ? "Proceed to Checkout" : `Add Rs. ${minimumOrderAmount - cartTotal} more to proceed`)
-                  : "Login /Create Account"
-                }
+                  ? canProceedToCheckout
+                    ? "Proceed to Checkout"
+                    : `Add Rs. ${minimumOrderAmount - cartTotal
+                    } more to proceed`
+                  : "Login /Create Account"}
               </Text>
             </Pressable>
           </View>
@@ -326,17 +361,8 @@ const styles = StyleSheet.create({
   proceedButtonPressed: {
     opacity: 0.8,
   },
-  loadingContainer: {
-    flex: 1,
-    justifyContent: "center",
-    alignItems: "center",
-  },
-  loadingText: {
-    fontSize: 16,
-    fontFamily: theme.fonts.medium,
-    color: theme.colors.text_secondary,
-  },
-  errorContainer: {
+
+  centeringContainer: {
     flex: 1,
     justifyContent: "center",
     alignItems: "center",

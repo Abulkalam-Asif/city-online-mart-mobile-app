@@ -51,12 +51,12 @@ export const ModalProvider: React.FC<ModalProviderProps> = ({ children }) => {
   };
 
   return (
-    <ModalContext.Provider value={{ 
-      modals, 
-      showModal, 
-      hideModal, 
-      hideAllModals, 
-      isModalVisible 
+    <ModalContext.Provider value={{
+      modals,
+      showModal,
+      hideModal,
+      hideAllModals,
+      isModalVisible
     }}>
       {children}
     </ModalContext.Provider>

@@ -35,18 +35,24 @@ const OrderSuccessModal = ({ orderId }: OrderSuccessModalProps) => {
 
         <View style={styles.buttonContainer}>
           <Pressable
-            style={[styles.button, styles.secondaryButton]}
-            onPress={handleContinueShopping}
-          >
+            style={({ pressed }) => [
+              styles.button,
+              styles.secondaryButton,
+              pressed && styles.buttonPressed,
+            ]}
+            onPress={handleContinueShopping}>
             <Text style={[styles.buttonText, styles.secondaryButtonText]}>
               Continue Shopping
             </Text>
           </Pressable>
 
           <Pressable
-            style={[styles.button, styles.primaryButton]}
-            onPress={handleViewOrders}
-          >
+            style={({ pressed }) => [
+              styles.button,
+              styles.primaryButton,
+              pressed && styles.buttonPressed,
+            ]}
+            onPress={handleViewOrders}>
             <Text style={[styles.buttonText, styles.primaryButtonText]}>
               View Orders
             </Text>
@@ -123,8 +129,12 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: theme.colors.primary,
   },
+  buttonPressed: {
+    opacity: 0.7,
+  },
   buttonText: {
     fontSize: 12,
+    lineHeight: 16,
     fontFamily: theme.fonts.semibold,
   },
   primaryButtonText: {

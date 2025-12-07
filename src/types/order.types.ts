@@ -5,7 +5,6 @@ export interface OrderItem {
   unitPrice: number; // Price at time of order
   discount: number; // Discount applied to this item
   subtotal: number;
-  batchId: string; // Which batch this came from
 }
 
 export interface Order {
@@ -23,7 +22,12 @@ export interface Order {
 
   // Payment
   paymentMethod: PaymentMethod;
-  paymentStatus: "pending" | "awaiting_confirmation" | "confirmed" | "refunded" | "cancelled";
+  paymentStatus:
+    | "pending"
+    | "awaiting_confirmation"
+    | "confirmed"
+    | "refunded"
+    | "cancelled";
   paymentStatusHistory: Array<{
     status: string;
     updatedAt: Date;
@@ -34,7 +38,13 @@ export interface Order {
   deliveryAddress: string;
 
   // Status
-  status: "pending" | "confirmed" | "shipped" | "delivered" | "cancelled" | "refunded";
+  status:
+    | "pending"
+    | "confirmed"
+    | "shipped"
+    | "delivered"
+    | "cancelled"
+    | "refunded";
   statusHistory: Array<{
     status: string;
     updatedAt: Date;

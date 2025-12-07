@@ -1,6 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { queryKeys } from "../lib/react-query";
-import { paymentMethodService } from "../services/PaymentMethodService";
+import { paymentMethodService } from "../services/paymentMethodService";
 
 // Hook for fetching active payment methods
 export function useGetActivePaymentMethods() {

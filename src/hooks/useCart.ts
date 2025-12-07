@@ -1,6 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { queryKeys } from "../lib/react-query";
-import { cartService } from "../services/CartService";
+import { cartService } from "../services/cartService";
 
 // Hook for fetching current cart
 export function useCart() {
@@ -21,16 +21,21 @@ export function useAddToCart() {
       productName,
       unitPrice,
       quantity = 1,
-      batchId,
-      imageUrl = ""
+      imageUrl = "",
     }: {
       productId: string;
       productName: string;
       unitPrice: number;
       quantity?: number;
-      batchId: string;
       imageUrl?: string;
-    }) => cartService.addToCart(productId, productName, unitPrice, quantity, batchId, imageUrl),
+    }) =>
+      cartService.addToCart(
+        productId,
+        productName,
+        unitPrice,
+        quantity,
+        imageUrl
+      ),
     onSuccess: () => {
       // Invalidate cart to refetch
       queryClient.invalidateQueries({
@@ -48,8 +53,13 @@ export function useUpdateCartItem() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: ({ productId, quantity }: { productId: string; quantity: number }) =>
-      cartService.updateCartItem(productId, quantity),
+    mutationFn: ({
+      productId,
+      quantity,
+    }: {
+      productId: string;
+      quantity: number;
+    }) => cartService.updateCartItem(productId, quantity),
     onSuccess: () => {
       // Invalidate cart to refetch
       queryClient.invalidateQueries({

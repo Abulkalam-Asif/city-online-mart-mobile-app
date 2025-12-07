@@ -1,4 +1,4 @@
-import { Pressable, StyleSheet, Text, View } from "react-native";
+import { Alert, Pressable, StyleSheet, Text, View } from "react-native";
 import React, { useMemo } from "react";
 import { Image } from "expo-image";
 import { theme } from "@/src/constants/theme";
@@ -46,8 +46,8 @@ const ProductCard = ({ product, cardWidth = 150 }: Props) => {
   const originalPrice = product.price;
   const discountedPrice = hasDiscount
     ? Math.round(
-        originalPrice - (originalPrice * product.discountPercentage!) / 100
-      )
+      originalPrice - (originalPrice * product.discountPercentage!) / 100
+    )
     : originalPrice;
   const savingsAmount = hasDiscount ? originalPrice - discountedPrice : 0;
 
@@ -118,6 +118,10 @@ const ProductCard = ({ product, cardWidth = 150 }: Props) => {
                 updateCartItemMutation.mutate({
                   productId: product.id,
                   quantity: quantityInCart + 1
+                }, {
+                  onError: (error) => {
+                    Alert.alert("Error", error.message || "Failed to update cart item");
+                  }
                 });
               }}>
               <FontAwesome6 name="plus" />
@@ -136,8 +140,11 @@ const ProductCard = ({ product, cardWidth = 150 }: Props) => {
                 productId: product.id,
                 productName: product.info.name,
                 unitPrice: product.price,
-                batchId: `batch_${product.id}`, // Use a default batch ID
                 imageUrl: primaryImage,
+              }, {
+                onError: (error) => {
+                  Alert.alert("Error", error.message || "Failed to add to cart");
+                }
               });
             } else {
               // Navigate to cart

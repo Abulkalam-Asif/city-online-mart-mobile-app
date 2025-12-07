@@ -1,12 +1,18 @@
-import React from "react";
+import React, { useState } from "react";
 import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 import GeneralTopBar from "@/src/components/general/GeneralTopBar";
 import { theme } from "@/src/constants/theme";
 import ExpectedDeliveryTimeSection from "@/src/components/checkout-payment/checkout/ExpectedDeliveryTimeSection";
 import BillingDetailsSection from "@/src/components/checkout-payment/checkout/BillingDetailsSection";
 import { router } from "expo-router";
+import AddressInfoSection from "@/src/components/checkout-payment/checkout/AddressInfoSection";
 
 export default function CheckoutScreen() {
+  const [address, setAddress] = useState("");
+
+  // Check if address is valid (not empty and has minimum length)
+  const isAddressValid = address.trim().length >= 5;
+
   return (
     <View style={styles.mainContainer}>
       <GeneralTopBar text="Checkout" />
@@ -17,6 +23,7 @@ export default function CheckoutScreen() {
           Add your delivery address,so that order can be provided to you at good
           time
         </Text>
+        <AddressInfoSection address={address} onAddressChange={setAddress} />
         <ExpectedDeliveryTimeSection />
         <BillingDetailsSection />
       </ScrollView>
@@ -24,12 +31,27 @@ export default function CheckoutScreen() {
         <Pressable
           style={({ pressed }) => [
             styles.proceedButton,
-            pressed && styles.proceedButtonPressed,
+            !isAddressValid && styles.proceedButtonDisabled,
+            pressed && isAddressValid && styles.proceedButtonPressed,
           ]}
           onPress={() => {
-            router.push("/payments");
-          }}>
-          <Text style={styles.proceedButtonText}>Proceed to Payments</Text>
+            if (!isAddressValid) {
+              alert("Please enter a valid delivery address (minimum 10 characters)");
+              return;
+            }
+            // Pass address to payments screen
+            router.push({
+              pathname: "/payments",
+              params: { deliveryAddress: address }
+            });
+          }}
+          disabled={!isAddressValid}>
+          <Text style={[
+            styles.proceedButtonText,
+            !isAddressValid && styles.proceedButtonTextDisabled
+          ]}>
+            Proceed to Payments
+          </Text>
         </Pressable>
       </View>
     </View>
@@ -81,5 +103,8 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontFamily: theme.fonts.semibold,
     color: "#fff",
+  },
+  proceedButtonTextDisabled: {
+    color: theme.colors.text_secondary,
   },
 });

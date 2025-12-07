@@ -1,7 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { queryKeys } from "../lib/react-query";
-import { orderService } from "../services/OrderService";
-import { Order, OrderItem, PaymentMethod } from "../types";
+import { orderService } from "../services/orderService";
+import { OrderItem, PaymentMethod } from "../types";
 
 // Hook for fetching customer orders
 export function useGetCustomerOrders(customerId: string) {
