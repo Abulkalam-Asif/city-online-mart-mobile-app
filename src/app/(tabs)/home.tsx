@@ -10,8 +10,31 @@ import BestPricesSection from "@/src/components/tabs/home/categories-section/Bes
 import HomeTopBg from "@/src/components/tabs/home/HomeTopBg";
 import Sidebar from "@/src/components/tabs/home/Sidebar";
 import PopupBanner from "@/src/components/tabs/home/PopupBanner";
+import ProductsSection from "@/src/components/tabs/home/ProductsSection";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 
 const HomeScreen = () => {
+  AsyncStorage.getItem("@cart_data").then((data) => {
+    // parse as json object
+    if (!data) {
+      console.log("No cart data found");
+      return;
+    }
+    const cartData = data ? JSON.parse(data) : null;
+    console.log(cartData);
+    console.log(cartData.items);
+  });
+  AsyncStorage.getItem("@current_popup_banner_id").then((data) => {
+    // parse as json object
+    if (!data) {
+      console.log("No popup banner id found");
+      return;
+    }
+    console.log("banner id: ", data);
+    // const bannerId = data ? JSON.parse(data) : null;
+    // console.log("banner id: ", bannerId);
+  });
+
   // const { data: categories, isLoading: loadingCategories } = useCategories();
   // const { data: categoryProductsData, isLoading: loadingCategoryProducts } =
   //   useCategoryProducts(1);
