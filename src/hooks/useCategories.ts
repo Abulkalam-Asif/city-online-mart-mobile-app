@@ -2,21 +2,15 @@ import { useQuery } from "@tanstack/react-query";
 import { queryKeys } from "../lib/react-query";
 import { categoryService } from "../services/categoryService";
 
-// Hook for fetching all categories
-export function useGetAllCategories() {
-  return useQuery({
-    queryKey: queryKeys.categories.lists(),
-    queryFn: () => categoryService.getAllCategories(),
-    staleTime: 1000 * 60 * 5, // 5 minutes - categories don't change often
-  });
-}
-
 // Hook for fetching categories for homepage
 export function useGetCategoriesForHomepage() {
   return useQuery({
-    queryKey: queryKeys.categories.lists(),
+    queryKey: queryKeys.categories.list({
+      isActive: true,
+      showOnHomepage: true,
+    }),
     queryFn: () =>
-      categoryService.getAllCategories({
+      categoryService.getCategories({
         isActive: true,
         showOnHomepage: true,
       }),
@@ -37,11 +31,13 @@ export function useGetAllCategoriesWithSubCategories() {
 // Hook for fetching special categories for homepage
 export function useGetSpecialCategoriesForHomepage() {
   return useQuery({
-    queryKey: queryKeys.categories.list({ special: true, homepage: true }),
+    queryKey: queryKeys.categories.list({
+      special: true,
+      showOnHomepage: true,
+    }),
     queryFn: () => categoryService.getSpecialCategoriesForHomepage(),
     staleTime: 1000 * 60 * 5, // 5 minutes
     retry: 2, // Retry twice on failure
     retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 30000), // Exponential backoff
   });
 }
-

@@ -1,6 +1,7 @@
 import { collection, getDocs, orderBy, query, where } from "firebase/firestore";
 import { Category, SubCategory } from "../types";
 import { convertEmulatorUrl, db } from "@/firebaseConfig";
+import { logger } from "../utils/logger";
 
 const CATEGORIES_COLLECTION = "CATEGORIES";
 const SUBCATEGORIES_COLLECTION = "SUB_CATEGORIES";
@@ -10,48 +11,46 @@ const firestoreToCategory = (id: string, data: any): Category => {
   return {
     id,
     name: data.name || "",
-    slug: data.slug || "",
+    nameLowerCase: data.nameLowerCase || "",
+    searchArr: data.searchArr || [],
     description: data.description || "",
     type: data.type || "simple",
     displayOrder: data.displayOrder || 1,
     image: convertEmulatorUrl(data.image) || undefined,
     subCategoryCount: data.subCategoryCount || 0,
     isActive: data.isActive ?? true,
-    productIds: data.productIds || [],
-    productCount: data.productCount || 0,
+    productsCount: data.productsCount || 0,
     showOnHomepage: data.showOnHomepage ?? false,
     showOnNavbar: data.showOnNavbar ?? false,
-    discountIds: data.discountIds || [],
     manufacturerIds: data.manufacturerIds || [],
+    discountId: data.discountId || null,
   };
 };
 
 // Helper function to convert Firestore data to SubCategory
-const firestoreToSubCategory = (
-  id: string,
-  data: any,
-  parentCategoryId: string
-): SubCategory => {
+const firestoreToSubCategory = (id: string, data: any): SubCategory => {
   return {
     id,
     name: data.name || "",
-    slug: data.slug || "",
+    nameLowerCase: data.nameLowerCase || "",
+    searchArr: data.searchArr || [],
     description: data.description || "",
     displayOrder: data.displayOrder || 1,
     image: convertEmulatorUrl(data.image) || undefined,
-    parentCategoryId,
+    parentCategoryId: data.parentCategoryId || "",
     isActive: data.isActive ?? true,
-    productIds: data.productIds || [],
-    productCount: data.productCount || 0,
-    discountIds: data.discountIds || [],
+    productsCount: data.productsCount || 0,
+    discountId: data.discountId || null,
+    showOnNavbar: data.showOnNavbar ?? false,
   };
 };
 
 export const categoryService = {
   // Get all categories
-  async getAllCategories(filters?: {
+  async getCategories(filters?: {
     isActive?: boolean;
     showOnHomepage?: boolean;
+    showOnNavbar?: boolean;
   }): Promise<Category[]> {
     try {
       let constraints = [];
@@ -62,6 +61,10 @@ export const categoryService = {
       if (filters?.showOnHomepage !== undefined) {
         constraints.push(where("showOnHomepage", "==", filters.showOnHomepage));
       }
+      if (filters?.showOnNavbar !== undefined) {
+        constraints.push(where("showOnNavbar", "==", filters.showOnNavbar));
+      }
+
       const categoriesRef = collection(db, CATEGORIES_COLLECTION);
       const q = query(
         categoriesRef,
@@ -75,7 +78,7 @@ export const categoryService = {
       );
       return categories;
     } catch (error) {
-      console.error("Error fetching categories at [getAllCategories]: ", error);
+      logger.error("getCategories", error);
       throw error;
     }
   },
@@ -140,7 +143,7 @@ export const categoryService = {
       const snapshot = await getDocs(q);
 
       return snapshot.docs.map((doc) =>
-        firestoreToSubCategory(doc.id, doc.data(), parentId)
+        firestoreToSubCategory(doc.id, doc.data())
       );
     } catch (error) {
       console.error("Error fetching subCategories:", error);

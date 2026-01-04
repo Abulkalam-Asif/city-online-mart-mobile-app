@@ -1,4 +1,4 @@
-import { ScrollView, StyleSheet } from "react-native";
+import { RefreshControl, ScrollView, StyleSheet } from "react-native";
 import React, { useState } from "react";
 import BannersCarousel from "@/src/components/tabs/home/BannersCarousel";
 import HomeSearchSection from "@/src/components/tabs/home/HomeSearchSection";
@@ -12,8 +12,8 @@ import Sidebar from "@/src/components/tabs/home/Sidebar";
 import PopupBanner from "@/src/components/tabs/home/PopupBanner";
 import ProductsSection from "@/src/components/tabs/home/ProductsSection";
 import { useGetSpecialCategoriesForHomepage } from "@/src/hooks/useCategories";
-
-
+import { queryClient, queryKeys } from "@/src/lib/react-query";
+import { theme } from "@/src/constants/theme";
 
 const HomeScreen = () => {
   // const { data: categories, isLoading: loadingCategories } = useCategories();
@@ -31,11 +31,42 @@ const HomeScreen = () => {
 
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
 
+  const [refreshing, setRefreshing] = useState(false);
+
+  const handleRefresh = async () => {
+    setRefreshing(true);
+
+    // Invalidate all queries that power the homepage
+    await Promise.all([
+      queryClient.invalidateQueries({
+        queryKey: queryKeys.categories.list({
+          isActive: true,
+          showOnHomepage: true,
+        })
+      }),
+    ]);
+
+    setRefreshing(false);
+  };
+
   return (
     <>
       <ScrollView
         style={styles.container}
-        contentContainerStyle={styles.containerContent}>
+        contentContainerStyle={styles.containerContent}
+        refreshControl={
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={handleRefresh}
+            colors={[
+              theme.colors.primary,
+              theme.colors.secondary,
+              theme.colors.error,
+            ]} // Android
+            tintColor={theme.colors.primary} // iOS
+          />
+        }
+      >
         <HomeTopBg />
         <HomeSearchSection openSidebarHandler={() => setIsSidebarOpen(true)} />
         <BannersCarousel />

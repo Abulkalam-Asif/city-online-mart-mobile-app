@@ -22,12 +22,15 @@ import { theme } from "@/src/constants/theme";
 import { useQueryClient } from "@tanstack/react-query";
 import { queryKeys } from "@/src/lib/react-query";
 import Loading from "@/src/components/common/Loading";
-import { parseCategoryId } from "@/src/types";
 import { useLocalSearchParams } from "expo-router";
 
 const CategoriesScreen = () => {
-  const { categoryId: searchParamCategoryId } = useLocalSearchParams<{
+  const {
+    categoryId: searchParamCategoryId,
+    subCategoryId: searchParamSubCategoryId,
+  } = useLocalSearchParams<{
     categoryId: string;
+    subCategoryId?: string;
   }>();
 
   const queryClient = useQueryClient();
@@ -49,17 +52,10 @@ const CategoriesScreen = () => {
   useEffect(() => {
     if (searchParamCategoryId) {
       shouldAutoScroll.current = true; // Enable auto-scroll for deep link navigation
-      const parsedCategoryId = parseCategoryId(searchParamCategoryId);
-      // Set category and subcategory based on parsed result
-      if (parsedCategoryId.isSubCategory) {
-        setCurrentCategoryId(parsedCategoryId.categoryId);
-        setCurrentSubCategoryId(parsedCategoryId.subCategoryId || "");
-      } else {
-        setCurrentCategoryId(parsedCategoryId.categoryId);
-        setCurrentSubCategoryId("");
-      }
+      setCurrentCategoryId(searchParamCategoryId);
+      setCurrentSubCategoryId(searchParamSubCategoryId || "");
     }
-  }, [searchParamCategoryId]);
+  }, [searchParamCategoryId, searchParamSubCategoryId]);
 
   // Set initial category when data loads
   useEffect(() => {

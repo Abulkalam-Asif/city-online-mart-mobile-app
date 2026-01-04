@@ -85,7 +85,6 @@ const firestoreToProduct = (id: string, data: any): Product => {
     },
     similarProductIds: data.similarProductIds || [],
     boughtTogetherProductIds: data.boughtTogetherProductIds || [],
-    purchaseHistory: data.purchaseHistory || [],
     batchStock: data.batchStock || {
       usableStock: 0,
       expiredStock: 0,

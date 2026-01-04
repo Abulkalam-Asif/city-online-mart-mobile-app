@@ -29,7 +29,6 @@ interface Product {
   };
   similarProductIds: string[];
   boughtTogetherProductIds: string[];
-  purchaseHistory: any[];
   batchStock?: {
     usableStock: number;
     expiredStock: number;

@@ -109,10 +109,10 @@ const styles = StyleSheet.create({
   },
   column: {
     flexDirection: "column",
-    gap: 16,
+    gap: getResponsiveValue(8, 16),
     width: getResponsiveValue(
-      (width) => (width - 112) / 4,
-      (width) => (width - 184) / 7
+      (width) => (width - 112) / 4, // 4 cards in view
+      (width) => (width - 184) / 7 // 7 cards in view
     ),
   },
 });

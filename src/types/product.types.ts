@@ -55,9 +55,6 @@ export interface Product {
   // Bought together Section
   boughtTogetherProductIds: string[];
 
-  // Purchase History Section
-  purchaseHistory: PurchaseOrderHistory[];
-
   // Batch Stock Data (calculated from batches)
   batchStock?: {
     usableStock: number; // Non-expired stock

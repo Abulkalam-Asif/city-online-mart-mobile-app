@@ -21,7 +21,12 @@ const CategoryCard = ({
   return (
     <Pressable
       onPress={() => {
-        router.push(`/categories?categoryId=${id}`);
+        router.push({
+          pathname: "/categories",
+          params: {
+            categoryId: id,
+          },
+        });
       }}
       style={({ pressed }) => [styles.card, pressed && styles.cardPressed]}>
       <View style={[styles.imageContainer, { backgroundColor }]}>
@@ -35,7 +40,9 @@ const CategoryCard = ({
           contentFit="contain"
         />
       </View>
-      <Text style={styles.nameText}>{name}</Text>
+      <Text style={styles.nameText} numberOfLines={2}>
+        {name}
+      </Text>
     </Pressable>
   );
 };
@@ -47,6 +54,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "flex-start",
     gap: 8,
+    height: getResponsiveValue<number>(105, 200),
   },
   cardPressed: {
     opacity: 0.7,

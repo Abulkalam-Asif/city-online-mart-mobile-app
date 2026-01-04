@@ -52,14 +52,12 @@ export const queryKeys = {
     // List variations
     lists: () => [...queryKeys.categories.all, "list"] as const,
     list: (filters?: {
+      isActive?: boolean;
+      showOnNavbar?: boolean;
+      showOnHomepage?: boolean;
       withSubCategories?: boolean;
       special?: boolean;
-      homepage?: boolean;
     }) => [...queryKeys.categories.lists(), filters] as const,
-
-    // Single category detail
-    details: () => [...queryKeys.categories.all, "detail"] as const,
-    detail: (id: string) => [...queryKeys.categories.details(), id] as const,
   },
 
   // ========================================
@@ -109,7 +107,8 @@ export const queryKeys = {
     featured: () => [...queryKeys.products.lists(), "featured"] as const,
     new: () => [...queryKeys.products.lists(), "new"] as const,
     onSale: () => [...queryKeys.products.lists(), "onSale"] as const,
-    bestPrices: (limit: number) => [...queryKeys.products.lists(), "bestPrices", limit] as const,
+    bestPrices: (limit: number) =>
+      [...queryKeys.products.lists(), "bestPrices", limit] as const,
 
     // Search
     search: (query: string, filters?: Record<string, any>) =>
@@ -144,7 +143,8 @@ export const queryKeys = {
 
     // Single payment method detail
     details: () => [...queryKeys.paymentMethods.all, "detail"] as const,
-    detail: (id: string) => [...queryKeys.paymentMethods.details(), id] as const,
+    detail: (id: string) =>
+      [...queryKeys.paymentMethods.details(), id] as const,
   },
 
   // ========================================
