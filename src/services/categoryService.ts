@@ -1,4 +1,4 @@
-import { collection, getDocs, orderBy, query, where } from "firebase/firestore";
+import { collection, doc, getDoc, getDocs, orderBy, query, where } from "firebase/firestore";
 import { Category, SubCategory } from "../types";
 import { convertEmulatorUrl, db } from "@/firebaseConfig";
 import { logger } from "../utils/logger";
@@ -51,6 +51,8 @@ export const categoryService = {
     isActive?: boolean;
     showOnHomepage?: boolean;
     showOnNavbar?: boolean;
+    type?: "simple" | "special";
+    productsCountGreaterThanZero?: boolean;
   }): Promise<Category[]> {
     try {
       let constraints = [];
@@ -63,6 +65,12 @@ export const categoryService = {
       }
       if (filters?.showOnNavbar !== undefined) {
         constraints.push(where("showOnNavbar", "==", filters.showOnNavbar));
+      }
+      if (filters?.type !== undefined) {
+        constraints.push(where("type", "==", filters.type));
+      }
+      if (filters?.productsCountGreaterThanZero) {
+        constraints.push(where("productsCount", ">", 0));
       }
 
       const categoriesRef = collection(db, CATEGORIES_COLLECTION);
@@ -79,6 +87,34 @@ export const categoryService = {
       return categories;
     } catch (error) {
       logger.error("getCategories", error);
+      throw error;
+    }
+  },
+
+  async getCategoryById(id: string): Promise<Category | null> {
+    try {
+      const categoryRef = doc(db, CATEGORIES_COLLECTION, id);
+      const snapshot = await getDoc(categoryRef);
+      if (!snapshot.exists()) {
+        return null;
+      }
+      return firestoreToCategory(snapshot.id, snapshot.data());
+    } catch (error) {
+      logger.error("getCategoryById", error);
+      throw error;
+    }
+  },
+
+  async getSubCategoryById(id: string): Promise<SubCategory | null> {
+    try {
+      const subCategoryRef = doc(db, SUBCATEGORIES_COLLECTION, id);
+      const snapshot = await getDoc(subCategoryRef);
+      if (!snapshot.exists()) {
+        return null;
+      }
+      return firestoreToSubCategory(snapshot.id, snapshot.data());
+    } catch (error) {
+      logger.error("getSubCategoryById", error);
       throw error;
     }
   },
@@ -147,32 +183,6 @@ export const categoryService = {
       );
     } catch (error) {
       console.error("Error fetching subCategories:", error);
-      throw error;
-    }
-  },
-
-  // Get special categories for homepage
-  async getSpecialCategoriesForHomepage(): Promise<Category[]> {
-    try {
-      const categoriesRef = collection(db, CATEGORIES_COLLECTION);
-      const q = query(
-        categoriesRef,
-        where("isActive", "==", true),
-        where("showOnHomepage", "==", true),
-        where("type", "==", "special"),
-        orderBy("displayOrder", "asc")
-      );
-      const snapshot = await getDocs(q);
-
-      const categories = snapshot.docs.map((doc) =>
-        firestoreToCategory(doc.id, doc.data())
-      );
-      return categories;
-    } catch (error) {
-      console.error(
-        "Error fetching special categories for homepage at [getSpecialCategoriesForHomepage]: ",
-        error
-      );
       throw error;
     }
   },

@@ -4,30 +4,24 @@ import BannersCarousel from "@/src/components/tabs/home/BannersCarousel";
 import HomeSearchSection from "@/src/components/tabs/home/HomeSearchSection";
 import CategoriesSection from "@/src/components/tabs/home/categories-section/CategoriesSection";
 import BestPricesSection from "@/src/components/tabs/home/categories-section/BestPricesSection";
-// import ProductsSection from "@/src/components/tabs/home/ProductsSection";
-// import { theme } from "@/src/constants/theme";
-// import { useCategories, useCategoryProducts } from "@/src/hooks/useCategories";
 import HomeTopBg from "@/src/components/tabs/home/HomeTopBg";
 import Sidebar from "@/src/components/tabs/home/Sidebar";
 import PopupBanner from "@/src/components/tabs/home/PopupBanner";
 import ProductsSection from "@/src/components/tabs/home/ProductsSection";
-import { useGetSpecialCategoriesForHomepage } from "@/src/hooks/useCategories";
+import { useGetSpecialCategories } from "@/src/hooks/useCategories";
 import { queryClient, queryKeys } from "@/src/lib/react-query";
 import { theme } from "@/src/constants/theme";
+import Loading from "@/src/components/common/Loading";
+import { Category } from "@/src/types";
 
 const HomeScreen = () => {
-  // const { data: categories, isLoading: loadingCategories } = useCategories();
-  // const { data: categoryProductsData, isLoading: loadingCategoryProducts } =
-  //   useCategoryProducts(1);
-  // console.log(categoryProductsData);
-
-  // if (!categoryProductsData || loadingCategories || loadingCategoryProducts) {
-  //   return <></>;
-  // }
-
-  // Fetch special categories for homepage (e.g., "Summer Sales", "Black Friday", etc.)
-  // const { data: specialCategories, isLoading: loadingSpecialCategories } =
-  //   useGetSpecialCategoriesForHomepage();
+  const {
+    data: specialCategories,
+    isLoading: loadingSpecialCategories,
+    error: errorGettingSpecialCategories,
+  } = useGetSpecialCategories({
+    productsCountGreaterThanZero: true,
+  });
 
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
 
@@ -36,15 +30,45 @@ const HomeScreen = () => {
   const handleRefresh = async () => {
     setRefreshing(true);
 
-    // Invalidate all queries that power the homepage
+    // Step 1: Invalidate and refetch categories FIRST
     await Promise.all([
+      // Invalidate and refetch categories for homepage (useGetCategoriesForHomepage)
       queryClient.invalidateQueries({
         queryKey: queryKeys.categories.list({
           isActive: true,
           showOnHomepage: true,
-        })
+        }),
+      }),
+      // Invalidate and refetch special categories (useGetSpecialCategories)
+      queryClient.invalidateQueries({
+        queryKey: queryKeys.categories.list({
+          isActive: true,
+          special: true,
+          productsCountGreaterThanZero: true,
+        }),
       }),
     ]);
+
+    // Step 2: Now specialCategories will have updated data
+    // Get fresh data from the cache
+    const freshCategories = queryClient.getQueryData<Category[]>(
+      queryKeys.categories.list({
+        isActive: true,
+        special: true,
+        productsCountGreaterThanZero: true,
+      })
+    );
+
+    // Step 3: Invalidate products for all (fresh) special categories (useGetProductsBySpecialCategory)
+    if (freshCategories && freshCategories.length > 0) {
+      await Promise.all(
+        freshCategories.map((category) =>
+          queryClient.invalidateQueries({
+            queryKey: queryKeys.products.bySpecialCategory(category.id),
+          })
+        )
+      );
+    }
 
     setRefreshing(false);
   };
@@ -65,38 +89,32 @@ const HomeScreen = () => {
             ]} // Android
             tintColor={theme.colors.primary} // iOS
           />
-        }
-      >
+        }>
         <HomeTopBg />
         <HomeSearchSection openSidebarHandler={() => setIsSidebarOpen(true)} />
-        <BannersCarousel />
+        {/* <BannersCarousel /> */}
         <BestPricesSection />
         <CategoriesSection />
-        {/* 
-        <ProductsSection
-          // sectionTitle={categoryProductsData.Category.Name}
-          // sectionTagline={categoryProductsData.Category.Description}
-          // categoryIdForSeeAll={categoryProductsData.Category.Id}
-          // products={categoryProductsData.Products}
-          // sectionBackgroundColor={theme.colors.secondary_bg_2}
-          category={tempProducts[0].Category}
-          products={tempProducts[0].Products}
-          sectionBackgroundColor={theme.extra_light_colors[0]}
-        />
-        <ProductsSection
-          // sectionTitle={categoryProductsData.Category.Name}
-          // sectionTagline={categoryProductsData.Category.Description}
-          // categoryIdForSeeAll={categoryProductsData.Category.Id}
-          // products={categoryProductsData.Products}
-          // sectionBackgroundColor={theme.colors.secondary_bg_2}
-          category={tempProducts[1].Category}
-          products={tempProducts[1].Products}
-          sectionBackgroundColor={theme.extra_light_colors[1]}
-        /> */}
+        {loadingSpecialCategories ? (
+          <Loading />
+        ) : errorGettingSpecialCategories ? null : specialCategories && // Show nothing or an error message
+          specialCategories.length > 0 ? (
+          specialCategories.map((category, index) => (
+            <ProductsSection
+              key={category.id}
+              category={category}
+              sectionBackgroundColor={
+                theme.extra_light_colors[
+                index % theme.extra_light_colors.length
+                ]
+              }
+            />
+          ))
+        ) : null}
       </ScrollView>
 
       {/* Popup Banner Modal - Shows on app start */}
-      <PopupBanner />
+      {/* <PopupBanner /> */}
       <Sidebar
         isOpen={isSidebarOpen}
         closeSidebarHandler={() => setIsSidebarOpen(false)}

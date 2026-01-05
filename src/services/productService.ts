@@ -5,43 +5,14 @@ import {
   doc,
   query,
   where,
-  orderBy,
-  limit,
-  startAfter,
-  DocumentSnapshot,
 } from "firebase/firestore";
-import { Product } from "../types";
+import { Discount, Product, ProductWithDiscount } from "../types";
 import { db, convertEmulatorUrl } from "@/firebaseConfig";
+import { logger } from "../utils/logger";
+import { discountService } from "./discountService";
+import { categoryService } from "./categoryService";
 
 const PRODUCTS_COLLECTION = "PRODUCTS";
-const DISCOUNTS_COLLECTION = "DISCOUNTS";
-const CATEGORIES_COLLECTION = "CATEGORIES";
-const SUBCATEGORIES_COLLECTION = "SUB_CATEGORIES";
-
-// Discount type
-interface Discount {
-  id: string;
-  name: string;
-  description?: string;
-  value: number;
-  applicableTo: "products" | "categories" | "order";
-  minPurchaseAmount?: number;
-  startDate: Date;
-  endDate: Date;
-  currentUsageCount: number;
-}
-
-// Helper: Parse categoryId to determine if it's a main category or subcategory
-function parseCategoryId(categoryId: string): {
-  categoryId: string;
-  subCategoryId: string | null;
-} {
-  const parts = categoryId.split("/");
-  if (parts.length === 2) {
-    return { categoryId: parts[0], subCategoryId: parts[1] };
-  }
-  return { categoryId: parts[0], subCategoryId: null };
-}
 
 // Helper function to convert Firestore data to Product
 const firestoreToProduct = (id: string, data: any): Product => {
@@ -61,11 +32,13 @@ const firestoreToProduct = (id: string, data: any): Product => {
 
   return {
     id,
-    slug: data.slug || "",
     info: {
       name: data.info?.name || "",
+      nameLowerCase: data.info?.nameLowerCase || "",
+      searchArr: data.info?.searchArr || [],
       description: data.info?.description || "",
-      categoryIds: data.info?.categoryIds || [],
+      subCategoryId: data.info?.subCategoryId || "",
+      specialCategoryIds: data.info?.specialCategoryIds || [],
       manufacturerId: data.info?.manufacturerId || "",
       isActive: data.info?.isActive ?? true,
       productTags: data.info?.productTags || [],
@@ -75,7 +48,7 @@ const firestoreToProduct = (id: string, data: any): Product => {
       markAsNewEndDate: convertDate(data.info?.markAsNewEndDate),
     },
     price: data.price || 0,
-    discountIds: data.discountIds || [],
+    discountId: data.discountId || null,
     minimumStockQuantity: data.minimumStockQuantity || 0,
     multimedia: {
       images: (data.multimedia?.images || []).map((url: string) =>
@@ -83,7 +56,6 @@ const firestoreToProduct = (id: string, data: any): Product => {
       ),
       video: convertEmulatorUrl(data.multimedia?.video || ""),
     },
-    similarProductIds: data.similarProductIds || [],
     boughtTogetherProductIds: data.boughtTogetherProductIds || [],
     batchStock: data.batchStock || {
       usableStock: 0,
@@ -106,356 +78,127 @@ export const productService = {
     return firestoreToProduct(docSnap.id, data);
   },
 
-  // Get products by category with pagination
-  async getProductsByCategory(
-    categoryId: string,
-    pageLimit: number = 10,
-    lastDoc?: DocumentSnapshot
-  ): Promise<{ products: Product[]; lastDoc: DocumentSnapshot | null }> {
+  async getProductsBySpecialCategory(
+    specialCategoryId: string
+  ): Promise<ProductWithDiscount[]> {
     try {
-      const productsRef = collection(db, PRODUCTS_COLLECTION);
-
-      // Build query
-      let q = query(
-        productsRef,
-        where("info.categoryIds", "array-contains", categoryId),
+      const q = query(
+        collection(db, PRODUCTS_COLLECTION),
+        where("info.specialCategoryIds", "array-contains", specialCategoryId),
         where("info.isActive", "==", true),
-        orderBy("info.name", "asc"),
-        limit(pageLimit)
       );
-
-      // Add pagination cursor if provided
-      if (lastDoc) {
-        q = query(
-          productsRef,
-          where("info.categoryIds", "array-contains", categoryId),
-          where("info.isActive", "==", true),
-          orderBy("info.name", "asc"),
-          startAfter(lastDoc),
-          limit(pageLimit)
-        );
-      }
-
       const snapshot = await getDocs(q);
-
-      const products = snapshot.docs.map((doc) =>
-        firestoreToProduct(doc.id, doc.data())
-      );
-
-      // Fetch discount percentages for all products
-      const productsWithDiscounts = await Promise.all(
-        products.map(async (product) => {
-          const discountPercentage =
-            await this.getHighestActiveDiscountPercentageByProductId(
-              product.id
-            );
+      const products: ProductWithDiscount[] = await Promise.all(
+        snapshot.docs.map(async (doc) => {
+          const product = firestoreToProduct(doc.id, doc.data());
+          const discount = await this.getValidDiscountByProduct(product);
           return {
             ...product,
-            discountPercentage,
+            discountPercentage: discount?.percentage || 0,
           };
         })
       );
-
-      // Get the last document for pagination
-      const lastVisible =
-        snapshot.docs.length > 0
-          ? snapshot.docs[snapshot.docs.length - 1]
-          : null;
-
-      return {
-        products: productsWithDiscounts,
-        lastDoc: lastVisible,
-      };
+      return products;
     } catch (error) {
-      console.error("Error fetching products by category:", error);
+      logger.error("getProductsBySpecialCategory", error);
       throw error;
     }
   },
 
-  // Get products by subcategory with pagination
-  async getProductsBySubCategory(
-    parentCategoryId: string,
-    subCategoryId: string,
-    pageLimit: number = 10,
-    lastDoc?: DocumentSnapshot
-  ): Promise<{ products: Product[]; lastDoc: DocumentSnapshot | null }> {
+  /**
+   * Get the valid discount applicable to a product.
+   *
+   * Priority Order (first valid discount wins):
+   * 1. Product-level discount (directly assigned to product)
+   * 2. SubCategory-level discount (if product belongs to a subcategory)
+   * 3. Parent Category-level discount (parent of the subcategory)
+   * 4. Special Category discounts (if product has no subcategory, find highest among special categories)
+   *
+   * @param product - The product to check for discounts
+   * @returns The highest priority valid discount, or null if none found
+   */
+  async getValidDiscountByProduct(
+    product: Product
+  ): Promise<Discount | null> {
     try {
-      const productsRef = collection(db, PRODUCTS_COLLECTION);
-      const fullCategoryId = `${parentCategoryId}/${subCategoryId}`;
-
-      // Build query
-      let q = query(
-        productsRef,
-        where("info.categoryIds", "array-contains", fullCategoryId),
-        where("info.isActive", "==", true),
-        orderBy("info.name", "asc"),
-        limit(pageLimit)
-      );
-
-      // Add pagination cursor if provided
-      if (lastDoc) {
-        q = query(
-          productsRef,
-          where("info.categoryIds", "array-contains", fullCategoryId),
-          where("info.isActive", "==", true),
-          orderBy("info.name", "asc"),
-          startAfter(lastDoc),
-          limit(pageLimit)
+      // Priority 1: Check product-level discount
+      if (product.discountId) {
+        const discount = await discountService.getDiscountById(
+          product.discountId
         );
-      }
-
-      const snapshot = await getDocs(q);
-
-      const products = snapshot.docs.map((doc) =>
-        firestoreToProduct(doc.id, doc.data())
-      );
-
-      // Fetch discount percentages for all products
-      const productsWithDiscounts = await Promise.all(
-        products.map(async (product) => {
-          const discountPercentage =
-            await this.getHighestActiveDiscountPercentageByProductId(
-              product.id
-            );
-          return {
-            ...product,
-            discountPercentage,
-          };
-        })
-      );
-
-      // Get the last document for pagination
-      const lastVisible =
-        snapshot.docs.length > 0
-          ? snapshot.docs[snapshot.docs.length - 1]
-          : null;
-
-      return {
-        products: productsWithDiscounts,
-        lastDoc: lastVisible,
-      };
-    } catch (error) {
-      console.error("Error fetching products by subcategory:", error);
-      throw error;
-    }
-  },
-
-  // Get products by array of IDs with pagination (maintains order)
-  async getProductsByIds(
-    productIds: string[],
-    pageLimit: number = 5,
-    currentIndex: number = 0
-  ): Promise<{ products: Product[]; nextIndex: number | null }> {
-    try {
-      if (productIds.length === 0) {
-        return { products: [], nextIndex: null };
-      }
-
-      // Calculate the slice of IDs to fetch for this page
-      const startIndex = currentIndex;
-      const endIndex = Math.min(startIndex + pageLimit, productIds.length);
-      const idsToFetch = productIds.slice(startIndex, endIndex);
-
-      if (idsToFetch.length === 0) {
-        return { products: [], nextIndex: null };
-      }
-
-      // Fetch products for this page
-      const productPromises = idsToFetch.map((id) => this.getProductById(id));
-      const fetchedProducts = await Promise.all(productPromises);
-
-      // Filter out null values (products that don't exist)
-      const validProducts = fetchedProducts.filter(
-        (product): product is Product => product !== null
-      );
-
-      // Fetch discount percentages for all products
-      const productsWithDiscounts = await Promise.all(
-        validProducts.map(async (product) => {
-          const discountPercentage =
-            await this.getHighestActiveDiscountPercentageByProductId(
-              product.id
-            );
-          return {
-            ...product,
-            discountPercentage,
-          };
-        })
-      );
-
-      // Determine next index for pagination
-      const nextIndex = endIndex < productIds.length ? endIndex : null;
-
-      return {
-        products: productsWithDiscounts,
-        nextIndex,
-      };
-    } catch (error) {
-      console.error("Error fetching products by IDs:", error);
-      throw error;
-    }
-  },
-
-  // Helper: Get discount by ID
-  async getDiscountById(id: string): Promise<Discount | null> {
-    try {
-      const docRef = doc(db, DISCOUNTS_COLLECTION, id);
-      const docSnap = await getDoc(docRef);
-
-      if (!docSnap.exists()) return null;
-
-      const data = docSnap.data();
-
-      // Convert date fields (can be Timestamp or ISO string)
-      const convertDate = (dateField: any): Date => {
-        if (!dateField) return new Date();
-        if (typeof dateField.toDate === "function") {
-          return dateField.toDate();
+        if (discount && discountService.isDiscountValid(discount)) {
+          return discount;
         }
-        if (typeof dateField === "string") {
-          return new Date(dateField);
-        }
-        return new Date();
-      };
+      }
 
-      return {
-        id: docSnap.id,
-        name: data.name || "",
-        description: data.description,
-        value: data.value || 0,
-        applicableTo: data.applicableTo || "products",
-        minPurchaseAmount: data.minPurchaseAmount,
-        startDate: convertDate(data.startDate),
-        endDate: convertDate(data.endDate),
-        currentUsageCount: data.currentUsageCount || 0,
-      };
-    } catch (error) {
-      console.error("Error fetching discount:", error);
-      return null;
-    }
-  },
-
-  // Helper: Check if discount is currently active
-  isDiscountActive(discount: Discount): boolean {
-    const now = new Date();
-    return (
-      new Date(discount.startDate) <= now && new Date(discount.endDate) >= now
-    );
-  },
-
-  // Get discount IDs from a category (handles both main categories and subcategories)
-  async getDiscountIdsOnCategoryById(categoryId: string): Promise<string[]> {
-    try {
-      const parsed = parseCategoryId(categoryId);
-      let docRef;
-
-      if (parsed.subCategoryId) {
-        // Subcategory
-        docRef = doc(
-          db,
-          CATEGORIES_COLLECTION,
-          parsed.categoryId,
-          SUBCATEGORIES_COLLECTION,
-          parsed.subCategoryId
+      // Priority 2 & 3: Check subcategory and its parent category
+      if (product.info.subCategoryId) {
+        const subCategory = await categoryService.getSubCategoryById(
+          product.info.subCategoryId
         );
-      } else {
-        // Main category
-        docRef = doc(db, CATEGORIES_COLLECTION, parsed.categoryId);
-      }
 
-      const docSnap = await getDoc(docRef);
-      if (docSnap.exists()) {
-        const categoryData = docSnap.data();
-        return categoryData.discountIds || [];
-      }
-      return [];
-    } catch (error) {
-      console.error("Error fetching discount IDs for category:", error);
-      return [];
-    }
-  },
-
-  // Get all discount IDs associated with a product (including category and subcategory discounts)
-  async getAllDiscountIdsOnProductById(productId: string): Promise<string[]> {
-    try {
-      // Get product to access its discount IDs and category IDs
-      const productsRef = collection(db, PRODUCTS_COLLECTION);
-      const productDoc = await getDoc(doc(productsRef, productId));
-
-      if (!productDoc.exists()) return [];
-
-      const productData = productDoc.data();
-      const allDiscountIds = [];
-
-      // Add product-level discount IDs
-      if (productData.discountIds) {
-        allDiscountIds.push(...productData.discountIds);
-      }
-
-      // Add category-level discount IDs
-      const categoryIds = productData.info?.categoryIds || [];
-      await Promise.all(
-        categoryIds.map(async (categoryId: string) => {
-          const categoryDiscountIds = await this.getDiscountIdsOnCategoryById(
-            categoryId
+        // Priority 2: SubCategory-level discount
+        if (subCategory?.discountId) {
+          const discount = await discountService.getDiscountById(
+            subCategory.discountId
           );
-          allDiscountIds.push(...categoryDiscountIds);
-        })
-      );
+          if (discount && discountService.isDiscountValid(discount)) {
+            return discount;
+          }
+        }
 
-      // Remove duplicates
-      const uniqueDiscountIds = Array.from(new Set(allDiscountIds));
-      return uniqueDiscountIds;
+        // Priority 3: Parent Category-level discount
+        if (subCategory?.parentCategoryId) {
+          const category = await categoryService.getCategoryById(
+            subCategory.parentCategoryId
+          );
+          if (category?.discountId) {
+            const discount = await discountService.getDiscountById(
+              category.discountId
+            );
+            if (discount && discountService.isDiscountValid(discount)) {
+              return discount;
+            }
+          }
+        }
+      } else {
+        // Priority 4: Special category discounts (only if no subcategory)
+        // Find highest valid discount among all special categories
+        const specialCategoryIds = product.info.specialCategoryIds;
+        if (specialCategoryIds && specialCategoryIds.length > 0) {
+          // Collect unique discount IDs from special categories
+          const discountIds = new Set<string>();
+          for (const categoryId of specialCategoryIds) {
+            const category = await categoryService.getCategoryById(categoryId);
+            if (category?.discountId) {
+              discountIds.add(category.discountId);
+            }
+          }
+
+          // Fetch all discounts in parallel and find the highest valid one
+          const discounts = await Promise.all(
+            Array.from(discountIds).map((id) =>
+              discountService.getDiscountById(id)
+            )
+          );
+
+          const validDiscounts = discounts.filter(
+            (d): d is Discount => d !== null && discountService.isDiscountValid(d)
+          );
+
+          if (validDiscounts.length > 0) {
+            // Return the discount with highest percentage
+            return validDiscounts.reduce((highest, current) =>
+              current.percentage > highest.percentage ? current : highest
+            );
+          }
+        }
+      }
+
+      return null;
     } catch (error) {
-      console.error("Error fetching discounts for product:", error);
-      return [];
+      logger.error("getValidDiscountByProduct", error);
+      throw error;
     }
-  },
-
-  // Get highest active discount percentage applicable to a product
-  async getHighestActiveDiscountPercentageByProductId(
-    productId: string
-  ): Promise<number> {
-    try {
-      const allDiscountIds = await this.getAllDiscountIdsOnProductById(
-        productId
-      );
-      if (allDiscountIds.length === 0) return 0;
-
-      const discountPromises = allDiscountIds.map((discountId) =>
-        this.getDiscountById(discountId)
-      );
-      const discounts = await Promise.all(discountPromises);
-      const validDiscounts = discounts.filter(
-        (discount): discount is Discount => discount !== null
-      );
-
-      // Check if the discount is active and within date range
-      const applicableDiscounts = validDiscounts.filter((discount) => {
-        return this.isDiscountActive(discount);
-      });
-
-      if (applicableDiscounts.length === 0) return 0;
-
-      const highestDiscount = applicableDiscounts.reduce(
-        (max, discount) => (discount.value > max ? discount.value : max),
-        0
-      );
-
-      return highestDiscount;
-    } catch (error) {
-      console.error("Error fetching highest discount for product:", error);
-      return 0;
-    }
-  },
-
-  // Is mark as new valid
-  isMarkAsNewValid(
-    markAsNewStartDate?: Date,
-    markAsNewEndDate?: Date
-  ): boolean {
-    const now = new Date();
-    if (!markAsNewStartDate || !markAsNewEndDate) return false;
-    return now >= markAsNewStartDate && now <= markAsNewEndDate;
   },
 };

@@ -4,13 +4,13 @@ import { Image } from "expo-image";
 import { theme } from "@/src/constants/theme";
 import { FontAwesome6 } from "@expo/vector-icons";
 import { router } from "expo-router";
-import { Product } from "@/src/types";
+import { ProductWithDiscount } from "@/src/types";
 import { useSinglePress } from "@/src/hooks/useSinglePress";
-import { productService } from "@/src/services/productService";
 import { useCart, useAddToCart, useUpdateCartItem } from "@/src/hooks/useCart";
+import { productUtils } from "@/src/utils/productUtils";
 
 type Props = {
-  product: Product;
+  product: ProductWithDiscount;
   cardWidth?: number | `${number}%`;
 };
 
@@ -41,15 +41,10 @@ const ProductCard = ({ product, cardWidth = 150 }: Props) => {
   };
 
   // Calculate discount information
-  const hasDiscount =
-    product.discountPercentage && product.discountPercentage > 0;
+  const hasDiscount = product.discountPercentage && product.discountPercentage > 0;
+  const savingsAmount = hasDiscount ? Math.round((product.price * product.discountPercentage!) / 100) : 0;
+  const discountedPrice = hasDiscount ? product.price - savingsAmount : product.price;
   const originalPrice = product.price;
-  const discountedPrice = hasDiscount
-    ? Math.round(
-      originalPrice - (originalPrice * product.discountPercentage!) / 100
-    )
-    : originalPrice;
-  const savingsAmount = hasDiscount ? originalPrice - discountedPrice : 0;
 
   // Get primary image (first image in array)
   const primaryImage = product.multimedia?.images?.[0] || "";
@@ -63,14 +58,14 @@ const ProductCard = ({ product, cardWidth = 150 }: Props) => {
         },
       ]}
       onPress={handleProductPress}>
-      {productService.isMarkAsNewValid(
+      {productUtils.isMarkAsNewValid(
         product.info.markAsNewStartDate,
         product.info.markAsNewEndDate
       ) ? (
         <Text style={styles.newText}>New</Text>
       ) : null}
       {hasDiscount ? (
-        <Text style={styles.discountText}>Rs. {savingsAmount} off</Text>
+        <Text style={styles.discountPercentageText}>{product.discountPercentage}% off</Text>
       ) : null}
       <View style={styles.imageContainer}>
         <Image source={primaryImage} style={styles.image} />
@@ -182,7 +177,7 @@ const styles = StyleSheet.create({
     fontSize: 10,
     fontFamily: theme.fonts.medium,
   },
-  discountText: {
+  discountPercentageText: {
     position: "absolute",
     top: 8,
     right: 8,

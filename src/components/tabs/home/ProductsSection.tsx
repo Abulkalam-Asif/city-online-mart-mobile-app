@@ -2,22 +2,30 @@ import { StyleSheet, View, ScrollView, Text } from "react-native";
 import React from "react";
 import { theme } from "@/src/constants/theme";
 import ProductCard from "./ProductCard";
-import { ICategory, IProduct } from "@/src/types";
+import { Category } from "@/src/types";
+import { useGetProductsBySpecialCategory } from "@/src/hooks/useProducts";
+import Loading from "../../common/Loading";
+import RetryButton from "../../common/RetryButton";
+import { queryClient, queryKeys } from "@/src/lib/react-query";
 
 type ProductsSectionProps = {
-  category: ICategory;
+  category: Category;
   sectionBackgroundColor?: string;
-  products?: IProduct[];
 };
 
 const ProductsSection = ({
   category,
   sectionBackgroundColor,
-  products,
 }: ProductsSectionProps) => {
+  const {
+    data: products,
+    isLoading: loadingProducts,
+    error: errorGettingProducts,
+  } = useGetProductsBySpecialCategory(category.id);
+
   return (
     <View style={styles.container}>
-      <Text style={styles.titleText}>{category.Name}</Text>
+      <Text style={styles.titleText}>{category.name}</Text>
       <ScrollView
         horizontal
         showsHorizontalScrollIndicator={false}
@@ -25,11 +33,23 @@ const ProductsSection = ({
           styles.scrollContent,
           { backgroundColor: sectionBackgroundColor },
         ]}>
-        {products &&
+        {loadingProducts ? (
+          <Loading />
+        ) : errorGettingProducts ? (
+          <RetryButton
+            onPress={async () => {
+              await queryClient.invalidateQueries({
+                queryKey: queryKeys.products.bySpecialCategory(category.id),
+              });
+            }}
+          />
+        ) : (
+          products &&
           products.length > 0 &&
           products?.map((product) => (
-            <ProductCard key={product.Id} product={product} />
-          ))}
+            <ProductCard key={product.id} product={product} />
+          ))
+        )}
       </ScrollView>
     </View>
   );
@@ -49,6 +69,8 @@ const styles = StyleSheet.create({
   },
   scrollContent: {
     flexDirection: "row",
+    minWidth: "100%",
+    justifyContent: "center",
     gap: 12,
     paddingHorizontal: 20,
     paddingVertical: 20,

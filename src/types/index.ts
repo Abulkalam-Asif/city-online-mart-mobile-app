@@ -7,3 +7,4 @@ export * from "./subCategory.types";
 export * from "./banner.types";
 export * from "./order.types";
 export * from "./cart.types";
+export * from "./discount.types";

@@ -57,6 +57,7 @@ export const queryKeys = {
       showOnHomepage?: boolean;
       withSubCategories?: boolean;
       special?: boolean;
+      productsCountGreaterThanZero?: boolean;
     }) => [...queryKeys.categories.lists(), filters] as const,
   },
 
@@ -75,6 +76,12 @@ export const queryKeys = {
       [...queryKeys.products.lists(), "category", categoryId] as const,
     byCategoryInfinite: (categoryId: string) =>
       [...queryKeys.products.byCategory(categoryId), "infinite"] as const,
+    bySpecialCategory: (specialCategoryId: string) =>
+      [
+        ...queryKeys.products.lists(),
+        "specialCategory",
+        specialCategoryId,
+      ] as const,
 
     // By subcategory (infinite scroll)
     bySubCategory: (parentCategoryId: string, subCategoryId: string) =>

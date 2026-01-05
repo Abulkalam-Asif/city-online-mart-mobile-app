@@ -1,11 +1,17 @@
-// Product Types
-
 // Product Information Section
 export interface ProductInfo {
   name: string;
+  nameLowerCase?: string; // Renamed from nameLower - lowercase version for case-insensitive search
+  searchArr?: string[]; // Renamed from words - array of individual words for enhanced search
   description: string;
-  categoryIds: string[]; // Format: "categoryId" or "parentCategoryId/subCategoryId"
-  manufacturerId: string; // Reference to manufacturer ID
+
+  // Category Assignment (NEW STRUCTURE)
+  subCategoryId?: string; // Single subcategory ID (optional) - primary classification
+  specialCategoryIds?: string[]; // Array of special category IDs (optional) - cross-listing
+  // Products can have BOTH subCategoryId AND specialCategoryIds
+  // At least ONE must be assigned (validated in service layer)
+
+  manufacturerId?: string; // Optional reference to manufacturer ID
   isActive: boolean;
   productTags: string[];
   allowCustomerReviews: boolean;
@@ -20,28 +26,17 @@ export interface ProductMultimedia {
   video: string;
 }
 
-// Purchase History Section
-export interface PurchaseOrderHistory {
-  orderId: string;
-  orderDate: Date;
-  customerName: string;
-  quantity: number;
-  unitPrice: number;
-  totalAmount: number;
-}
-
 export interface Product {
   id: string;
-  slug: string;
 
   // Product Information Section
   info: ProductInfo;
 
   // Pricing
-  price: number; // Current selling price (highest of all the batches, synced from batches)
+  price: number; // Current selling price set directly on the product
 
   // Discounts Section
-  discountIds: string[]; // Array of associated discount IDs
+  discountId?: string; // Single discount ID that can be applied directly to the product
 
   // Inventory Section
   minimumStockQuantity: number;
@@ -49,20 +44,16 @@ export interface Product {
   // Multimedia Section
   multimedia: ProductMultimedia;
 
-  // Similar Products Section
-  similarProductIds: string[];
-
-  // Bought together Section
-  boughtTogetherProductIds: string[];
+  // Related Products Section
+  boughtTogetherProductIds: string[]; // Manually curated "frequently bought together" products
 
   // Batch Stock Data (calculated from batches)
   batchStock?: {
     usableStock: number; // Non-expired stock
     expiredStock: number; // Expired stock
-    totalStock: number; // Total stock (usable + expired)
-    activeBatchCount: number; // Number of active batches
   };
+}
 
-  // Discount Data (calculated from discounts)
-  discountPercentage?: number; // Highest active discount percentage applicable to this product
+export interface ProductWithDiscount extends Product {
+  discountPercentage: number;
 }
