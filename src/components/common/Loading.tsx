@@ -2,15 +2,16 @@ import { ActivityIndicator, StyleSheet, Text, View } from "react-native";
 import React from "react";
 import { theme } from "@/src/constants/theme";
 
-type LoadingProps = {
+interface LoadingProps extends React.ComponentProps<typeof View> {
   text?: string;
-};
+  size?: number | "small" | "large" | undefined;
+}
 
-const Loading = ({ text }: LoadingProps) => {
+const Loading = ({ text, size = "large", ...props }: LoadingProps) => {
   return (
     <>
-      <View style={styles.productsLoading}>
-        <ActivityIndicator size="large" color={theme.colors.primary} />
+      <View style={styles.loadingContainer} {...props}>
+        <ActivityIndicator size={size} color={theme.colors.primary} />
         {text && <Text style={styles.loadingText}>{text}</Text>}
       </View>
     </>
@@ -20,10 +21,9 @@ const Loading = ({ text }: LoadingProps) => {
 export default Loading;
 
 const styles = StyleSheet.create({
-  productsLoading: {
+  loadingContainer: {
     justifyContent: "center",
     alignItems: "center",
-    paddingVertical: 20,
   },
   loadingText: {
     marginTop: 16,

@@ -24,10 +24,10 @@ const firestoreToDiscount = (id: string, data: any): Discount => {
 export const discountService = {
   async getDiscountById(discountId: string): Promise<Discount | null> {
     try {
-      const discountRef = doc(db, DISCOUNTS_COLLECTION, discountId)
-      const discountSnapshot = await getDoc(discountRef)
+      const discountRef = doc(db, DISCOUNTS_COLLECTION, discountId);
+      const discountSnapshot = await getDoc(discountRef);
       if (!discountSnapshot.exists()) {
-        return null
+        return null;
       }
       return firestoreToDiscount(discountSnapshot.id, discountSnapshot.data());
     } catch (error) {
@@ -35,12 +35,4 @@ export const discountService = {
       throw error;
     }
   },
-
-  // A discount is valid if it is active and the current date is between the start and end dates
-  isDiscountValid(discount: Discount): boolean {
-    const now = new Date();
-    return (
-      discount.isActive && now >= discount.startDate && now <= discount.endDate
-    );
-  },
-}
+};

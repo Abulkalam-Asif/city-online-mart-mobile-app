@@ -55,10 +55,30 @@ export const queryKeys = {
       isActive?: boolean;
       showOnNavbar?: boolean;
       showOnHomepage?: boolean;
-      withSubCategories?: boolean;
       special?: boolean;
       productsCountGreaterThanZero?: boolean;
     }) => [...queryKeys.categories.lists(), filters] as const,
+  },
+
+  // ========================================
+  // SUB CATEGORIES
+  // ========================================
+  subCategories: {
+    all: ["subCategories"] as const,
+
+    byParentCategory: (
+      parentCategoryId: string,
+      filters?: {
+        isActive?: boolean;
+        showOnNavbar?: boolean;
+      }
+    ) =>
+      [
+        ...queryKeys.subCategories.all,
+        "byParentCategory",
+        parentCategoryId,
+        filters,
+      ] as const,
   },
 
   // ========================================

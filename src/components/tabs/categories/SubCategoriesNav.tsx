@@ -1,12 +1,18 @@
 import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
-import React, { useEffect, useRef } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { theme } from "@/src/constants/theme";
 import { SubCategory } from "@/src/types";
 import SortButton from "./SortButton";
 import BrandsButton from "./BrandsButton";
+import Loading from "../../common/Loading";
+import ErrorBanner from "../../common/ErrorBanner";
+import { queryClient, queryKeys } from "@/src/lib/react-query";
 
 type SubCategoriesNavProps = {
-  subCategories: SubCategory[];
+  subCategories: SubCategory[] | undefined;
+  loadingSubCategories: boolean;
+  errorGettingSubCategories: Error | null;
+  parentCategoryId: string;
   currentSubCategoryId: string;
   setCurrentSubCategoryId: (id: string) => void;
   setBottomSheetType: (type: "sort" | "brands" | null) => void;
@@ -17,6 +23,9 @@ type SubCategoriesNavProps = {
 
 const SubCategoriesNav = ({
   subCategories,
+  loadingSubCategories,
+  errorGettingSubCategories,
+  parentCategoryId,
   currentSubCategoryId,
   setCurrentSubCategoryId,
   setBottomSheetType,
@@ -26,6 +35,12 @@ const SubCategoriesNav = ({
 }: SubCategoriesNavProps) => {
   const scrollViewRef = useRef<ScrollView>(null);
   const itemRefs = useRef<{ [key: string]: View | null }>({});
+  const [dismissedError, setDismissedError] = useState(false);
+
+  // Reset error when parent category changes
+  useEffect(() => {
+    setDismissedError(false);
+  }, [parentCategoryId]);
 
   // Auto-scroll to selected subcategory (only when from deep link)
   useEffect(() => {
@@ -49,7 +64,7 @@ const SubCategoriesNav = ({
                 animated: true,
               });
             },
-            () => {}
+            () => { }
           );
         }, 300); // Increased delay for subcategories
 
@@ -58,6 +73,25 @@ const SubCategoriesNav = ({
       }
     }
   }, [currentSubCategoryId, subCategories, shouldAutoScroll]);
+
+  if (errorGettingSubCategories && !dismissedError) {
+    return (
+      <ErrorBanner
+        title="Unable to Load Subcategories"
+        message="Error loading subcategories. Please try again."
+        onDismiss={() => setDismissedError(true)}
+        onRetry={async () => {
+          // Invalidate the query to refetch categories for navbar (useGetCategoriesForNavbar)
+          await queryClient.invalidateQueries({
+            queryKey: queryKeys.subCategories.byParentCategory(
+              parentCategoryId,
+              { isActive: true, showOnNavbar: true }
+            ),
+          });
+        }}
+      />
+    );
+  }
 
   return (
     <View style={styles.container}>
@@ -74,32 +108,39 @@ const SubCategoriesNav = ({
         contentContainerStyle={styles.containerContent}
         horizontal
         showsHorizontalScrollIndicator={false}>
-        {subCategories.map((subCategory) => (
-          <View
-            key={subCategory.id}
-            ref={(ref) => {
-              itemRefs.current[subCategory.id] = ref;
-            }}
-            collapsable={false}>
-            <Pressable
-              onPress={() => setCurrentSubCategoryId(subCategory.id)}
-              style={({ pressed }) => [
-                styles.subCategoryButton,
-                currentSubCategoryId === subCategory.id &&
-                  styles.subCategoryButtonSelected,
-                pressed && styles.subCategoryButtonPressed,
-              ]}>
-              <Text
-                style={[
-                  styles.subCategoryNameText,
-                  currentSubCategoryId === subCategory.id &&
-                    styles.selectedSubCategoryText,
-                ]}>
-                {subCategory.name}
-              </Text>
-            </Pressable>
+        {loadingSubCategories ? (
+          <View style={styles.subCategoriesLoadingContainer}>
+            <Loading size={"small"} />
           </View>
-        ))}
+        ) : (
+          subCategories &&
+          subCategories.map((subCategory) => (
+            <View
+              key={subCategory.id}
+              ref={(ref) => {
+                itemRefs.current[subCategory.id] = ref;
+              }}
+              collapsable={false}>
+              <Pressable
+                onPress={() => setCurrentSubCategoryId(subCategory.id)}
+                style={({ pressed }) => [
+                  styles.subCategoryButton,
+                  currentSubCategoryId === subCategory.id &&
+                  styles.subCategoryButtonSelected,
+                  pressed && styles.subCategoryButtonPressed,
+                ]}>
+                <Text
+                  style={[
+                    styles.subCategoryNameText,
+                    currentSubCategoryId === subCategory.id &&
+                    styles.selectedSubCategoryText,
+                  ]}>
+                  {subCategory.name}
+                </Text>
+              </Pressable>
+            </View>
+          ))
+        )}
       </ScrollView>
     </View>
   );
@@ -119,6 +160,16 @@ const styles = StyleSheet.create({
     alignItems: "center",
     flexDirection: "row",
     gap: 12,
+    width: "100%",
+  },
+  subCategoriesLoadingContainer: {
+    width: "100%",
+    justifyContent: "center",
+  },
+  subCategoriesErrorContainer: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
   },
 
   subCategoryButton: {

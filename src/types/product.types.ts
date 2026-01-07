@@ -53,7 +53,3 @@ export interface Product {
     expiredStock: number; // Expired stock
   };
 }
-
-export interface ProductWithDiscount extends Product {
-  discountPercentage: number;
-}

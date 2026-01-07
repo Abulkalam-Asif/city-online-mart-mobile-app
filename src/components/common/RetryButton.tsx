@@ -1,13 +1,28 @@
-import { Pressable, StyleSheet, Text } from "react-native";
+import {
+  Pressable,
+  StyleProp,
+  StyleSheet,
+  Text,
+  ViewStyle,
+} from "react-native";
 import React from "react";
 import { theme } from "@/src/constants/theme";
 
-const RetryButton = ({ ...props }: React.ComponentProps<typeof Pressable>) => {
+interface RetryButtonProps
+  extends Omit<React.ComponentProps<typeof Pressable>, "style"> {
+  style?: StyleProp<ViewStyle>;
+  text?: string;
+}
+const RetryButton = ({ style, text = "Retry", ...props }: RetryButtonProps) => {
   return (
     <Pressable
       {...props}
-      style={({ pressed }) => [styles.button, pressed && styles.buttonPressed]}>
-      <Text style={styles.buttonText}>Retry</Text>
+      style={({ pressed }) => [
+        styles.button,
+        pressed && styles.buttonPressed,
+        style,
+      ]}>
+      <Text style={styles.buttonText}>{text}</Text>
     </Pressable>
   );
 };

@@ -9,42 +9,59 @@ import React, { useState, useMemo, useEffect, useRef } from "react";
 import CategoriesHeader from "@/src/components/tabs/categories/CategoriesHeader";
 import CategoriesNav from "@/src/components/tabs/categories/CategoriesNav";
 import SubCategoriesNav from "@/src/components/tabs/categories/SubCategoriesNav";
-import ProductsGrid from "@/src/components/tabs/categories/ProductsGrid";
 import { PortalBottomSheet } from "@/src/components/common/PortalBottomSheet";
 import BrandsMenu from "@/src/components/tabs/categories/BrandsMenu";
 import SortMenu from "@/src/components/tabs/categories/SortMenu";
-import { useGetAllCategoriesWithSubCategories } from "@/src/hooks/useCategories";
 import {
-  useInfiniteProductsByCategory,
-  useInfiniteProductsBySubCategory,
-} from "@/src/hooks/useProducts";
+  useGetCategoriesForNavbar,
+  useGetSubCategoriesByCategoryIdForNavbar,
+} from "@/src/hooks/useCategories";
+// import {
+//   useInfiniteProductsByCategory,
+//   useInfiniteProductsBySubCategory,
+// } from "@/src/hooks/useProducts";
 import { theme } from "@/src/constants/theme";
-import { useQueryClient } from "@tanstack/react-query";
-import { queryKeys } from "@/src/lib/react-query";
 import Loading from "@/src/components/common/Loading";
 import { useLocalSearchParams } from "expo-router";
+import { queryClient, queryKeys } from "@/src/lib/react-query";
+import ErrorBanner from "@/src/components/common/ErrorBanner";
 
 const CategoriesScreen = () => {
   const {
     categoryId: searchParamCategoryId,
     subCategoryId: searchParamSubCategoryId,
   } = useLocalSearchParams<{
-    categoryId: string;
+    categoryId?: string;
     subCategoryId?: string;
   }>();
 
-  const queryClient = useQueryClient();
+  // Fetch categories for navbar
+  const {
+    data: categoriesForNavbarData,
+    isLoading: loadingCategoriesForNavbar,
+    error: errorGettingCategoriesForNavbar,
+  } = useGetCategoriesForNavbar();
+
+  const categories = useMemo(
+    () => categoriesForNavbarData || [],
+    [categoriesForNavbarData]
+  );
+
+  const [currentCategoryId, setCurrentCategoryId] = useState(
+    searchParamCategoryId || ""
+  );
 
   const {
-    data: categoriesData,
-    isLoading: loadingCategories,
-    error,
-  } = useGetAllCategoriesWithSubCategories();
+    data: subCategoriesForNavbarData,
+    isLoading: loadingSubCategoriesForNavbar,
+    error: errorGettingSubCategoriesForNavbar,
+  } = useGetSubCategoriesByCategoryIdForNavbar(
+    searchParamCategoryId || currentCategoryId || ""
+  );
 
-  const categories = useMemo(() => categoriesData || [], [categoriesData]);
-
-  const [currentCategoryId, setCurrentCategoryId] = useState("");
-  const [currentSubCategoryId, setCurrentSubCategoryId] = useState("");
+  const [currentSubCategoryId, setCurrentSubCategoryId] = useState(
+    searchParamSubCategoryId || ""
+  );
 
   // Track if we should auto-scroll (from deep link)
   const shouldAutoScroll = useRef(false);
@@ -57,13 +74,10 @@ const CategoriesScreen = () => {
     }
   }, [searchParamCategoryId, searchParamSubCategoryId]);
 
-  // Set initial category when data loads
+  // Set initial category when data loads, and fetch subcategories
   useEffect(() => {
     if (categories.length > 0 && !currentCategoryId) {
       setCurrentCategoryId(categories[0].id);
-      if (categories[0].subCategories?.length > 0) {
-        setCurrentSubCategoryId(categories[0].subCategories[0]?.id);
-      }
     }
   }, [categories, currentCategoryId]);
 
@@ -84,30 +98,30 @@ const CategoriesScreen = () => {
     setBottomSheetType(null);
   };
 
+  const currentCategory = categories.find(cat => cat.id === currentCategoryId);
+
   // Determine if we should show subcategory products or category products
-  const hasSubCategories = useMemo(() => {
-    const category = categories.find((cat) => cat.id === currentCategoryId);
-    return (category?.subCategories?.length ?? 0) > 0;
-  }, [categories, currentCategoryId]);
+  const hasSubCategories =
+    currentCategory && currentCategory.subCategoryCount > 0 && currentCategory.type === "simple";
 
-  // Fetch products based on whether subcategory is selected
-  const {
-    data: subCategoryProductsData,
-    isLoading: isLoadingSubCategoryProducts,
-    error: subCategoryProductsError,
-    fetchNextPage: fetchNextSubCategoryPage,
-    hasNextPage: hasNextSubCategoryPage,
-    isFetchingNextPage: isFetchingNextSubCategoryPage,
-  } = useInfiniteProductsBySubCategory(currentCategoryId, currentSubCategoryId);
+  // // Fetch products based on whether subcategory is selected
+  // const {
+  //   data: subCategoryProductsData,
+  //   isLoading: isLoadingSubCategoryProducts,
+  //   error: subCategoryProductsError,
+  //   fetchNextPage: fetchNextSubCategoryPage,
+  //   hasNextPage: hasNextSubCategoryPage,
+  //   isFetchingNextPage: isFetchingNextSubCategoryPage,
+  // } = useInfiniteProductsBySubCategory(currentCategoryId, currentSubCategoryId);
 
-  const {
-    data: categoryProductsData,
-    isLoading: isLoadingCategoryProducts,
-    error: categoryProductsError,
-    fetchNextPage: fetchNextCategoryPage,
-    hasNextPage: hasNextCategoryPage,
-    isFetchingNextPage: isFetchingNextCategoryPage,
-  } = useInfiniteProductsByCategory(currentCategoryId);
+  // const {
+  //   data: categoryProductsData,
+  //   isLoading: isLoadingCategoryProducts,
+  //   error: categoryProductsError,
+  //   fetchNextPage: fetchNextCategoryPage,
+  //   hasNextPage: hasNextCategoryPage,
+  //   isFetchingNextPage: isFetchingNextCategoryPage,
+  // } = useInfiniteProductsByCategory(currentCategoryId);
 
   // Pull to refresh state
   const [isRefreshing, setIsRefreshing] = useState(false);
@@ -116,22 +130,23 @@ const CategoriesScreen = () => {
   const handleRefresh = async () => {
     setIsRefreshing(true);
     try {
-      // Invalidate categories
+      // Invalidate categories for navbar (useGetCategoriesForNavbar)
       await queryClient.invalidateQueries({
-        queryKey: queryKeys.categories.list({ withSubCategories: true }),
+        queryKey: queryKeys.categories.list({
+          isActive: true,
+          showOnNavbar: true,
+        }),
       });
-
-      // Invalidate products based on current view
-      if (hasSubCategories && currentSubCategoryId) {
+      // Invalidate subcategories for current category if available (useGetSubCategoriesByCategoryIdForNavbar)
+      if (hasSubCategories) {
         await queryClient.invalidateQueries({
-          queryKey: queryKeys.products.bySubCategoryInfinite(
+          queryKey: queryKeys.subCategories.byParentCategory(
             currentCategoryId,
-            currentSubCategoryId
+            {
+              isActive: true,
+              showOnNavbar: true,
+            }
           ),
-        });
-      } else {
-        await queryClient.invalidateQueries({
-          queryKey: queryKeys.products.byCategoryInfinite(currentCategoryId),
         });
       }
     } finally {
@@ -140,57 +155,70 @@ const CategoriesScreen = () => {
   };
 
   // Flatten the infinite query pages into a single array
-  const products = useMemo(() => {
-    if (hasSubCategories && currentSubCategoryId) {
-      return (
-        subCategoryProductsData?.pages.flatMap((page: any) => page.products) ||
-        []
-      );
-    } else {
-      return (
-        categoryProductsData?.pages.flatMap((page: any) => page.products) || []
-      );
-    }
-  }, [
-    hasSubCategories,
-    currentSubCategoryId,
-    subCategoryProductsData,
-    categoryProductsData,
-  ]);
+  // const products = useMemo(() => {
+  //   if (hasSubCategories && currentSubCategoryId) {
+  //     return (
+  //       subCategoryProductsData?.pages.flatMap((page: any) => page.products) ||
+  //       []
+  //     );
+  //   } else {
+  //     return (
+  //       categoryProductsData?.pages.flatMap((page: any) => page.products) || []
+  //     );
+  //   }
+  // }, [
+  //   hasSubCategories,
+  //   currentSubCategoryId,
+  //   subCategoryProductsData,
+  //   categoryProductsData,
+  // ]);
 
   // Determine loading and error states
-  const isLoadingProducts = hasSubCategories
-    ? isLoadingSubCategoryProducts
-    : isLoadingCategoryProducts;
-  const productsError = hasSubCategories
-    ? subCategoryProductsError
-    : categoryProductsError;
+  // const isLoadingProducts = hasSubCategories
+  //   ? isLoadingSubCategoryProducts
+  //   : isLoadingCategoryProducts;
+  // const productsError = hasSubCategories
+  //   ? subCategoryProductsError
+  //   : categoryProductsError;
 
-  // Handle load more
-  const handleLoadMore = () => {
-    if (hasSubCategories && currentSubCategoryId) {
-      if (hasNextSubCategoryPage && !isFetchingNextSubCategoryPage) {
-        fetchNextSubCategoryPage();
-      }
-    } else {
-      if (hasNextCategoryPage && !isFetchingNextCategoryPage) {
-        fetchNextCategoryPage();
-      }
-    }
-  };
+  // // Handle load more
+  // const handleLoadMore = () => {
+  //   if (hasSubCategories && currentSubCategoryId) {
+  //     if (hasNextSubCategoryPage && !isFetchingNextSubCategoryPage) {
+  //       fetchNextSubCategoryPage();
+  //     }
+  //   } else {
+  //     if (hasNextCategoryPage && !isFetchingNextCategoryPage) {
+  //       fetchNextCategoryPage();
+  //     }
+  //   }
+  // };
 
   // Loading state
-  if (loadingCategories) {
-    return <Loading text="Loading categories..." />;
+  if (loadingCategoriesForNavbar) {
+    return (
+      <View style={[styles.container, styles.centered]}>
+        <Loading />
+      </View>
+    );
   }
 
   // Error state
-  if (error) {
+  if (errorGettingCategoriesForNavbar) {
     return (
-      <View style={[styles.container, styles.centered]}>
-        <Text style={styles.errorText}>Error loading categories</Text>
-        <Text style={styles.errorDetail}>{error.message}</Text>
-      </View>
+      <ErrorBanner
+        title="Unable to Load"
+        message="Error loading categories. Please try again."
+        onRetry={async () => {
+          // Invalidate the query to refetch categories for navbar (useGetCategoriesForNavbar)
+          await queryClient.invalidateQueries({
+            queryKey: queryKeys.categories.list({
+              isActive: true,
+              showOnNavbar: true,
+            }),
+          });
+        }}
+      />
     );
   }
 
@@ -235,10 +263,10 @@ const CategoriesScreen = () => {
             shouldAutoScroll={shouldAutoScroll}
           />
           <SubCategoriesNav
-            subCategories={
-              categories.find((cat) => cat.id === currentCategoryId)
-                ?.subCategories || []
-            }
+            subCategories={subCategoriesForNavbarData}
+            loadingSubCategories={loadingSubCategoriesForNavbar}
+            errorGettingSubCategories={errorGettingSubCategoriesForNavbar}
+            parentCategoryId={currentCategoryId}
             currentSubCategoryId={currentSubCategoryId}
             setCurrentSubCategoryId={setCurrentSubCategoryId}
             setBottomSheetType={setBottomSheetType}
@@ -249,7 +277,7 @@ const CategoriesScreen = () => {
         </View>
 
         {/* Products Loading State */}
-        {isLoadingProducts ? (
+        {/* {isLoadingProducts ? (
           <Loading text="Loading products..." />
         ) : productsError ? (
           <View style={styles.productsLoading}>
@@ -275,7 +303,7 @@ const CategoriesScreen = () => {
                 : isFetchingNextCategoryPage
             }
           />
-        )}
+        )} */}
       </ScrollView>
       <PortalBottomSheet
         id="categories-filter"

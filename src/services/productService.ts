@@ -6,11 +6,9 @@ import {
   query,
   where,
 } from "firebase/firestore";
-import { Discount, Product, ProductWithDiscount } from "../types";
+import { Product } from "../types";
 import { db, convertEmulatorUrl } from "@/firebaseConfig";
 import { logger } from "../utils/logger";
-import { discountService } from "./discountService";
-import { categoryService } from "./categoryService";
 
 const PRODUCTS_COLLECTION = "PRODUCTS";
 
@@ -80,124 +78,20 @@ export const productService = {
 
   async getProductsBySpecialCategory(
     specialCategoryId: string
-  ): Promise<ProductWithDiscount[]> {
+  ): Promise<Product[]> {
     try {
       const q = query(
         collection(db, PRODUCTS_COLLECTION),
         where("info.specialCategoryIds", "array-contains", specialCategoryId),
-        where("info.isActive", "==", true),
+        where("info.isActive", "==", true)
       );
       const snapshot = await getDocs(q);
-      const products: ProductWithDiscount[] = await Promise.all(
-        snapshot.docs.map(async (doc) => {
-          const product = firestoreToProduct(doc.id, doc.data());
-          const discount = await this.getValidDiscountByProduct(product);
-          return {
-            ...product,
-            discountPercentage: discount?.percentage || 0,
-          };
-        })
+      const discounts = await Promise.all(
+        snapshot.docs.map(async (doc) => firestoreToProduct(doc.id, doc.data()))
       );
-      return products;
+      return discounts;
     } catch (error) {
       logger.error("getProductsBySpecialCategory", error);
-      throw error;
-    }
-  },
-
-  /**
-   * Get the valid discount applicable to a product.
-   *
-   * Priority Order (first valid discount wins):
-   * 1. Product-level discount (directly assigned to product)
-   * 2. SubCategory-level discount (if product belongs to a subcategory)
-   * 3. Parent Category-level discount (parent of the subcategory)
-   * 4. Special Category discounts (if product has no subcategory, find highest among special categories)
-   *
-   * @param product - The product to check for discounts
-   * @returns The highest priority valid discount, or null if none found
-   */
-  async getValidDiscountByProduct(
-    product: Product
-  ): Promise<Discount | null> {
-    try {
-      // Priority 1: Check product-level discount
-      if (product.discountId) {
-        const discount = await discountService.getDiscountById(
-          product.discountId
-        );
-        if (discount && discountService.isDiscountValid(discount)) {
-          return discount;
-        }
-      }
-
-      // Priority 2 & 3: Check subcategory and its parent category
-      if (product.info.subCategoryId) {
-        const subCategory = await categoryService.getSubCategoryById(
-          product.info.subCategoryId
-        );
-
-        // Priority 2: SubCategory-level discount
-        if (subCategory?.discountId) {
-          const discount = await discountService.getDiscountById(
-            subCategory.discountId
-          );
-          if (discount && discountService.isDiscountValid(discount)) {
-            return discount;
-          }
-        }
-
-        // Priority 3: Parent Category-level discount
-        if (subCategory?.parentCategoryId) {
-          const category = await categoryService.getCategoryById(
-            subCategory.parentCategoryId
-          );
-          if (category?.discountId) {
-            const discount = await discountService.getDiscountById(
-              category.discountId
-            );
-            if (discount && discountService.isDiscountValid(discount)) {
-              return discount;
-            }
-          }
-        }
-      } else {
-        // Priority 4: Special category discounts (only if no subcategory)
-        // Find highest valid discount among all special categories
-        const specialCategoryIds = product.info.specialCategoryIds;
-        if (specialCategoryIds && specialCategoryIds.length > 0) {
-          // Collect unique discount IDs from special categories
-          const discountIds = new Set<string>();
-          for (const categoryId of specialCategoryIds) {
-            const category = await categoryService.getCategoryById(categoryId);
-            if (category?.discountId) {
-              discountIds.add(category.discountId);
-            }
-          }
-
-          // Fetch all discounts in parallel and find the highest valid one
-          const discounts = await Promise.all(
-            Array.from(discountIds).map((id) =>
-              discountService.getDiscountById(id)
-            )
-          );
-
-          const validDiscounts = discounts.filter(
-            (d): d is Discount => d !== null && discountService.isDiscountValid(d)
-          );
-
-          if (validDiscounts.length > 0) {
-            // Return the discount with highest percentage
-            return validDiscounts.reduce((highest, current) =>
-              current.percentage > highest.percentage ? current : highest
-            );
-          }
-        }
-      }
-
-      return null;
-    } catch (error) {
-      logger.error("getValidDiscountByProduct", error);
       throw error;
     }
   },

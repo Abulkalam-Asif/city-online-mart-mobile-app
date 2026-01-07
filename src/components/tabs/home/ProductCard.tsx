@@ -4,13 +4,13 @@ import { Image } from "expo-image";
 import { theme } from "@/src/constants/theme";
 import { FontAwesome6 } from "@expo/vector-icons";
 import { router } from "expo-router";
-import { ProductWithDiscount } from "@/src/types";
+import { Product } from "@/src/types";
 import { useSinglePress } from "@/src/hooks/useSinglePress";
 import { useCart, useAddToCart, useUpdateCartItem } from "@/src/hooks/useCart";
 import { productUtils } from "@/src/utils/productUtils";
 
 type Props = {
-  product: ProductWithDiscount;
+  product: Product;
   cardWidth?: number | `${number}%`;
 };
 
@@ -26,7 +26,7 @@ const ProductCard = ({ product, cardWidth = 150 }: Props) => {
 
   // Check if product is in cart and get quantity
   const cartItem = useMemo(() => {
-    return cart?.items.find(item => item.productId === product.id);
+    return cart?.items.find((item) => item.productId === product.id);
   }, [cart, product.id]);
 
   const quantityInCart = cartItem?.quantity || 0;
@@ -41,9 +41,8 @@ const ProductCard = ({ product, cardWidth = 150 }: Props) => {
   };
 
   // Calculate discount information
-  const hasDiscount = product.discountPercentage && product.discountPercentage > 0;
-  const savingsAmount = hasDiscount ? Math.round((product.price * product.discountPercentage!) / 100) : 0;
-  const discountedPrice = hasDiscount ? product.price - savingsAmount : product.price;
+  const hasDiscount = false;
+  const discountedPrice = product.price;
   const originalPrice = product.price;
 
   // Get primary image (first image in array)
@@ -64,9 +63,11 @@ const ProductCard = ({ product, cardWidth = 150 }: Props) => {
       ) ? (
         <Text style={styles.newText}>New</Text>
       ) : null}
-      {hasDiscount ? (
-        <Text style={styles.discountPercentageText}>{product.discountPercentage}% off</Text>
-      ) : null}
+      {/* {hasDiscount ? (
+        <Text style={styles.discountPercentageText}>
+          {product.discountPercentage}% off
+        </Text>
+      ) : null} */}
       <View style={styles.imageContainer}>
         <Image source={primaryImage} style={styles.image} />
       </View>
@@ -91,13 +92,13 @@ const ProductCard = ({ product, cardWidth = 150 }: Props) => {
                 if (quantityInCart > 1) {
                   updateCartItemMutation.mutate({
                     productId: product.id,
-                    quantity: quantityInCart - 1
+                    quantity: quantityInCart - 1,
                   });
                 } else {
                   // If quantity is 1, remove the item
                   updateCartItemMutation.mutate({
                     productId: product.id,
-                    quantity: 0
+                    quantity: 0,
                   });
                 }
               }}>
@@ -110,14 +111,20 @@ const ProductCard = ({ product, cardWidth = 150 }: Props) => {
                 pressed && styles.quantityChangeButtonPressed,
               ]}
               onPress={() => {
-                updateCartItemMutation.mutate({
-                  productId: product.id,
-                  quantity: quantityInCart + 1
-                }, {
-                  onError: (error) => {
-                    Alert.alert("Error", error.message || "Failed to update cart item");
+                updateCartItemMutation.mutate(
+                  {
+                    productId: product.id,
+                    quantity: quantityInCart + 1,
+                  },
+                  {
+                    onError: (error) => {
+                      Alert.alert(
+                        "Error",
+                        error.message || "Failed to update cart item"
+                      );
+                    },
                   }
-                });
+                );
               }}>
               <FontAwesome6 name="plus" />
             </Pressable>
@@ -131,16 +138,22 @@ const ProductCard = ({ product, cardWidth = 150 }: Props) => {
           onPress={() => {
             if (quantityInCart === 0) {
               // Add to cart for first time
-              addToCartMutation.mutate({
-                productId: product.id,
-                productName: product.info.name,
-                unitPrice: product.price,
-                imageUrl: primaryImage,
-              }, {
-                onError: (error) => {
-                  Alert.alert("Error", error.message || "Failed to add to cart");
+              addToCartMutation.mutate(
+                {
+                  productId: product.id,
+                  productName: product.info.name,
+                  unitPrice: product.price,
+                  imageUrl: primaryImage,
+                },
+                {
+                  onError: (error) => {
+                    Alert.alert(
+                      "Error",
+                      error.message || "Failed to add to cart"
+                    );
+                  },
                 }
-              });
+              );
             } else {
               // Navigate to cart
               router.push("/cart");

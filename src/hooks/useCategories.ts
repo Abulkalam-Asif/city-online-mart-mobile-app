@@ -16,9 +16,7 @@ export function useGetCategoriesForHomepage() {
         isActive: true,
         showOnHomepage: true,
       }),
-    staleTime: 1000 * 60 * 5, // 5 minutes
-    retry: 2, // Retry twice on failure
-    retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 30000), // Exponential backoff
+    staleTime: 1000 * 60 * 15, // 15 minutes
   });
 }
 
@@ -41,17 +39,46 @@ export function useGetSpecialCategories({
         productsCountGreaterThanZero,
       });
     },
-    staleTime: 1000 * 60 * 5, // 5 minutes
-    retry: 2, // Retry twice on failure
-    retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 30000), // Exponential backoff
+    staleTime: 1000 * 60 * 15, // 15 minutes
   });
 }
 
-// Hook for fetching all categories with their sub-categories
-export function useGetAllCategoriesWithSubCategories() {
+// Index required: CATEGORIES
+// isActive, showOnNavbar, displayOrder, __name__
+// Hook for fetching categories for navbar
+export function useGetCategoriesForNavbar() {
   return useQuery({
-    queryKey: queryKeys.categories.list({ withSubCategories: true }),
-    queryFn: () => categoryService.getAllCategoriesWithSubCategories(),
-    staleTime: 1000 * 60 * 5, // 5 minutes - categories don't change often
+    queryKey: queryKeys.categories.list({
+      isActive: true,
+      showOnNavbar: true,
+    }),
+    queryFn: () => {
+      return categoryService.getCategories({
+        isActive: true,
+        showOnNavbar: true,
+      });
+    },
+    staleTime: 1000 * 60 * 15, // 15 minutes
+  });
+}
+
+// Index required: SUB_CATEGORIES
+// isActive, showOnNavbar, parentCategoryId, displayOrder, __name__
+// Hook for fetching subcategories by parent category ID for navbar
+export function useGetSubCategoriesByCategoryIdForNavbar(
+  parentCategoryId: string
+) {
+  return useQuery({
+    queryKey: queryKeys.subCategories.byParentCategory(parentCategoryId, {
+      isActive: true,
+      showOnNavbar: true,
+    }),
+    queryFn: () =>
+      categoryService.getSubCategories(parentCategoryId, {
+        isActive: true,
+        showOnNavbar: true,
+      }),
+    staleTime: 1000 * 60 * 15, // 15 minutes
+    enabled: !!parentCategoryId,
   });
 }

@@ -1,4 +1,4 @@
-import { collection, doc, getDoc, getDocs, orderBy, query, where } from "firebase/firestore";
+import { collection, getDocs, orderBy, query, where } from "firebase/firestore";
 import { Category, SubCategory } from "../types";
 import { convertEmulatorUrl, db } from "@/firebaseConfig";
 import { logger } from "../utils/logger";
@@ -46,7 +46,7 @@ const firestoreToSubCategory = (id: string, data: any): SubCategory => {
 };
 
 export const categoryService = {
-  // Get all categories
+  // Get all categories based on filters
   async getCategories(filters?: {
     isActive?: boolean;
     showOnHomepage?: boolean;
@@ -91,88 +91,25 @@ export const categoryService = {
     }
   },
 
-  async getCategoryById(id: string): Promise<Category | null> {
-    try {
-      const categoryRef = doc(db, CATEGORIES_COLLECTION, id);
-      const snapshot = await getDoc(categoryRef);
-      if (!snapshot.exists()) {
-        return null;
-      }
-      return firestoreToCategory(snapshot.id, snapshot.data());
-    } catch (error) {
-      logger.error("getCategoryById", error);
-      throw error;
-    }
-  },
-
-  async getSubCategoryById(id: string): Promise<SubCategory | null> {
-    try {
-      const subCategoryRef = doc(db, SUBCATEGORIES_COLLECTION, id);
-      const snapshot = await getDoc(subCategoryRef);
-      if (!snapshot.exists()) {
-        return null;
-      }
-      return firestoreToSubCategory(snapshot.id, snapshot.data());
-    } catch (error) {
-      logger.error("getSubCategoryById", error);
-      throw error;
-    }
-  },
-
-  // Get all active categories with their subCategories populated
-  async getAllCategoriesWithSubCategories(): Promise<any[]> {
-    try {
-      // First, get all main categories
-      const categoriesRef = collection(db, CATEGORIES_COLLECTION);
-      const q = query(
-        categoriesRef,
-        where("isActive", "==", true),
-        orderBy("displayOrder", "asc")
-      );
-      const snapshot = await getDocs(q);
-
-      const categories = await Promise.all(
-        snapshot.docs.map(async (docSnap) => {
-          const category = firestoreToCategory(docSnap.id, docSnap.data());
-
-          // Fetch subCategories for this category
-          const subCategories = await this.getSubCategories(category.id, {
-            isActive: true,
-          });
-
-          return {
-            ...category,
-            subCategories,
-          };
-        })
-      );
-
-      return categories;
-    } catch (error) {
-      console.error("Error fetching categories with subCategories:", error);
-      throw error;
-    }
-  },
-
   // Get subcategory by ID
   async getSubCategories(
-    parentId: string,
-    filter?: { isActive?: boolean }
+    parentCategoryId: string,
+    filter?: { isActive?: boolean; showOnNavbar?: boolean }
   ): Promise<SubCategory[]> {
     try {
-      const subCategoriesRef = collection(
-        db,
-        CATEGORIES_COLLECTION,
-        parentId,
-        SUBCATEGORIES_COLLECTION
-      );
+      const subCategoriesRef = collection(db, SUBCATEGORIES_COLLECTION);
       const constraints = [];
 
       if (filter?.isActive !== undefined) {
         constraints.push(where("isActive", "==", filter.isActive));
       }
+      if (filter?.showOnNavbar !== undefined) {
+        constraints.push(where("showOnNavbar", "==", filter.showOnNavbar));
+      }
+
       const q = query(
         subCategoriesRef,
+        where("parentCategoryId", "==", parentCategoryId),
         ...constraints,
         orderBy("displayOrder", "asc")
       );
@@ -182,7 +119,7 @@ export const categoryService = {
         firestoreToSubCategory(doc.id, doc.data())
       );
     } catch (error) {
-      console.error("Error fetching subCategories:", error);
+      logger.error("getSubCategories", error);
       throw error;
     }
   },
