@@ -27,6 +27,7 @@ import { queryClient, queryKeys } from "@/src/lib/react-query";
 import ErrorBanner from "@/src/components/common/ErrorBanner";
 
 const CategoriesScreen = () => {
+  // Get category and subcategory from URL params (if any)
   const {
     categoryId: searchParamCategoryId,
     subCategoryId: searchParamSubCategoryId,
@@ -42,6 +43,7 @@ const CategoriesScreen = () => {
     error: errorGettingCategoriesForNavbar,
   } = useGetCategoriesForNavbar();
 
+  // Memoize categories for navbar
   const categories = useMemo(
     () => categoriesForNavbarData || [],
     [categoriesForNavbarData]
@@ -51,16 +53,29 @@ const CategoriesScreen = () => {
     searchParamCategoryId || ""
   );
 
+  const [currentSubCategoryId, setCurrentSubCategoryId] = useState(
+    searchParamSubCategoryId || ""
+  );
+
+  // Derive currentCategory from categories array
+  const currentCategory = categories.find(
+    (cat) => cat.id === currentCategoryId
+  );
+
+  // Simple categories have subcategories, special categories don't, and some simple categories can currently have 0 sub-categories
+  const hasSubCategories =
+    currentCategory &&
+    currentCategory.subCategoryCount > 0 &&
+    currentCategory.type === "simple";
+
+  // Only fetch subcategories for "simple" type categories that currently have subcategories
   const {
     data: subCategoriesForNavbarData,
     isLoading: loadingSubCategoriesForNavbar,
     error: errorGettingSubCategoriesForNavbar,
   } = useGetSubCategoriesByCategoryIdForNavbar(
-    searchParamCategoryId || currentCategoryId || ""
-  );
-
-  const [currentSubCategoryId, setCurrentSubCategoryId] = useState(
-    searchParamSubCategoryId || ""
+    currentCategoryId,
+    !!hasSubCategories
   );
 
   // Track if we should auto-scroll (from deep link)
@@ -69,17 +84,31 @@ const CategoriesScreen = () => {
   useEffect(() => {
     if (searchParamCategoryId) {
       shouldAutoScroll.current = true; // Enable auto-scroll for deep link navigation
-      setCurrentCategoryId(searchParamCategoryId);
+      // Set category ID and subcategory ID from URL params
+      setCurrentCategoryId(searchParamCategoryId || "");
       setCurrentSubCategoryId(searchParamSubCategoryId || "");
     }
   }, [searchParamCategoryId, searchParamSubCategoryId]);
 
-  // Set initial category when data loads, and fetch subcategories
+  // Set initial category when data loads
   useEffect(() => {
     if (categories.length > 0 && !currentCategoryId) {
       setCurrentCategoryId(categories[0].id);
     }
   }, [categories, currentCategoryId]);
+
+  // Set initial subcategory when subcategories load or category changes
+  useEffect(() => {
+    // Skip if coming from deep link with a specific subcategory
+    if (searchParamSubCategoryId) return;
+
+    // Set first subcategory if available, otherwise reset to empty
+    if (subCategoriesForNavbarData && subCategoriesForNavbarData.length > 0) {
+      setCurrentSubCategoryId(subCategoriesForNavbarData[0].id);
+    } else {
+      setCurrentSubCategoryId("");
+    }
+  }, [subCategoriesForNavbarData, currentCategoryId, searchParamSubCategoryId]);
 
   const [bottomSheetType, setBottomSheetType] = useState<
     "sort" | "brands" | null
@@ -97,12 +126,6 @@ const CategoriesScreen = () => {
     setSelectedBrands(brands);
     setBottomSheetType(null);
   };
-
-  const currentCategory = categories.find(cat => cat.id === currentCategoryId);
-
-  // Determine if we should show subcategory products or category products
-  const hasSubCategories =
-    currentCategory && currentCategory.subCategoryCount > 0 && currentCategory.type === "simple";
 
   // // Fetch products based on whether subcategory is selected
   // const {

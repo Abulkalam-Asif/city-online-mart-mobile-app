@@ -66,7 +66,8 @@ export function useGetCategoriesForNavbar() {
 // isActive, showOnNavbar, parentCategoryId, displayOrder, __name__
 // Hook for fetching subcategories by parent category ID for navbar
 export function useGetSubCategoriesByCategoryIdForNavbar(
-  parentCategoryId: string
+  parentCategoryId: string,
+  enabled: boolean = true
 ) {
   return useQuery({
     queryKey: queryKeys.subCategories.byParentCategory(parentCategoryId, {
@@ -79,6 +80,6 @@ export function useGetSubCategoriesByCategoryIdForNavbar(
         showOnNavbar: true,
       }),
     staleTime: 1000 * 60 * 15, // 15 minutes
-    enabled: !!parentCategoryId,
+    enabled: !!parentCategoryId && enabled,
   });
 }
