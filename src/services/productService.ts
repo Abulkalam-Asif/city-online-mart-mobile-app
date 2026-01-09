@@ -5,10 +5,15 @@ import {
   doc,
   query,
   where,
+  QueryConstraint,
+  startAfter,
+  limit,
+  orderBy,
 } from "firebase/firestore";
-import { Product } from "../types";
+import { Product, ProductSortType } from "../types";
 import { db, convertEmulatorUrl } from "@/firebaseConfig";
 import { logger } from "../utils/logger";
+import { PaginatedResult } from "../types/common.types";
 
 const PRODUCTS_COLLECTION = "PRODUCTS";
 
@@ -65,17 +70,140 @@ const firestoreToProduct = (id: string, data: any): Product => {
 };
 
 export const productService = {
-  // Get product by ID
-  async getProductById(id: string): Promise<Product | null> {
-    const docRef = doc(db, PRODUCTS_COLLECTION, id);
-    const docSnap = await getDoc(docRef);
+  /**
+   * @param subCategoryId Sub category id
+   * @param sortBy Sort by price-asc, price-desc, default (default is ascending order by document ID)
+   * @param pageSize Page size
+   * @param startAfterDoc Start after document id
+   * @returns Paginated result of products
+   */
+  async getPaginatedProductsBySubCategory(subCategoryId: string, sortBy: ProductSortType, pageSize: number, startAfterDoc?: string | undefined): Promise<PaginatedResult<Product>> {
+    console.log("Paginated by sub category", subCategoryId, sortBy, pageSize, startAfterDoc);
+    try {
+      const queryConstraints: QueryConstraint[] = [
+        where("info.subCategoryId", "==", subCategoryId),
+        where("info.isActive", "==", true)
+      ];
 
-    if (!docSnap.exists()) return null;
+      if (sortBy === "price-asc") {
+        queryConstraints.push(orderBy("price", "asc"));
+      } else if (sortBy === "price-desc") {
+        queryConstraints.push(orderBy("price", "desc"));
+      } else {
+        queryConstraints.push(orderBy("__name__", "asc"));
+      }
 
-    const data = docSnap.data();
-    return firestoreToProduct(docSnap.id, data);
+      // If startAfterDoc is provided, add it to the query constraints
+      if (startAfterDoc) {
+        const lastDoc = await getDoc(doc(db, PRODUCTS_COLLECTION, startAfterDoc));
+        if (lastDoc.exists()) {
+          queryConstraints.push(startAfter(lastDoc));
+        }
+      }
+
+      // Add limit + 1 to check if there are more documents
+      queryConstraints.push(limit(pageSize + 1));
+
+      const q = query(
+        collection(db, PRODUCTS_COLLECTION),
+        ...queryConstraints
+      );
+
+      const snapshot = await getDocs(q);
+
+      // Check if there are more documents
+      const hasMore = snapshot.docs.length > pageSize;
+
+      // Get actual items (excluding the extra one used for hasMore check)
+      const docs = hasMore ? snapshot.docs.slice(0, pageSize) : snapshot.docs;
+
+      const products =
+        docs.map((doc) => firestoreToProduct(doc.id, doc.data()))
+
+      // Get lastDocId for next page cursor
+      const lastDocId = docs.length > 0 ? docs[docs.length - 1].id : undefined;
+
+      return {
+        items: products,
+        hasMore,
+        lastDocId,
+      };
+    } catch (error) {
+      logger.error("getProductBySubCategory", error);
+      throw error;
+    }
   },
 
+  /**
+   * Get paginated products by special category
+   * @param specialCategoryId Special category id
+   * @param sortBy Sort by price-asc, price-desc, default (default is ascending order by document ID)
+   * @param pageSize Page size
+   * @param startAfterDoc Start after document id
+   * @returns Paginated result of products
+   */
+  async getPaginatedProductsBySpecialCategory(specialCategoryId: string, sortBy: ProductSortType, pageSize: number, startAfterDoc?: string | undefined): Promise<PaginatedResult<Product>> {
+    console.log("Paginated by special category", specialCategoryId, sortBy, pageSize, startAfterDoc);
+    try {
+      const queryConstraints: QueryConstraint[] = [
+        where("info.specialCategoryIds", "array-contains", specialCategoryId),
+        where("info.isActive", "==", true)
+      ];
+
+      if (sortBy === "price-asc") {
+        queryConstraints.push(orderBy("price", "asc"));
+      } else if (sortBy === "price-desc") {
+        queryConstraints.push(orderBy("price", "desc"));
+      } else {
+        queryConstraints.push(orderBy("__name__", "asc"));
+      }
+
+      // If startAfterDoc is provided, add it to the query constraints
+      if (startAfterDoc) {
+        const lastDoc = await getDoc(doc(db, PRODUCTS_COLLECTION, startAfterDoc));
+        if (lastDoc.exists()) {
+          queryConstraints.push(startAfter(lastDoc));
+        }
+      }
+
+      // Add limit + 1 to check if there are more documents
+      queryConstraints.push(limit(pageSize + 1));
+
+      const q = query(
+        collection(db, PRODUCTS_COLLECTION),
+        ...queryConstraints
+      );
+
+      const snapshot = await getDocs(q);
+
+      // Check if there are more documents
+      const hasMore = snapshot.docs.length > pageSize;
+
+      // Get actual items (excluding the extra one used for hasMore check)
+      const docs = hasMore ? snapshot.docs.slice(0, pageSize) : snapshot.docs;
+
+      const products =
+        docs.map((doc) => firestoreToProduct(doc.id, doc.data()))
+
+      // Get lastDocId for next page cursor
+      const lastDocId = docs.length > 0 ? docs[docs.length - 1].id : undefined;
+
+      return {
+        items: products,
+        hasMore,
+        lastDocId,
+      };
+    } catch (error) {
+      logger.error("getPaginatedProductsBySubCategory", error);
+      throw error;
+    }
+  },
+
+  /**
+   * Get products by special category
+   * @param specialCategoryId Special category id
+   * @returns Array of products
+   */
   async getProductsBySpecialCategory(
     specialCategoryId: string
   ): Promise<Product[]> {
@@ -86,10 +214,10 @@ export const productService = {
         where("info.isActive", "==", true)
       );
       const snapshot = await getDocs(q);
-      const discounts = await Promise.all(
+      const products = await Promise.all(
         snapshot.docs.map(async (doc) => firestoreToProduct(doc.id, doc.data()))
       );
-      return discounts;
+      return products;
     } catch (error) {
       logger.error("getProductsBySpecialCategory", error);
       throw error;

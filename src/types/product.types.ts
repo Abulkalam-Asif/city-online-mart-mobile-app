@@ -1,11 +1,13 @@
+export type ProductSortType = "default" | "price-asc" | "price-desc"
+
 // Product Information Section
 export interface ProductInfo {
   name: string;
-  nameLowerCase?: string; // Renamed from nameLower - lowercase version for case-insensitive search
-  searchArr?: string[]; // Renamed from words - array of individual words for enhanced search
+  nameLowerCase?: string; // lowercase version for case-insensitive search
+  searchArr?: string[]; // array of individual words for enhanced search
   description: string;
 
-  // Category Assignment (NEW STRUCTURE)
+  // Category Assignment
   subCategoryId?: string; // Single subcategory ID (optional) - primary classification
   specialCategoryIds?: string[]; // Array of special category IDs (optional) - cross-listing
   // Products can have BOTH subCategoryId AND specialCategoryIds

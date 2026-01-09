@@ -1,20 +1,21 @@
-import React from "react";
+import React, { useState } from "react";
 import { Pressable, StyleSheet, Text, View } from "react-native";
 import { theme } from "@/src/constants/theme";
+import { ProductSortType } from "@/src/types";
 
 type SortMenuProps = {
-  onApply: (sortType: string) => void;
-  selectedSort: string;
+  onApply: (sortType: ProductSortType) => void;
+  selectedSort: ProductSortType;
 };
 
 const sortOptions = [
-  { id: "recommended", label: "Recommended (default)" },
-  { id: "price_low_high", label: "Price : High to Low" },
-  { id: "price_high_low", label: "Price : Low to High" },
+  { id: "default", label: "Recommended (default)" },
+  { id: "price-asc", label: "Price : High to Low" },
+  { id: "price-desc", label: "Price : Low to High" },
 ];
 
 const SortMenu = ({ onApply, selectedSort }: SortMenuProps) => {
-  const [localSelected, setLocalSelected] = React.useState(selectedSort);
+  const [localSelected, setLocalSelected] = useState<ProductSortType>(selectedSort);
 
   const handleApply = () => {
     onApply(localSelected);
@@ -30,7 +31,7 @@ const SortMenu = ({ onApply, selectedSort }: SortMenuProps) => {
               styles.option,
               localSelected === option.id && styles.selectedOption,
             ]}
-            onPress={() => setLocalSelected(option.id)}>
+            onPress={() => setLocalSelected(option.id as ProductSortType)}>
             <Text
               style={[
                 styles.optionText,

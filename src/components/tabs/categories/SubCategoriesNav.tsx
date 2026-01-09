@@ -1,5 +1,5 @@
 import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
-import React, { useEffect, useRef, useState } from "react";
+import React, { useEffect, useState } from "react";
 import { theme } from "@/src/constants/theme";
 import { SubCategory } from "@/src/types";
 import SortButton from "./SortButton";
@@ -18,7 +18,6 @@ type SubCategoriesNavProps = {
   setBottomSheetType: (type: "sort" | "brands" | null) => void;
   selectedSort: string;
   selectedBrands: number[];
-  shouldAutoScroll?: React.RefObject<boolean>;
 };
 
 const SubCategoriesNav = ({
@@ -31,10 +30,7 @@ const SubCategoriesNav = ({
   setBottomSheetType,
   selectedSort,
   selectedBrands,
-  shouldAutoScroll,
 }: SubCategoriesNavProps) => {
-  const scrollViewRef = useRef<ScrollView>(null);
-  const itemRefs = useRef<{ [key: string]: View | null }>({});
   const [dismissedError, setDismissedError] = useState(false);
 
   // Reset error when parent category changes
@@ -42,37 +38,6 @@ const SubCategoriesNav = ({
     setDismissedError(false);
   }, [parentCategoryId]);
 
-  // Auto-scroll to selected subcategory (only when from deep link)
-  useEffect(() => {
-    if (
-      shouldAutoScroll?.current &&
-      currentSubCategoryId &&
-      scrollViewRef.current
-    ) {
-      const selectedItemRef = itemRefs.current[currentSubCategoryId];
-
-      if (selectedItemRef) {
-        // Longer delay for subcategories to ensure layout is complete
-        setTimeout(() => {
-          selectedItemRef.measureLayout(
-            scrollViewRef.current as any,
-            (x, y, width, height) => {
-              // Scroll to position the item at the left edge
-              // Add small offset (10px) for visual breathing room
-              scrollViewRef.current?.scrollTo({
-                x: Math.max(0, x - 10),
-                animated: true,
-              });
-            },
-            () => { }
-          );
-        }, 300); // Increased delay for subcategories
-
-        // Reset flag after scrolling
-        shouldAutoScroll.current = false;
-      }
-    }
-  }, [currentSubCategoryId, subCategories, shouldAutoScroll]);
 
   if (errorGettingSubCategories && !dismissedError) {
     return (
@@ -104,8 +69,7 @@ const SubCategoriesNav = ({
         selectedBrands={selectedBrands}
       />
       <ScrollView
-        ref={scrollViewRef}
-        contentContainerStyle={styles.containerContent}
+        contentContainerStyle={[styles.containerContent, loadingSubCategories && { width: "100%" }]}
         horizontal
         showsHorizontalScrollIndicator={false}>
         {loadingSubCategories ? (
@@ -117,9 +81,6 @@ const SubCategoriesNav = ({
           subCategories.map((subCategory) => (
             <View
               key={subCategory.id}
-              ref={(ref) => {
-                itemRefs.current[subCategory.id] = ref;
-              }}
               collapsable={false}>
               <Pressable
                 onPress={() => setCurrentSubCategoryId(subCategory.id)}
@@ -160,7 +121,6 @@ const styles = StyleSheet.create({
     alignItems: "center",
     flexDirection: "row",
     gap: 12,
-    width: "100%",
   },
   subCategoriesLoadingContainer: {
     width: "100%",

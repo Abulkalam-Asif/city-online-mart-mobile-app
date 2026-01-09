@@ -91,63 +91,31 @@ export const queryKeys = {
     // Lists (paginated or infinite scroll)
     lists: () => [...queryKeys.products.all, "list"] as const,
 
-    // By category (infinite scroll)
-    byCategory: (categoryId: string) =>
-      [...queryKeys.products.lists(), "category", categoryId] as const,
-    byCategoryInfinite: (categoryId: string) =>
-      [...queryKeys.products.byCategory(categoryId), "infinite"] as const,
+    // By special category
     bySpecialCategory: (specialCategoryId: string) =>
       [
         ...queryKeys.products.lists(),
         "specialCategory",
         specialCategoryId,
       ] as const,
-
-    // By subcategory (infinite scroll)
-    bySubCategory: (parentCategoryId: string, subCategoryId: string) =>
+    bySpecialCategoryInfinite: (specialCategoryId: string) =>
       [
-        ...queryKeys.products.lists(),
-        "subcategory",
-        parentCategoryId,
-        subCategoryId,
-      ] as const,
-    bySubCategoryInfinite: (parentCategoryId: string, subCategoryId: string) =>
-      [
-        ...queryKeys.products.bySubCategory(parentCategoryId, subCategoryId),
+        ...queryKeys.products.bySpecialCategory(specialCategoryId),
         "infinite",
       ] as const,
 
-    // By IDs (for similar products, bought together, etc.)
-    byIds: (productIds: string[], type: "similar" | "bought-together") =>
+    // By sub-category
+    bySubCategory: (subCategoryId: string) =>
       [
         ...queryKeys.products.lists(),
-        "byIds",
-        type,
-        productIds.join(","),
+        "subcategory",
+        subCategoryId,
       ] as const,
-    byIdsInfinite: (
-      productIds: string[],
-      type: "similar" | "bought-together"
-    ) => [...queryKeys.products.byIds(productIds, type), "infinite"] as const,
-
-    // Special lists
-    featured: () => [...queryKeys.products.lists(), "featured"] as const,
-    new: () => [...queryKeys.products.lists(), "new"] as const,
-    onSale: () => [...queryKeys.products.lists(), "onSale"] as const,
-    bestPrices: (limit: number) =>
-      [...queryKeys.products.lists(), "bestPrices", limit] as const,
-
-    // Search
-    search: (query: string, filters?: Record<string, any>) =>
-      [...queryKeys.products.lists(), "search", query, filters] as const,
-
-    // Single product detail
-    details: () => [...queryKeys.products.all, "detail"] as const,
-    detail: (id: string) => [...queryKeys.products.details(), id] as const,
-
-    // Product reviews
-    reviews: (productId: string) =>
-      [...queryKeys.products.detail(productId), "reviews"] as const,
+    bySubCategoryInfinite: (subCategoryId: string) =>
+      [
+        ...queryKeys.products.bySubCategory(subCategoryId),
+        "infinite",
+      ] as const,
   },
 
   // ========================================

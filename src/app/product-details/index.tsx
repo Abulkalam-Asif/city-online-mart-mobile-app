@@ -1,14 +1,16 @@
 import React from "react";
 import ProductDetailsContent from "@/src/components/product-details/ProductDetailsContent";
 import { useLocalSearchParams } from "expo-router";
-import { useProductById } from "@/src/hooks/useProducts";
+// import { useProductById } from "@/src/hooks/useProducts";
 import { StyleSheet, Text, View } from "react-native";
 import { theme } from "@/src/constants/theme";
 
 export default function ProductDetailsScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
 
-  const { data: product, isLoading } = useProductById(id);
+  // const { data: product, isLoading } = useProductById(id);
+  const product = null;
+  const isLoading = false;
 
   if (!id || !product) {
     return (

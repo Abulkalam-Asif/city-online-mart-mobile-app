@@ -1,11 +1,12 @@
 import {
-  ScrollView,
+  FlatList,
   StyleSheet,
   View,
   Text,
   RefreshControl,
+  ActivityIndicator,
 } from "react-native";
-import React, { useState, useMemo, useEffect, useRef } from "react";
+import React, { useState, useMemo, useEffect, useCallback } from "react";
 import CategoriesHeader from "@/src/components/tabs/categories/CategoriesHeader";
 import CategoriesNav from "@/src/components/tabs/categories/CategoriesNav";
 import SubCategoriesNav from "@/src/components/tabs/categories/SubCategoriesNav";
@@ -16,15 +17,17 @@ import {
   useGetCategoriesForNavbar,
   useGetSubCategoriesByCategoryIdForNavbar,
 } from "@/src/hooks/useCategories";
-// import {
-//   useInfiniteProductsByCategory,
-//   useInfiniteProductsBySubCategory,
-// } from "@/src/hooks/useProducts";
 import { theme } from "@/src/constants/theme";
 import Loading from "@/src/components/common/Loading";
 import { useLocalSearchParams } from "expo-router";
 import { queryClient, queryKeys } from "@/src/lib/react-query";
 import ErrorBanner from "@/src/components/common/ErrorBanner";
+import { useGetInfiniteProductsBySpecialCategory, useGetInfiniteProductsBySubCategory } from "@/src/hooks/useProducts";
+import { Product, ProductSortType } from "@/src/types";
+import ProductCard from "@/src/components/tabs/home/ProductCard";
+import { getResponsiveValue } from "@/src/utils/getResponsiveValue";
+import RetryButton from "@/src/components/common/RetryButton";
+import { useCart } from "@/src/hooks/useCart";
 
 const CategoriesScreen = () => {
   // Get category and subcategory from URL params (if any)
@@ -57,6 +60,9 @@ const CategoriesScreen = () => {
     searchParamSubCategoryId || ""
   );
 
+  // Get cart data
+  const { data: cart } = useCart();
+
   // Derive currentCategory from categories array
   const currentCategory = categories.find(
     (cat) => cat.id === currentCategoryId
@@ -78,12 +84,8 @@ const CategoriesScreen = () => {
     !!hasSubCategories
   );
 
-  // Track if we should auto-scroll (from deep link)
-  const shouldAutoScroll = useRef(false);
-
   useEffect(() => {
     if (searchParamCategoryId) {
-      shouldAutoScroll.current = true; // Enable auto-scroll for deep link navigation
       // Set category ID and subcategory ID from URL params
       setCurrentCategoryId(searchParamCategoryId || "");
       setCurrentSubCategoryId(searchParamSubCategoryId || "");
@@ -114,10 +116,12 @@ const CategoriesScreen = () => {
     "sort" | "brands" | null
   >(null);
 
-  const [selectedSort, setSelectedSort] = useState<string>("recommended");
+  const [selectedSort, setSelectedSort] = useState<
+    ProductSortType
+  >("default");
   const [selectedBrands, setSelectedBrands] = useState<number[]>([]);
 
-  const handleSortApply = (sortType: string) => {
+  const handleSortApply = (sortType: ProductSortType) => {
     setSelectedSort(sortType);
     setBottomSheetType(null);
   };
@@ -127,24 +131,15 @@ const CategoriesScreen = () => {
     setBottomSheetType(null);
   };
 
-  // // Fetch products based on whether subcategory is selected
-  // const {
-  //   data: subCategoryProductsData,
-  //   isLoading: isLoadingSubCategoryProducts,
-  //   error: subCategoryProductsError,
-  //   fetchNextPage: fetchNextSubCategoryPage,
-  //   hasNextPage: hasNextSubCategoryPage,
-  //   isFetchingNextPage: isFetchingNextSubCategoryPage,
-  // } = useInfiniteProductsBySubCategory(currentCategoryId, currentSubCategoryId);
+  const subCategoryProductsQuery = useGetInfiniteProductsBySubCategory(currentSubCategoryId, selectedSort, 10, !!currentSubCategoryId && !!hasSubCategories);
 
-  // const {
-  //   data: categoryProductsData,
-  //   isLoading: isLoadingCategoryProducts,
-  //   error: categoryProductsError,
-  //   fetchNextPage: fetchNextCategoryPage,
-  //   hasNextPage: hasNextCategoryPage,
-  //   isFetchingNextPage: isFetchingNextCategoryPage,
-  // } = useInfiniteProductsByCategory(currentCategoryId);
+  const specialProductsQuery = useGetInfiniteProductsBySpecialCategory(currentCategoryId, selectedSort, 10, !!currentCategoryId && !hasSubCategories)
+
+  // Fetch products based on category type
+  const productsQuery = hasSubCategories ? subCategoryProductsQuery : specialProductsQuery;
+
+  // Memoize products
+  const products = useMemo(() => productsQuery.data?.pages.flatMap(page => page.items) ?? [], [productsQuery.data]);
 
   // Pull to refresh state
   const [isRefreshing, setIsRefreshing] = useState(false);
@@ -177,45 +172,107 @@ const CategoriesScreen = () => {
     }
   };
 
-  // Flatten the infinite query pages into a single array
-  // const products = useMemo(() => {
-  //   if (hasSubCategories && currentSubCategoryId) {
-  //     return (
-  //       subCategoryProductsData?.pages.flatMap((page: any) => page.products) ||
-  //       []
-  //     );
-  //   } else {
-  //     return (
-  //       categoryProductsData?.pages.flatMap((page: any) => page.products) || []
-  //     );
-  //   }
-  // }, [
-  //   hasSubCategories,
-  //   currentSubCategoryId,
-  //   subCategoryProductsData,
-  //   categoryProductsData,
-  // ]);
+  // Calculate product card width based on screen (moved before renderProduct for useCallback dependency)
+  const productCardWidth = getResponsiveValue<number>(
+    (width) => (width - 48) / 2,
+    (width) => (width - 64) / 3
+  );
 
-  // Determine loading and error states
-  // const isLoadingProducts = hasSubCategories
-  //   ? isLoadingSubCategoryProducts
-  //   : isLoadingCategoryProducts;
-  // const productsError = hasSubCategories
-  //   ? subCategoryProductsError
-  //   : categoryProductsError;
+  // Render product item - memoized for performance
+  const renderProduct = useCallback(({ item, index }: { item: Product; index: number }) => {
+    const cartItem = cart?.items.find(i => i.productId === item.id);
+    return (
+      <View style={[
+        styles.productItem,
+        index % 2 === 0 ? styles.productItemLeft : styles.productItemRight
+      ]}>
+        <ProductCard
+          product={item}
+          cardWidth={productCardWidth}
+          quantityInCart={cartItem?.quantity || 0}
+        />
+      </View>
+    )
+  }, [productCardWidth, cart]);
 
-  // // Handle load more
-  // const handleLoadMore = () => {
-  //   if (hasSubCategories && currentSubCategoryId) {
-  //     if (hasNextSubCategoryPage && !isFetchingNextSubCategoryPage) {
-  //       fetchNextSubCategoryPage();
-  //     }
-  //   } else {
-  //     if (hasNextCategoryPage && !isFetchingNextCategoryPage) {
-  //       fetchNextCategoryPage();
-  //     }
-  //   }
-  // };
+  // Number of columns for the grid
+  const numColumns = getResponsiveValue<number>(2, 3);
+
+  // Memoize ListHeader to prevent unnecessary re-renders
+  const ListHeader = useMemo(() => (
+    <>
+      <View style={styles.stickyHeader}>
+        <CategoriesHeader
+          currentCategoryName={
+            categories.find((cat) => cat.id === currentCategoryId)?.name || ""
+          }
+        />
+        <CategoriesNav
+          categories={categories}
+          currentCategoryId={currentCategoryId}
+          setCurrentCategoryId={setCurrentCategoryId}
+        />
+        <SubCategoriesNav
+          subCategories={subCategoriesForNavbarData}
+          loadingSubCategories={loadingSubCategoriesForNavbar}
+          errorGettingSubCategories={errorGettingSubCategoriesForNavbar}
+          parentCategoryId={currentCategoryId}
+          currentSubCategoryId={currentSubCategoryId}
+          setCurrentSubCategoryId={setCurrentSubCategoryId}
+          setBottomSheetType={setBottomSheetType}
+          selectedSort={selectedSort}
+          selectedBrands={selectedBrands}
+        />
+      </View>
+
+      {/* Products Loading/Error States */}
+      {productsQuery.isLoading && (
+        <View style={styles.productsLoading}>
+          <Loading text="Loading products..." />
+        </View>
+      )}
+      {productsQuery.error && !productsQuery.isLoading && (
+        <View style={styles.productsLoading}>
+          <Text style={styles.errorText}>Error loading products</Text>
+          <RetryButton
+            onPress={() => productsQuery.refetch()}
+            text="Retry"
+            style={styles.retryButton}
+          />
+        </View>
+      )}
+      {!productsQuery.isLoading && !productsQuery.error && products.length === 0 && (
+        <View style={styles.productsLoading}>
+          <Text style={styles.emptyText}>No products available</Text>
+        </View>
+      )}
+    </>
+  ), [
+    categories,
+    currentCategoryId,
+    setCurrentCategoryId,
+    subCategoriesForNavbarData,
+    loadingSubCategoriesForNavbar,
+    errorGettingSubCategoriesForNavbar,
+    currentSubCategoryId,
+    setCurrentSubCategoryId,
+    setBottomSheetType,
+    selectedSort,
+    selectedBrands,
+    productsQuery.isLoading,
+    productsQuery.error,
+    products.length
+  ]);
+
+  // Footer component for loading more indicator
+  const ListFooter = useMemo(() => {
+    if (!productsQuery.isFetchingNextPage) return null;
+    return (
+      <View style={styles.footer}>
+        <ActivityIndicator size="small" color={theme.colors.primary} />
+      </View>
+    );
+  }, [productsQuery.isFetchingNextPage]);
 
   // Loading state
   if (loadingCategoriesForNavbar) {
@@ -254,12 +311,28 @@ const CategoriesScreen = () => {
     );
   }
 
+
+
   return (
     <>
-      <ScrollView
+      <FlatList
         style={styles.container}
         contentContainerStyle={styles.containerContent}
+        columnWrapperStyle={styles.columnWrapper}
+        data={products}
+        renderItem={renderProduct}
+        keyExtractor={(item) => item.id}
+        numColumns={numColumns}
+        ListHeaderComponent={ListHeader}
+        ListFooterComponent={ListFooter}
+        showsVerticalScrollIndicator={true}
         stickyHeaderIndices={[0]}
+        onEndReached={() => {
+          if (productsQuery.hasNextPage && !productsQuery.isFetchingNextPage) {
+            productsQuery.fetchNextPage();
+          }
+        }}
+        onEndReachedThreshold={0.5}
         refreshControl={
           <RefreshControl
             refreshing={isRefreshing}
@@ -268,66 +341,11 @@ const CategoriesScreen = () => {
               theme.colors.primary,
               theme.colors.secondary,
               theme.colors.error,
-            ]} // Android
-            tintColor={theme.colors.primary} // iOS
+            ]}
+            tintColor={theme.colors.primary}
           />
-        }>
-        <View style={styles.stickyHeader}>
-          <CategoriesHeader
-            currentCategoryName={
-              categories.find((cat) => cat.id === currentCategoryId)?.name || ""
-            }
-          />
-          <CategoriesNav
-            categories={categories}
-            currentCategoryId={currentCategoryId}
-            setCurrentCategoryId={setCurrentCategoryId}
-            setCurrentSubCategoryId={setCurrentSubCategoryId}
-            shouldAutoScroll={shouldAutoScroll}
-          />
-          <SubCategoriesNav
-            subCategories={subCategoriesForNavbarData}
-            loadingSubCategories={loadingSubCategoriesForNavbar}
-            errorGettingSubCategories={errorGettingSubCategoriesForNavbar}
-            parentCategoryId={currentCategoryId}
-            currentSubCategoryId={currentSubCategoryId}
-            setCurrentSubCategoryId={setCurrentSubCategoryId}
-            setBottomSheetType={setBottomSheetType}
-            selectedSort={selectedSort}
-            selectedBrands={selectedBrands}
-            shouldAutoScroll={shouldAutoScroll}
-          />
-        </View>
-
-        {/* Products Loading State */}
-        {/* {isLoadingProducts ? (
-          <Loading text="Loading products..." />
-        ) : productsError ? (
-          <View style={styles.productsLoading}>
-            <Text style={styles.errorText}>Error loading products</Text>
-            <Text style={styles.errorDetail}>{productsError.message}</Text>
-          </View>
-        ) : products.length === 0 ? (
-          <View style={styles.productsLoading}>
-            <Text style={styles.emptyText}>No products available</Text>
-          </View>
-        ) : (
-          <ProductsGrid
-            products={products}
-            selectedSort={selectedSort}
-            selectedBrands={selectedBrands}
-            onEndReached={handleLoadMore}
-            hasNextPage={
-              hasSubCategories ? hasNextSubCategoryPage : hasNextCategoryPage
-            }
-            isFetchingNextPage={
-              hasSubCategories
-                ? isFetchingNextSubCategoryPage
-                : isFetchingNextCategoryPage
-            }
-          />
-        )} */}
-      </ScrollView>
+        }
+      />
       <PortalBottomSheet
         id="categories-filter"
         isVisible={bottomSheetType !== null}
@@ -354,7 +372,10 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   containerContent: {
-    paddingBottom: 60,
+    paddingBottom: 100
+  },
+  columnWrapper: {
+    paddingTop: 16
   },
   stickyHeader: {
     backgroundColor: "#fff",
@@ -380,14 +401,28 @@ const styles = StyleSheet.create({
     color: "#DC2626",
     marginBottom: 8,
   },
-  errorDetail: {
-    fontSize: 14,
-    color: "#666",
-    textAlign: "center",
+  retryButton: {
+    marginTop: 16,
     paddingHorizontal: 32,
   },
   emptyText: {
     fontSize: 16,
     color: "#666",
+  },
+  productItem: {
+    flex: 1,
+    // marginBottom: 16,
+  },
+  productItemLeft: {
+    paddingLeft: 16,
+    paddingRight: 8,
+  },
+  productItemRight: {
+    paddingLeft: 8,
+    paddingRight: 16,
+  },
+  footer: {
+    paddingVertical: 40,
+    alignItems: "center",
   },
 });

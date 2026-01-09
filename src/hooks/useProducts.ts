@@ -1,6 +1,8 @@
 import { useQuery } from "@tanstack/react-query";
 import { productService } from "../services/productService";
 import { queryKeys } from "../lib/react-query";
+import { useInfiniteQuery } from "@tanstack/react-query";
+import { ProductSortType } from "../types";
 
 // Hook to get products by special category
 export function useGetProductsBySpecialCategory(specialCategoryId: string) {
@@ -13,15 +15,51 @@ export function useGetProductsBySpecialCategory(specialCategoryId: string) {
   });
 }
 
-// Hook to get a product details by ID
-export function useProductById(productId: string) {
-  return useQuery({
-    queryKey: queryKeys.products.detail(productId),
-    queryFn: () => productService.getProductById(productId),
-    enabled: !!productId,
-    staleTime: 1000 * 60 * 2, // 2 minutes
+// Hook to get infinite products by sub category
+export function useGetInfiniteProductsBySubCategory(
+  subCategoryId: string,
+  sortBy: ProductSortType,
+  pageSize: number,
+  enabled: boolean = true
+) {
+  return useInfiniteQuery({
+    queryKey: [...queryKeys.products.bySubCategoryInfinite(subCategoryId), sortBy, pageSize],
+    queryFn: ({ pageParam }) =>
+      productService.getPaginatedProductsBySubCategory(subCategoryId, sortBy, pageSize, pageParam),
+    getNextPageParam: (lastPage) => lastPage.hasMore ? lastPage.lastDocId : undefined,
+    initialPageParam: undefined as string | undefined,
+    enabled: enabled && !!subCategoryId,
+    staleTime: 1000 * 60 * 15, // 15 minutes
   });
 }
+
+// Hook to get infinite products by special category
+export function useGetInfiniteProductsBySpecialCategory(
+  specialCategoryId: string,
+  sortBy: ProductSortType,
+  pageSize: number,
+  enabled: boolean = true
+) {
+  return useInfiniteQuery({
+    queryKey: [...queryKeys.products.bySpecialCategoryInfinite(specialCategoryId), sortBy, pageSize],
+    queryFn: ({ pageParam }) =>
+      productService.getPaginatedProductsBySpecialCategory(specialCategoryId, sortBy, pageSize, pageParam),
+    getNextPageParam: (lastPage) => lastPage.hasMore ? lastPage.lastDocId : undefined,
+    initialPageParam: undefined as string | undefined,
+    enabled: enabled && !!specialCategoryId,
+    staleTime: 1000 * 60 * 15, // 15 minutes
+  });
+}
+
+// Hook to get a product details by ID
+// export function useProductById(productId: string) {
+//   return useQuery({
+//     queryKey: queryKeys.products.detail(productId),
+//     queryFn: () => productService.getProductById(productId),
+//     enabled: !!productId,
+//     staleTime: 1000 * 60 * 2, // 2 minutes
+//   });
+// }
 
 // Hook for infinite scrolling products by IDs (for similar/bought-together products)
 // export function useInfiniteProductsByIds(

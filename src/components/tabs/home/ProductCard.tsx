@@ -1,35 +1,28 @@
 import { Alert, Pressable, StyleSheet, Text, View } from "react-native";
-import React, { useMemo } from "react";
+import React from "react";
 import { Image } from "expo-image";
 import { theme } from "@/src/constants/theme";
 import { FontAwesome6 } from "@expo/vector-icons";
 import { router } from "expo-router";
 import { Product } from "@/src/types";
 import { useSinglePress } from "@/src/hooks/useSinglePress";
-import { useCart, useAddToCart, useUpdateCartItem } from "@/src/hooks/useCart";
+import { useAddToCart, useUpdateCartItem } from "@/src/hooks/useCart";
 import { productUtils } from "@/src/utils/productUtils";
 
-type Props = {
+type ProductCardProps = {
   product: Product;
   cardWidth?: number | `${number}%`;
+  quantityInCart: number;
 };
 
-const ProductCard = ({ product, cardWidth = 150 }: Props) => {
+const ProductCard = ({ product, cardWidth = 150, quantityInCart }: ProductCardProps) => {
   const canPress = useSinglePress();
 
-  // Get cart data
-  const { data: cart } = useCart();
+
 
   // Cart mutations
   const addToCartMutation = useAddToCart();
   const updateCartItemMutation = useUpdateCartItem();
-
-  // Check if product is in cart and get quantity
-  const cartItem = useMemo(() => {
-    return cart?.items.find((item) => item.productId === product.id);
-  }, [cart, product.id]);
-
-  const quantityInCart = cartItem?.quantity || 0;
 
   const handleProductPress = () => {
     if (!canPress()) return;
@@ -168,7 +161,7 @@ const ProductCard = ({ product, cardWidth = 150 }: Props) => {
   );
 };
 
-export default ProductCard;
+export default React.memo(ProductCard);
 
 const styles = StyleSheet.create({
   card: {
