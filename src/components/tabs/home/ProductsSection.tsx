@@ -7,6 +7,7 @@ import { useGetProductsBySpecialCategory } from "@/src/hooks/useProducts";
 import Loading from "../../common/Loading";
 import RetryButton from "../../common/RetryButton";
 import { queryClient, queryKeys } from "@/src/lib/react-query";
+import { useCart } from "@/src/hooks/useCart";
 
 type ProductsSectionProps = {
   category: Category;
@@ -22,6 +23,8 @@ const ProductsSection = ({
     isLoading: loadingProducts,
     error: errorGettingProducts,
   } = useGetProductsBySpecialCategory(category.id);
+
+  const { data: cart } = useCart();
 
   return (
     <View style={styles.container}>
@@ -46,9 +49,14 @@ const ProductsSection = ({
         ) : (
           products &&
           products.length > 0 &&
-          products?.map((product) => (
-            <ProductCard key={product.id} product={product} />
-          ))
+          products?.map((product) => {
+            const cartItem = cart?.items.find(i => i.productId === product.id);
+            return (
+              <ProductCard key={product.id} product={product}
+                quantityInCart={cartItem?.quantity || 0}
+              />
+            )
+          })
         )}
       </ScrollView>
     </View>
