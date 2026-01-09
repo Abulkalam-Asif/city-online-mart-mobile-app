@@ -15,6 +15,9 @@ export function useGetProductsBySpecialCategory(specialCategoryId: string) {
   });
 }
 
+// Indexes required: PRODUCTS
+// 1. info.subCategoryId, info.isActive, price (when sortBy="price-asc")
+// 2. info.subCategoryId, info.isActive, price (desc), __name__ (desc) (when sortBy="price-desc")
 // Hook to get infinite products by sub category
 export function useGetInfiniteProductsBySubCategory(
   subCategoryId: string,
@@ -33,6 +36,9 @@ export function useGetInfiniteProductsBySubCategory(
   });
 }
 
+// Indexes required: PRODUCTS
+// 1. info.specialCategoryIds, info.isActive, price (when sortBy="price-asc")
+// 2. info.specialCategoryIds, info.isActive, price (desc), __name__ (desc) (when sortBy="price-desc")
 // Hook to get infinite products by special category
 export function useGetInfiniteProductsBySpecialCategory(
   specialCategoryId: string,
