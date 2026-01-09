@@ -29,6 +29,8 @@ import { getResponsiveValue } from "@/src/utils/getResponsiveValue";
 import RetryButton from "@/src/components/common/RetryButton";
 import { useCart } from "@/src/hooks/useCart";
 
+const PRODUCTS_PER_PAGE = 6;
+
 const CategoriesScreen = () => {
   // Get category and subcategory from URL params (if any)
   const {
@@ -131,9 +133,9 @@ const CategoriesScreen = () => {
     setBottomSheetType(null);
   };
 
-  const subCategoryProductsQuery = useGetInfiniteProductsBySubCategory(currentSubCategoryId, selectedSort, 10, !!currentSubCategoryId && !!hasSubCategories);
+  const subCategoryProductsQuery = useGetInfiniteProductsBySubCategory(currentSubCategoryId, selectedSort, PRODUCTS_PER_PAGE, !!currentSubCategoryId && !!hasSubCategories);
 
-  const specialProductsQuery = useGetInfiniteProductsBySpecialCategory(currentCategoryId, selectedSort, 10, !!currentCategoryId && !hasSubCategories)
+  const specialProductsQuery = useGetInfiniteProductsBySpecialCategory(currentCategoryId, selectedSort, PRODUCTS_PER_PAGE, !!currentCategoryId && !hasSubCategories)
 
   // Fetch products based on category type
   const productsQuery = hasSubCategories ? subCategoryProductsQuery : specialProductsQuery;
@@ -167,6 +169,10 @@ const CategoriesScreen = () => {
           ),
         });
       }
+
+      // Products - only refetch the CURRENT query (not all cached pages)
+      await productsQuery.refetch();  // ✅ Just refetches current infinite query
+
     } finally {
       setIsRefreshing(false);
     }

@@ -78,7 +78,6 @@ export const productService = {
    * @returns Paginated result of products
    */
   async getPaginatedProductsBySubCategory(subCategoryId: string, sortBy: ProductSortType, pageSize: number, startAfterDoc?: string | undefined): Promise<PaginatedResult<Product>> {
-    console.log("Paginated by sub category", subCategoryId, sortBy, pageSize, startAfterDoc);
     try {
       const queryConstraints: QueryConstraint[] = [
         where("info.subCategoryId", "==", subCategoryId),
@@ -143,7 +142,6 @@ export const productService = {
    * @returns Paginated result of products
    */
   async getPaginatedProductsBySpecialCategory(specialCategoryId: string, sortBy: ProductSortType, pageSize: number, startAfterDoc?: string | undefined): Promise<PaginatedResult<Product>> {
-    console.log("Paginated by special category", specialCategoryId, sortBy, pageSize, startAfterDoc);
     try {
       const queryConstraints: QueryConstraint[] = [
         where("info.specialCategoryIds", "array-contains", specialCategoryId),
