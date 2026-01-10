@@ -18,7 +18,7 @@ const HomeTopBg = () => {
   );
 };
 
-export default HomeTopBg;
+export default React.memo(HomeTopBg);
 
 const styles = StyleSheet.create({
   container: {

@@ -203,18 +203,26 @@ export const productService = {
    * @returns Array of products
    */
   async getProductsBySpecialCategory(
-    specialCategoryId: string
+    specialCategoryId: string,
+    filters?: {
+      limit?: number;
+    }
   ): Promise<Product[]> {
     try {
-      const q = query(
-        collection(db, PRODUCTS_COLLECTION),
+      const queryConstraints: QueryConstraint[] = [
         where("info.specialCategoryIds", "array-contains", specialCategoryId),
         where("info.isActive", "==", true)
+      ];
+      if (filters?.limit) {
+        queryConstraints.push(limit(filters.limit));
+      }
+      const q = query(
+        collection(db, PRODUCTS_COLLECTION),
+        ...queryConstraints
       );
       const snapshot = await getDocs(q);
-      const products = await Promise.all(
-        snapshot.docs.map(async (doc) => firestoreToProduct(doc.id, doc.data()))
-      );
+      const products = snapshot.docs.map((doc) => firestoreToProduct(doc.id, doc.data()));
+
       return products;
     } catch (error) {
       logger.error("getProductsBySpecialCategory", error);

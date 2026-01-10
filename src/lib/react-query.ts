@@ -92,11 +92,12 @@ export const queryKeys = {
     lists: () => [...queryKeys.products.all, "list"] as const,
 
     // By special category
-    bySpecialCategory: (specialCategoryId: string) =>
+    bySpecialCategory: (specialCategoryId: string, filters?: { limit?: number }) =>
       [
         ...queryKeys.products.lists(),
         "specialCategory",
         specialCategoryId,
+        filters,
       ] as const,
     bySpecialCategoryInfinite: (specialCategoryId: string) =>
       [

@@ -1,4 +1,4 @@
-import { StyleSheet, View, ScrollView, Text } from "react-native";
+import { StyleSheet, View, ScrollView, Text, Pressable } from "react-native";
 import React from "react";
 import { theme } from "@/src/constants/theme";
 import ProductCard from "./ProductCard";
@@ -8,6 +8,9 @@ import Loading from "../../common/Loading";
 import RetryButton from "../../common/RetryButton";
 import { queryClient, queryKeys } from "@/src/lib/react-query";
 import { useCart } from "@/src/hooks/useCart";
+import { SPECIAL_CATEGORIES_PRODUCTS_LIMIT_FOR_HOMEPAGE } from "@/src/app/(tabs)/home";
+import { FontAwesome6 } from "@expo/vector-icons";
+import { router } from "expo-router";
 
 type ProductsSectionProps = {
   category: Category;
@@ -22,9 +25,16 @@ const ProductsSection = ({
     data: products,
     isLoading: loadingProducts,
     error: errorGettingProducts,
-  } = useGetProductsBySpecialCategory(category.id);
+  } = useGetProductsBySpecialCategory(category.id, { limit: SPECIAL_CATEGORIES_PRODUCTS_LIMIT_FOR_HOMEPAGE });
 
   const { data: cart } = useCart();
+
+  const handleViewAll = () => {
+    router.push({
+      pathname: "/(tabs)/categories",
+      params: { categoryId: category.id },
+    });
+  };
 
   return (
     <View style={styles.container}>
@@ -49,21 +59,34 @@ const ProductsSection = ({
         ) : (
           products &&
           products.length > 0 &&
-          products?.map((product) => {
-            const cartItem = cart?.items.find(i => i.productId === product.id);
-            return (
-              <ProductCard key={product.id} product={product}
-                quantityInCart={cartItem?.quantity || 0}
-              />
-            )
-          })
+          (<>
+            {products?.map((product) => {
+              const cartItem = cart?.items.find(i => i.productId === product.id);
+              return (
+                <ProductCard key={product.id} product={product}
+                  quantityInCart={cartItem?.quantity || 0}
+                />
+              )
+            })}
+            <View style={styles.viewAllButtonContainer}>
+              <Pressable
+                onPress={handleViewAll}
+                style={({ pressed }) => [
+                  styles.viewAllButton,
+                  pressed && styles.viewAllButtonPressed,
+                ]}>
+                <FontAwesome6 name="arrow-right" size={20} color={theme.colors.primary} />
+              </Pressable>
+              <Text style={styles.viewAllText}>View All</Text>
+            </View>
+          </>)
         )}
       </ScrollView>
     </View>
   );
 };
 
-export default ProductsSection;
+export default React.memo(ProductsSection);
 
 const styles = StyleSheet.create({
   container: {
@@ -82,5 +105,30 @@ const styles = StyleSheet.create({
     gap: 12,
     paddingHorizontal: 20,
     paddingVertical: 20,
+  },
+  viewAllButtonContainer: {
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 8,
+    paddingHorizontal: 20,
+  },
+  viewAllButton: {
+    width: 56,
+    height: 56,
+    justifyContent: "center",
+    alignItems: "center",
+    borderRadius: 28,
+    backgroundColor: theme.colors.background_3,
+    borderWidth: 1,
+    borderColor: theme.colors.primary,
+  },
+  viewAllButtonPressed: {
+    backgroundColor: theme.colors.background,
+    transform: [{ scale: 0.95 }],
+  },
+  viewAllText: {
+    fontFamily: theme.fonts.medium,
+    fontSize: 12,
+    color: theme.colors.text_secondary,
   },
 });

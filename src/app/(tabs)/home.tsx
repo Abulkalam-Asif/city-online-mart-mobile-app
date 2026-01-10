@@ -1,18 +1,17 @@
 import { RefreshControl, ScrollView, StyleSheet } from "react-native";
 import React, { useState } from "react";
-import BannersCarousel from "@/src/components/tabs/home/BannersCarousel";
 import HomeSearchSection from "@/src/components/tabs/home/HomeSearchSection";
 import CategoriesSection from "@/src/components/tabs/home/categories-section/CategoriesSection";
-import BestPricesSection from "@/src/components/tabs/home/categories-section/BestPricesSection";
 import HomeTopBg from "@/src/components/tabs/home/HomeTopBg";
 import Sidebar from "@/src/components/tabs/home/Sidebar";
-import PopupBanner from "@/src/components/tabs/home/PopupBanner";
 import ProductsSection from "@/src/components/tabs/home/ProductsSection";
 import { useGetSpecialCategories } from "@/src/hooks/useCategories";
 import { queryClient, queryKeys } from "@/src/lib/react-query";
 import { theme } from "@/src/constants/theme";
 import Loading from "@/src/components/common/Loading";
 import { Category } from "@/src/types";
+
+export const SPECIAL_CATEGORIES_PRODUCTS_LIMIT_FOR_HOMEPAGE = 6;
 
 const HomeScreen = () => {
   const {
@@ -64,7 +63,7 @@ const HomeScreen = () => {
       await Promise.all(
         freshCategories.map((category) =>
           queryClient.invalidateQueries({
-            queryKey: queryKeys.products.bySpecialCategory(category.id),
+            queryKey: queryKeys.products.bySpecialCategory(category.id, { limit: SPECIAL_CATEGORIES_PRODUCTS_LIMIT_FOR_HOMEPAGE }),
           })
         )
       );
@@ -93,7 +92,7 @@ const HomeScreen = () => {
         <HomeTopBg />
         <HomeSearchSection openSidebarHandler={() => setIsSidebarOpen(true)} />
         {/* <BannersCarousel /> */}
-        <BestPricesSection />
+        {/* <BestPricesSection /> */}
         <CategoriesSection />
         {loadingSpecialCategories ? (
           <Loading />

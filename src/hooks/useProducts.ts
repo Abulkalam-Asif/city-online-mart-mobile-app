@@ -1,15 +1,17 @@
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useInfiniteQuery } from "@tanstack/react-query";
 import { productService } from "../services/productService";
 import { queryKeys } from "../lib/react-query";
-import { useInfiniteQuery } from "@tanstack/react-query";
 import { ProductSortType } from "../types";
 
 // Hook to get products by special category
-export function useGetProductsBySpecialCategory(specialCategoryId: string) {
+export function useGetProductsBySpecialCategory(
+  specialCategoryId: string,
+  filters?: { limit?: number }
+) {
   return useQuery({
-    queryKey: queryKeys.products.bySpecialCategory(specialCategoryId),
+    queryKey: queryKeys.products.bySpecialCategory(specialCategoryId, filters),
     queryFn: () =>
-      productService.getProductsBySpecialCategory(specialCategoryId),
+      productService.getProductsBySpecialCategory(specialCategoryId, filters),
     enabled: !!specialCategoryId,
     staleTime: 1000 * 60 * 15, // 15 minutes
   });
@@ -26,10 +28,20 @@ export function useGetInfiniteProductsBySubCategory(
   enabled: boolean = true
 ) {
   return useInfiniteQuery({
-    queryKey: [...queryKeys.products.bySubCategoryInfinite(subCategoryId), sortBy, pageSize],
+    queryKey: [
+      ...queryKeys.products.bySubCategoryInfinite(subCategoryId),
+      sortBy,
+      pageSize,
+    ],
     queryFn: ({ pageParam }) =>
-      productService.getPaginatedProductsBySubCategory(subCategoryId, sortBy, pageSize, pageParam),
-    getNextPageParam: (lastPage) => lastPage.hasMore ? lastPage.lastDocId : undefined,
+      productService.getPaginatedProductsBySubCategory(
+        subCategoryId,
+        sortBy,
+        pageSize,
+        pageParam
+      ),
+    getNextPageParam: (lastPage) =>
+      lastPage.hasMore ? lastPage.lastDocId : undefined,
     initialPageParam: undefined as string | undefined,
     enabled: enabled && !!subCategoryId,
     staleTime: 1000 * 60 * 15, // 15 minutes
@@ -47,10 +59,20 @@ export function useGetInfiniteProductsBySpecialCategory(
   enabled: boolean = true
 ) {
   return useInfiniteQuery({
-    queryKey: [...queryKeys.products.bySpecialCategoryInfinite(specialCategoryId), sortBy, pageSize],
+    queryKey: [
+      ...queryKeys.products.bySpecialCategoryInfinite(specialCategoryId),
+      sortBy,
+      pageSize,
+    ],
     queryFn: ({ pageParam }) =>
-      productService.getPaginatedProductsBySpecialCategory(specialCategoryId, sortBy, pageSize, pageParam),
-    getNextPageParam: (lastPage) => lastPage.hasMore ? lastPage.lastDocId : undefined,
+      productService.getPaginatedProductsBySpecialCategory(
+        specialCategoryId,
+        sortBy,
+        pageSize,
+        pageParam
+      ),
+    getNextPageParam: (lastPage) =>
+      lastPage.hasMore ? lastPage.lastDocId : undefined,
     initialPageParam: undefined as string | undefined,
     enabled: enabled && !!specialCategoryId,
     staleTime: 1000 * 60 * 15, // 15 minutes
