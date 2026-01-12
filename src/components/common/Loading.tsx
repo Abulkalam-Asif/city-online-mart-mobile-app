@@ -5,13 +5,14 @@ import { theme } from "@/src/constants/theme";
 interface LoadingProps extends React.ComponentProps<typeof View> {
   text?: string;
   size?: number | "small" | "large" | undefined;
+  color?: string;
 }
 
-const Loading = ({ text, size = "large", ...props }: LoadingProps) => {
+const Loading = ({ text, size = "large", color, ...props }: LoadingProps) => {
   return (
     <>
       <View style={styles.loadingContainer} {...props}>
-        <ActivityIndicator size={size} color={theme.colors.primary} />
+        <ActivityIndicator size={size} color={color || theme.colors.primary} />
         {text && <Text style={styles.loadingText}>{text}</Text>}
       </View>
     </>

@@ -1,8 +1,9 @@
 import { Dimensions, StyleSheet, View } from "react-native";
-import React, { useRef, useState } from "react";
+import React from "react";
 import Carousel from "react-native-reanimated-carousel";
 import { Image } from "expo-image";
 import CarouselAnimatedDots from "../general/CarouselAnimatedDots";
+import { useSharedValue } from "react-native-reanimated";
 
 type ImagesCarouselProps = {
   images: string[];
@@ -13,20 +14,20 @@ const { width } = Dimensions.get("window");
 const ImagesCarousel = ({ images }: ImagesCarouselProps) => {
   const cardWidth = width;
 
-  const [currentIndex, setCurrentIndex] = useState(0);
-  const carouselRef = useRef<any>(null);
+  const progressValue = useSharedValue<number>(0);
 
   return (
     <>
       <View>
         <Carousel
-          ref={carouselRef}
           width={cardWidth}
           height={250}
           style={{ width: width }}
           autoPlay={true}
           autoPlayInterval={10000}
-          onSnapToItem={(index) => setCurrentIndex(index)}
+          onProgressChange={(_, absoluteProgress) => {
+            progressValue.value = absoluteProgress;
+          }}
           data={images || []}
           renderItem={({ item }: { item: string }) => (
             <View style={styles.imageContainer}>
@@ -40,10 +41,8 @@ const ImagesCarousel = ({ images }: ImagesCarouselProps) => {
         />
         <CarouselAnimatedDots
           bannersCount={images.length}
-          currentIndex={currentIndex}
-          setCurrentIndex={setCurrentIndex}
           horizontalPosition="center"
-          carouselRef={carouselRef}
+          progressValue={progressValue}
         />
       </View>
     </>

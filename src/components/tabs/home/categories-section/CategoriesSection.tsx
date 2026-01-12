@@ -79,7 +79,7 @@ const CategoriesSection = () => {
   );
 };
 
-export default CategoriesSection;
+export default React.memo(CategoriesSection);
 
 const styles = StyleSheet.create({
   container: {

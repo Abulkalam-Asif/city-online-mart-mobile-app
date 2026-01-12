@@ -8,9 +8,9 @@ import Loading from "../../common/Loading";
 import RetryButton from "../../common/RetryButton";
 import { queryClient, queryKeys } from "@/src/lib/react-query";
 import { useCart } from "@/src/hooks/useCart";
-import { SPECIAL_CATEGORIES_PRODUCTS_LIMIT_FOR_HOMEPAGE } from "@/src/app/(tabs)/home";
 import { FontAwesome6 } from "@expo/vector-icons";
 import { router } from "expo-router";
+import { CONSTANTS } from "@/src/constants/constants";
 
 type ProductsSectionProps = {
   category: Category;
@@ -25,7 +25,7 @@ const ProductsSection = ({
     data: products,
     isLoading: loadingProducts,
     error: errorGettingProducts,
-  } = useGetProductsBySpecialCategory(category.id, { limit: SPECIAL_CATEGORIES_PRODUCTS_LIMIT_FOR_HOMEPAGE });
+  } = useGetProductsBySpecialCategory(category.id, { limit: CONSTANTS.limits.homepageProductsPerSpecialCategory });
 
   const { data: cart } = useCart();
 

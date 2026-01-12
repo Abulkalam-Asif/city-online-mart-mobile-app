@@ -4,39 +4,26 @@ import { Image } from "expo-image";
 import { Ionicons } from "@expo/vector-icons";
 import { useGetPopupBanner } from "@/src/hooks/useBanners";
 import { router } from "expo-router";
-import bannerService from "@/src/services/bannerService";
 
-const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get("window");
+const { width: SCREEN_WIDTH } = Dimensions.get("window");
+
+let hasShownPopupThisSession = false;
 
 const PopupBanner = () => {
-  const { data: popupBanner, isLoading } = useGetPopupBanner();
+  const { data: popupBanner, isLoading, error: errorGettingPopupBanner } = useGetPopupBanner();
   const [isVisible, setIsVisible] = useState(false);
-  const [hasCheckedBanner, setHasCheckedBanner] = useState(false);
 
-  // Check if this is a new banner when data is loaded
+  // Show popup banner if it exists and hasn't been shown this session
   useEffect(() => {
-    const checkAndShowBanner = async () => {
-      if (!popupBanner || hasCheckedBanner) {
-        return;
-      }
-
-      // Check if this is a new banner
-      const shouldShow = await bannerService.isNewPopupBanner(popupBanner.id);
-
-      if (shouldShow) {
-        // Store the banner ID immediately to prevent showing it again
-        await bannerService.storePopupBannerId(popupBanner.id);
-        setIsVisible(true);
-      }
-
-      setHasCheckedBanner(true);
-    };
-
-    checkAndShowBanner();
-  }, [popupBanner, hasCheckedBanner]);
+    if (!popupBanner || hasShownPopupThisSession) {
+      return;
+    }
+    hasShownPopupThisSession = true;
+    setIsVisible(true);
+  }, [popupBanner]);
 
   // Don't show if loading, no data, or not visible
-  if (isLoading || !popupBanner || !isVisible) {
+  if (isLoading || !popupBanner || !isVisible || errorGettingPopupBanner) {
     return null;
   }
 
@@ -62,13 +49,10 @@ const PopupBanner = () => {
       animationType="fade"
       onRequestClose={handleClose}>
       <Pressable style={styles.overlay} onPress={handleClose}>
-        <View style={styles.bannerContainer}>
-          {/* Close Button */}
+        <View style={styles.contentWrapper}>
           <Pressable style={styles.closeButton} onPress={handleClose}>
-            <Ionicons name="close" size={24} color="#fff" />
+            <Ionicons name="close" size={28} color="#000" />
           </Pressable>
-
-          {/* Banner Image */}
           <Pressable onPress={handleBannerPress} style={styles.imageContainer}>
             <Image
               source={popupBanner.imageUrl}
@@ -84,48 +68,32 @@ const PopupBanner = () => {
 
 export default PopupBanner;
 
+const BANNER_WIDTH = SCREEN_WIDTH * 0.9;
+
 const styles = StyleSheet.create({
   overlay: {
     flex: 1,
-    backgroundColor: "rgba(0, 0, 0, 0.5)",
+    backgroundColor: "rgba(0, 0, 0, 0.6)",
     justifyContent: "center",
     alignItems: "center",
-    padding: 20,
   },
-  bannerContainer: {
-    position: "relative",
-    borderRadius: 12,
-    overflow: "hidden",
-    maxWidth: SCREEN_WIDTH * 0.9,
-    maxHeight: SCREEN_HEIGHT * 0.7,
-    elevation: 10,
-    shadowColor: "#000",
-    shadowOffset: {
-      width: 0,
-      height: 5,
-    },
-    shadowOpacity: 0.25,
-    shadowRadius: 10,
+  contentWrapper: {
+    alignItems: "flex-end", // Align close button to right
   },
   closeButton: {
-    position: "absolute",
-    top: 10,
-    right: 10,
-    backgroundColor: "rgba(0, 0, 0, 0.6)",
-    borderRadius: 20,
-    width: 40,
-    height: 40,
+    marginBottom: 12,
+    backgroundColor: "#fff",
+    borderRadius: 24,
+    width: 44,
+    height: 44,
     justifyContent: "center",
     alignItems: "center",
-    zIndex: 1,
-    elevation: 2,
   },
   imageContainer: {
-    width: "100%",
+    overflow: "hidden",
   },
   bannerImage: {
-    width: SCREEN_WIDTH * 0.9,
-    height: SCREEN_WIDTH * 0.9 * 0.75, // 4:3 aspect ratio
-    minHeight: 200,
+    width: BANNER_WIDTH,
+    height: BANNER_WIDTH, // Square, image will maintain aspect via contentFit
   },
 });

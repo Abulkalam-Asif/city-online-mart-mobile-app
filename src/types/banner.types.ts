@@ -1,7 +1,6 @@
 export interface Banner {
   id: string;
-  title: string;
-  description?: string;
+  title?: string; // Optional
   imageUrl: string;
   bannerType: "popup" | "homepage";
   linkType: "category" | "product";
@@ -10,10 +9,4 @@ export interface Banner {
   displayOrder: number;
 }
 
-export interface BannerMinimal {
-  id: string;
-  imageUrl: string;
-  linkType: "category" | "product";
-  link: string; // Could be categoryId or productId based on linkType
-  displayOrder: number;
-}
+export type BannerMinimal = Pick<Banner, "id" | "imageUrl" | "linkType" | "link" | "displayOrder">;

@@ -10,8 +10,9 @@ import { queryClient, queryKeys } from "@/src/lib/react-query";
 import { theme } from "@/src/constants/theme";
 import Loading from "@/src/components/common/Loading";
 import { Category } from "@/src/types";
-
-export const SPECIAL_CATEGORIES_PRODUCTS_LIMIT_FOR_HOMEPAGE = 6;
+import BannersCarousel from "@/src/components/tabs/home/BannersCarousel";
+import PopupBanner from "@/src/components/tabs/home/PopupBanner";
+import { CONSTANTS } from "@/src/constants/constants";
 
 const HomeScreen = () => {
   const {
@@ -63,11 +64,18 @@ const HomeScreen = () => {
       await Promise.all(
         freshCategories.map((category) =>
           queryClient.invalidateQueries({
-            queryKey: queryKeys.products.bySpecialCategory(category.id, { limit: SPECIAL_CATEGORIES_PRODUCTS_LIMIT_FOR_HOMEPAGE }),
+            queryKey: queryKeys.products.bySpecialCategory(category.id, {
+              limit: CONSTANTS.limits.homepageProductsPerSpecialCategory,
+            }),
           })
         )
       );
     }
+
+    // Step 4: Invalidate homepage banners
+    await queryClient.invalidateQueries({
+      queryKey: queryKeys.banners.homepage,
+    });
 
     setRefreshing(false);
   };
@@ -91,7 +99,7 @@ const HomeScreen = () => {
         }>
         <HomeTopBg />
         <HomeSearchSection openSidebarHandler={() => setIsSidebarOpen(true)} />
-        {/* <BannersCarousel /> */}
+        <BannersCarousel />
         {/* <BestPricesSection /> */}
         <CategoriesSection />
         {loadingSpecialCategories ? (
@@ -113,7 +121,7 @@ const HomeScreen = () => {
       </ScrollView>
 
       {/* Popup Banner Modal - Shows on app start */}
-      {/* <PopupBanner /> */}
+      <PopupBanner />
       <Sidebar
         isOpen={isSidebarOpen}
         closeSidebarHandler={() => setIsSidebarOpen(false)}

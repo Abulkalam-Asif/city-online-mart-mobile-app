@@ -22,14 +22,16 @@ import Loading from "@/src/components/common/Loading";
 import { useLocalSearchParams } from "expo-router";
 import { queryClient, queryKeys } from "@/src/lib/react-query";
 import ErrorBanner from "@/src/components/common/ErrorBanner";
-import { useGetInfiniteProductsBySpecialCategory, useGetInfiniteProductsBySubCategory } from "@/src/hooks/useProducts";
+import {
+  useGetInfiniteProductsBySpecialCategory,
+  useGetInfiniteProductsBySubCategory,
+} from "@/src/hooks/useProducts";
 import { Product, ProductSortType } from "@/src/types";
 import ProductCard from "@/src/components/tabs/home/ProductCard";
 import { getResponsiveValue } from "@/src/utils/getResponsiveValue";
 import RetryButton from "@/src/components/common/RetryButton";
 import { useCart } from "@/src/hooks/useCart";
-
-const PRODUCTS_PER_PAGE = 6;
+import { CONSTANTS } from "@/src/constants/constants";
 
 const CategoriesScreen = () => {
   // Get category and subcategory from URL params (if any)
@@ -118,9 +120,7 @@ const CategoriesScreen = () => {
     "sort" | "brands" | null
   >(null);
 
-  const [selectedSort, setSelectedSort] = useState<
-    ProductSortType
-  >("default");
+  const [selectedSort, setSelectedSort] = useState<ProductSortType>("default");
   const [selectedBrands, setSelectedBrands] = useState<number[]>([]);
 
   const handleSortApply = (sortType: ProductSortType) => {
@@ -133,15 +133,30 @@ const CategoriesScreen = () => {
     setBottomSheetType(null);
   };
 
-  const subCategoryProductsQuery = useGetInfiniteProductsBySubCategory(currentSubCategoryId, selectedSort, PRODUCTS_PER_PAGE, !!currentSubCategoryId && !!hasSubCategories);
+  const subCategoryProductsQuery = useGetInfiniteProductsBySubCategory(
+    currentSubCategoryId,
+    selectedSort,
+    CONSTANTS.limits.productsPerPage,
+    !!currentSubCategoryId && !!hasSubCategories
+  );
 
-  const specialProductsQuery = useGetInfiniteProductsBySpecialCategory(currentCategoryId, selectedSort, PRODUCTS_PER_PAGE, !!currentCategoryId && !hasSubCategories)
+  const specialProductsQuery = useGetInfiniteProductsBySpecialCategory(
+    currentCategoryId,
+    selectedSort,
+    CONSTANTS.limits.productsPerPage,
+    !!currentCategoryId && !hasSubCategories
+  );
 
   // Fetch products based on category type
-  const productsQuery = hasSubCategories ? subCategoryProductsQuery : specialProductsQuery;
+  const productsQuery = hasSubCategories
+    ? subCategoryProductsQuery
+    : specialProductsQuery;
 
   // Memoize products
-  const products = useMemo(() => productsQuery.data?.pages.flatMap(page => page.items) ?? [], [productsQuery.data]);
+  const products = useMemo(
+    () => productsQuery.data?.pages.flatMap((page) => page.items) ?? [],
+    [productsQuery.data]
+  );
 
   // Pull to refresh state
   const [isRefreshing, setIsRefreshing] = useState(false);
@@ -171,8 +186,7 @@ const CategoriesScreen = () => {
       }
 
       // Products - only refetch the CURRENT query (not all cached pages)
-      await productsQuery.refetch();  // ✅ Just refetches current infinite query
-
+      await productsQuery.refetch(); // ✅ Just refetches current infinite query
     } finally {
       setIsRefreshing(false);
     }
@@ -185,32 +199,35 @@ const CategoriesScreen = () => {
   );
 
   // Render product item - memoized for performance
-  const renderProduct = useCallback(({ item, index }: { item: Product; index: number }) => {
-    const cartItem = cart?.items.find(i => i.productId === item.id);
-    return (
-      <View style={[
-        styles.productItem,
-        index % 2 === 0 ? styles.productItemLeft : styles.productItemRight
-      ]}>
-        <ProductCard
-          product={item}
-          cardWidth={productCardWidth}
-          quantityInCart={cartItem?.quantity || 0}
-        />
-      </View>
-    )
-  }, [productCardWidth, cart]);
+  const renderProduct = useCallback(
+    ({ item, index }: { item: Product; index: number }) => {
+      const cartItem = cart?.items.find((i) => i.productId === item.id);
+      return (
+        <View
+          style={[
+            styles.productItem,
+            index % 2 === 0 ? styles.productItemLeft : styles.productItemRight,
+          ]}>
+          <ProductCard
+            product={item}
+            cardWidth={productCardWidth}
+            quantityInCart={cartItem?.quantity || 0}
+          />
+        </View>
+      );
+    },
+    [productCardWidth, cart]
+  );
 
   // Number of columns for the grid
   const numColumns = getResponsiveValue<number>(2, 3);
 
-  // Memoize ListHeader to prevent unnecessary re-renders
-  const ListHeader = useMemo(() => (
+  const listHeader = (
     <>
       <View style={styles.stickyHeader}>
         <CategoriesHeader
           currentCategoryName={
-            categories.find((cat) => cat.id === currentCategoryId)?.name || ""
+            currentCategory?.name || ""
           }
         />
         <CategoriesNav
@@ -247,38 +264,22 @@ const CategoriesScreen = () => {
           />
         </View>
       )}
-      {!productsQuery.isLoading && !productsQuery.error && products.length === 0 && (
-        <View style={styles.productsLoading}>
-          <Text style={styles.emptyText}>No products available</Text>
-        </View>
-      )}
+      {!productsQuery.isLoading &&
+        !productsQuery.error &&
+        products.length === 0 && (
+          <View style={styles.productsLoading}>
+            <Text style={styles.emptyText}>No products available</Text>
+          </View>
+        )}
     </>
-  ), [
-    categories,
-    currentCategoryId,
-    setCurrentCategoryId,
-    subCategoriesForNavbarData,
-    loadingSubCategoriesForNavbar,
-    errorGettingSubCategoriesForNavbar,
-    currentSubCategoryId,
-    setCurrentSubCategoryId,
-    setBottomSheetType,
-    selectedSort,
-    selectedBrands,
-    productsQuery.isLoading,
-    productsQuery.error,
-    products.length
-  ]);
+  );
 
   // Footer component for loading more indicator
-  const ListFooter = useMemo(() => {
-    if (!productsQuery.isFetchingNextPage) return null;
-    return (
-      <View style={styles.footer}>
-        <ActivityIndicator size="small" color={theme.colors.primary} />
-      </View>
-    );
-  }, [productsQuery.isFetchingNextPage]);
+  const listFooter = productsQuery.isFetchingNextPage ? (
+    <View style={styles.footer}>
+      <ActivityIndicator size="small" color={theme.colors.primary} />
+    </View>
+  ) : null;
 
   // Loading state
   if (loadingCategoriesForNavbar) {
@@ -317,8 +318,6 @@ const CategoriesScreen = () => {
     );
   }
 
-
-
   return (
     <>
       <FlatList
@@ -329,8 +328,8 @@ const CategoriesScreen = () => {
         renderItem={renderProduct}
         keyExtractor={(item) => item.id}
         numColumns={numColumns}
-        ListHeaderComponent={ListHeader}
-        ListFooterComponent={ListFooter}
+        ListHeaderComponent={listHeader}
+        ListFooterComponent={listFooter}
         showsVerticalScrollIndicator={true}
         stickyHeaderIndices={[0]}
         onEndReached={() => {
@@ -378,10 +377,10 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   containerContent: {
-    paddingBottom: 100
+    paddingBottom: 100,
   },
   columnWrapper: {
-    paddingTop: 16
+    paddingTop: 16,
   },
   stickyHeader: {
     backgroundColor: "#fff",

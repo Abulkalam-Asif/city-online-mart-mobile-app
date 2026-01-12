@@ -92,7 +92,10 @@ export const queryKeys = {
     lists: () => [...queryKeys.products.all, "list"] as const,
 
     // By special category
-    bySpecialCategory: (specialCategoryId: string, filters?: { limit?: number }) =>
+    bySpecialCategory: (
+      specialCategoryId: string,
+      filters?: { limit?: number }
+    ) =>
       [
         ...queryKeys.products.lists(),
         "specialCategory",
@@ -107,16 +110,9 @@ export const queryKeys = {
 
     // By sub-category
     bySubCategory: (subCategoryId: string) =>
-      [
-        ...queryKeys.products.lists(),
-        "subcategory",
-        subCategoryId,
-      ] as const,
+      [...queryKeys.products.lists(), "subcategory", subCategoryId] as const,
     bySubCategoryInfinite: (subCategoryId: string) =>
-      [
-        ...queryKeys.products.bySubCategory(subCategoryId),
-        "infinite",
-      ] as const,
+      [...queryKeys.products.bySubCategory(subCategoryId), "infinite"] as const,
   },
 
   // ========================================

@@ -1,34 +1,23 @@
 import { Pressable, StyleSheet, View } from "react-native";
-import React, { useEffect } from "react";
+import React from "react";
 import { theme } from "@/src/constants/theme";
 import Animated, {
+  interpolate,
   useAnimatedStyle,
-  useSharedValue,
-  withSpring,
+  SharedValue,
 } from "react-native-reanimated";
 
 type CarouselAnimatedDotsProps = {
   bannersCount: number;
-  currentIndex: number;
-  setCurrentIndex: (index: number) => void;
-  carouselRef: React.RefObject<any>;
   horizontalPosition?: "flex-start" | "center" | "flex-end";
+  progressValue: SharedValue<number>;
 };
 
 const CarouselAnimatedDots = ({
   bannersCount,
-  currentIndex,
-  carouselRef,
-  setCurrentIndex,
   horizontalPosition = "center",
+  progressValue,
 }: CarouselAnimatedDotsProps) => {
-  const handleDotPress = (index: number) => {
-    setCurrentIndex(index);
-    if (carouselRef.current) {
-      carouselRef.current.scrollTo({ index, animated: true });
-    }
-  };
-
   return (
     <>
       <View
@@ -39,9 +28,9 @@ const CarouselAnimatedDots = ({
         {Array.from({ length: bannersCount }).map((_, index) => (
           <AnimatedDot
             key={index}
-            isActive={index === currentIndex}
             index={index}
-            handleDotPress={handleDotPress}
+            totalCount={bannersCount}
+            progressValue={progressValue}
           />
         ))}
       </View>
@@ -53,38 +42,87 @@ export default CarouselAnimatedDots;
 
 // Create a proper animated dot component
 const AnimatedDot = ({
-  isActive,
   index,
-  handleDotPress,
+  totalCount,
+  progressValue,
 }: {
-  isActive: boolean;
   index: number;
-  handleDotPress: (index: number) => void;
+  totalCount: number;
+  progressValue: SharedValue<number>;
 }) => {
-  const dotWidth = useSharedValue(isActive ? 30 : 10);
+  const animatedStyle = useAnimatedStyle(() => {
+    const progress = progressValue.value;
 
-  useEffect(() => {
-    dotWidth.value = withSpring(isActive ? 30 : 10, {
-      duration: 500,
-    });
-  }, [isActive, dotWidth]);
+    // Handle circular carousel behavior
+    // Calculate the shortest distance considering wrap-around
+    let effectiveProgress = progress;
 
-  const animatedStyle = useAnimatedStyle(() => ({
-    width: dotWidth.value,
-  }));
+    // If we're at the last index and progress is near 0, adjust for wrap-around
+    if (index === 0 && progress > totalCount - 1.5) {
+      effectiveProgress = progress - totalCount;
+    }
+    // If we're at index 0 and progress is near the last index, we're wrapping backward
+    else if (index === totalCount - 1 && progress < 0.5) {
+      effectiveProgress = progress + totalCount;
+    }
+
+    const inputRange = [index - 1, index, index + 1];
+    const outputRange = [10, 30, 10];
+
+    const width = interpolate(
+      effectiveProgress,
+      inputRange,
+      outputRange,
+      "clamp"
+    );
+
+    // Interpolate opacity for smoother transition
+    const opacity = interpolate(
+      effectiveProgress,
+      inputRange,
+      [0.4, 1, 0.4],
+      "clamp"
+    );
+
+    return {
+      width,
+      opacity,
+    };
+  });
+
+  const colorStyle = useAnimatedStyle(() => {
+    const progress = progressValue.value;
+
+    // Handle circular carousel behavior for color as well
+    let effectiveProgress = progress;
+
+    if (index === 0 && progress > totalCount - 1.5) {
+      effectiveProgress = progress - totalCount;
+    } else if (index === totalCount - 1 && progress < 0.5) {
+      effectiveProgress = progress + totalCount;
+    }
+
+    // Interpolate color between inactive and active states
+    const inputRange = [index - 0.5, index, index + 0.5];
+
+    // Use opacity to blend between colors smoothly
+    const colorOpacity = interpolate(
+      effectiveProgress,
+      inputRange,
+      [0, 1, 0],
+      "clamp"
+    );
+
+    return {
+      backgroundColor:
+        colorOpacity > 0.5 ? theme.colors.primary : theme.colors.placeholder,
+    };
+  });
 
   return (
-    <Pressable hitSlop={4} onPress={() => handleDotPress(index)}>
+    <Pressable hitSlop={4}>
       <Animated.View
-        style={[
-          styles.paginationDot,
-          animatedStyle,
-          {
-            backgroundColor: isActive
-              ? theme.colors.primary
-              : theme.colors.placeholder,
-          },
-        ]}
+        style={[styles.paginationDot, animatedStyle, colorStyle]}
       />
     </Pressable>
   );
