@@ -3,11 +3,8 @@ import { initializeApp, getApps } from "firebase/app";
 import { getAuth, connectAuthEmulator } from "firebase/auth";
 import { getFirestore, connectFirestoreEmulator } from "firebase/firestore";
 import { getStorage, connectStorageEmulator } from "firebase/storage";
-import { getAnalytics, isSupported } from "firebase/analytics";
-import {
-  getMessaging,
-  isSupported as isMessagingSupported,
-} from "firebase/messaging";
+// Note: Analytics and Messaging removed - they're web-only and break React Native release builds
+// Use @react-native-firebase packages if you need these features
 
 // Your web app's Firebase configuration
 const firebaseConfig = {
@@ -69,18 +66,6 @@ if (USE_EMULATOR) {
     console.log(`🔧 Connected to Storage Emulator at ${EMULATOR_HOST}:9199`);
   }
 }
-
-// Initialize Analytics (only on client side and NOT in emulator mode)
-export const analytics =
-  typeof window !== "undefined" && !USE_EMULATOR
-    ? isSupported().then((yes) => (yes ? getAnalytics(app) : null))
-    : null;
-
-// Initialize Messaging (only on client side with notification support and NOT in emulator mode)
-export const messaging =
-  typeof window !== "undefined" && !USE_EMULATOR
-    ? isMessagingSupported().then((yes) => (yes ? getMessaging(app) : null))
-    : null;
 
 // Utility function to convert localhost URLs to work with Android emulator
 export const convertEmulatorUrl = (url: string): string => {
