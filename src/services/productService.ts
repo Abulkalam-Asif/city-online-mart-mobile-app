@@ -52,6 +52,8 @@ const firestoreToProduct = (id: string, data: any): Product => {
     },
     price: data.price || 0,
     discountId: data.discountId || null,
+    discountSources: data.discountSources || [],
+    validApplicableDiscounts: data.validApplicableDiscounts || [],
     minimumStockQuantity: data.minimumStockQuantity || 0,
     multimedia: {
       images: (data.multimedia?.images || []).map((url: string) =>

@@ -1,5 +1,5 @@
 import { Alert, Pressable, StyleSheet, Text, View } from "react-native";
-import React from "react";
+import React, { useMemo } from "react";
 import { Image } from "expo-image";
 import { theme } from "@/src/constants/theme";
 import { FontAwesome6 } from "@expo/vector-icons";
@@ -15,10 +15,12 @@ type ProductCardProps = {
   quantityInCart: number;
 };
 
-const ProductCard = ({ product, cardWidth = 150, quantityInCart }: ProductCardProps) => {
+const ProductCard = ({
+  product,
+  cardWidth = 150,
+  quantityInCart,
+}: ProductCardProps) => {
   const canPress = useSinglePress();
-
-
 
   // Cart mutations
   const addToCartMutation = useAddToCart();
@@ -33,9 +35,17 @@ const ProductCard = ({ product, cardWidth = 150, quantityInCart }: ProductCardPr
     });
   };
 
+  const highestDiscount = useMemo(() => product.validApplicableDiscounts.reduce(
+    (max, discount) => (discount.percentage > max ? discount.percentage : max),
+    0
+  ), [product.validApplicableDiscounts]);
+
   // Calculate discount information
-  const hasDiscount = false;
-  const discountedPrice = product.price;
+  const hasDiscount = product.validApplicableDiscounts.length > 0;
+  const discountedPrice =
+    highestDiscount > 0
+      ? Math.round(product.price * (1 - highestDiscount / 100))
+      : product.price;
   const originalPrice = product.price;
 
   // Get primary image (first image in array)
@@ -56,11 +66,11 @@ const ProductCard = ({ product, cardWidth = 150, quantityInCart }: ProductCardPr
       ) ? (
         <Text style={styles.newText}>New</Text>
       ) : null}
-      {/* {hasDiscount ? (
+      {hasDiscount ? (
         <Text style={styles.discountPercentageText}>
-          {product.discountPercentage}% off
+          {highestDiscount}% off
         </Text>
-      ) : null} */}
+      ) : null}
       <View style={styles.imageContainer}>
         <Image source={primaryImage} style={styles.image} />
       </View>

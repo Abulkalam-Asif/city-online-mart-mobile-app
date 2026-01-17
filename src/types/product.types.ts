@@ -1,5 +1,12 @@
 export type ProductSortType = "default" | "price-asc" | "price-desc"
 
+// Discount information cached in products (only valid discounts)
+export interface ProductDiscount {
+  id: string;        // Discount document ID
+  percentage: number; // Discount percentage (0-100, max 2 decimals)
+  source: "product" | "category" | "sub-category" | "special-category";
+}
+
 // Product Information Section
 export interface ProductInfo {
   name: string;
@@ -39,6 +46,8 @@ export interface Product {
 
   // Discounts Section
   discountId?: string; // Single discount ID that can be applied directly to the product
+  validApplicableDiscounts: ProductDiscount[]; // Cache of all valid discounts (active && not expired)
+  discountSources: string[]; // Discount IDs for efficient querying (mirrors validApplicableDiscounts IDs)
 
   // Inventory Section
   minimumStockQuantity: number;
