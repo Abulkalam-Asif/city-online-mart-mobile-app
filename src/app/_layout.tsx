@@ -7,30 +7,48 @@ import useMyFonts from "../hooks/useMyFonts";
 import { queryClient } from "../lib/react-query";
 import { theme } from "../constants/theme";
 import { ModalProvider } from "../contexts/ModalContext";
+import { AuthProvider } from "../contexts/AuthContext";
 import { ModalPortal } from "../components/common/ModalPortal";
 import NotificationManager from "../components/notifications/NotificationManager";
+
+import * as SplashScreen from "expo-splash-screen";
+
+// Prevent splash screen from auto-hiding
+SplashScreen.preventAutoHideAsync().catch(() => { });
 
 export default function RootLayout() {
   const fontsLoaded = useMyFonts();
 
-  return fontsLoaded ? (
+  React.useEffect(() => {
+    if (fontsLoaded) {
+      SplashScreen.hideAsync().catch(() => { });
+    }
+  }, [fontsLoaded]);
+
+  if (!fontsLoaded) {
+    return null;
+  }
+
+  return (
     <QueryClientProvider client={queryClient}>
-      <SafeAreaProvider>
-        <ModalProvider>
-          <SafeAreaView style={{ flex: 1 }}>
-            <StatusBar style="auto" backgroundColor={theme.colors.primary} />
-            <Stack
-              screenOptions={{
-                headerShown: false,
-              }}>
-              <Stack.Screen name="index" />
-              <Stack.Screen name="(tabs)" />
-            </Stack>
-            <ModalPortal />
-            <NotificationManager />
-          </SafeAreaView>
-        </ModalProvider>
-      </SafeAreaProvider>
+      <AuthProvider>
+        <SafeAreaProvider>
+          <ModalProvider>
+            <SafeAreaView style={{ flex: 1 }}>
+              <StatusBar style="auto" backgroundColor={theme.colors.primary} />
+              <Stack
+                screenOptions={{
+                  headerShown: false,
+                }}>
+                <Stack.Screen name="index" />
+                <Stack.Screen name="(tabs)" />
+              </Stack>
+              <ModalPortal />
+              <NotificationManager />
+            </SafeAreaView>
+          </ModalProvider>
+        </SafeAreaProvider>
+      </AuthProvider>
     </QueryClientProvider>
-  ) : null;
+  );
 }

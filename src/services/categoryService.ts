@@ -1,4 +1,12 @@
-import { collection, getDocs, orderBy, query, where } from "firebase/firestore";
+import {
+  collection,
+  FirebaseFirestoreTypes,
+  getDocs,
+  orderBy,
+  query,
+  QueryConstraint,
+  where,
+} from "@react-native-firebase/firestore";
 import { Category, SubCategory } from "../types";
 import { convertEmulatorUrl, db } from "@/firebaseConfig";
 import { logger } from "../utils/logger";
@@ -55,34 +63,45 @@ export const categoryService = {
     productsCountGreaterThanZero?: boolean;
   }): Promise<Category[]> {
     try {
-      let constraints = [];
+      let constraints: QueryConstraint[] = [];
 
       if (filters?.isActive !== undefined) {
-        constraints.push(where("isActive", "==", filters.isActive));
+        constraints.push(
+          where("isActive", "==", filters.isActive) as QueryConstraint,
+        );
       }
       if (filters?.showOnHomepage !== undefined) {
-        constraints.push(where("showOnHomepage", "==", filters.showOnHomepage));
+        constraints.push(
+          where(
+            "showOnHomepage",
+            "==",
+            filters.showOnHomepage,
+          ) as QueryConstraint,
+        );
       }
       if (filters?.showOnNavbar !== undefined) {
-        constraints.push(where("showOnNavbar", "==", filters.showOnNavbar));
+        constraints.push(
+          where("showOnNavbar", "==", filters.showOnNavbar) as QueryConstraint,
+        );
       }
       if (filters?.type !== undefined) {
-        constraints.push(where("type", "==", filters.type));
+        constraints.push(where("type", "==", filters.type) as QueryConstraint);
       }
       if (filters?.productsCountGreaterThanZero) {
-        constraints.push(where("productsCount", ">", 0));
+        constraints.push(where("productsCount", ">", 0) as QueryConstraint);
       }
 
       const categoriesRef = collection(db, CATEGORIES_COLLECTION);
       const q = query(
         categoriesRef,
         ...constraints,
-        orderBy("displayOrder", "asc")
+        orderBy("displayOrder", "asc") as QueryConstraint,
       );
       const snapshot = await getDocs(q);
 
-      const categories = snapshot.docs.map((doc) =>
-        firestoreToCategory(doc.id, doc.data())
+      const categories = snapshot.docs.map(
+        (doc: FirebaseFirestoreTypes.QueryDocumentSnapshot) =>
+          firestoreToCategory(doc.id, doc.data()),
       );
       return categories;
     } catch (error) {
@@ -94,29 +113,34 @@ export const categoryService = {
   // Get subcategory by ID
   async getSubCategories(
     parentCategoryId: string,
-    filter?: { isActive?: boolean; showOnNavbar?: boolean }
+    filter?: { isActive?: boolean; showOnNavbar?: boolean },
   ): Promise<SubCategory[]> {
     try {
       const subCategoriesRef = collection(db, SUBCATEGORIES_COLLECTION);
-      const constraints = [];
+      const constraints: QueryConstraint[] = [];
 
       if (filter?.isActive !== undefined) {
-        constraints.push(where("isActive", "==", filter.isActive));
+        constraints.push(
+          where("isActive", "==", filter.isActive) as QueryConstraint,
+        );
       }
       if (filter?.showOnNavbar !== undefined) {
-        constraints.push(where("showOnNavbar", "==", filter.showOnNavbar));
+        constraints.push(
+          where("showOnNavbar", "==", filter.showOnNavbar) as QueryConstraint,
+        );
       }
 
       const q = query(
         subCategoriesRef,
-        where("parentCategoryId", "==", parentCategoryId),
+        where("parentCategoryId", "==", parentCategoryId) as QueryConstraint,
         ...constraints,
-        orderBy("displayOrder", "asc")
+        orderBy("displayOrder", "asc") as QueryConstraint,
       );
       const snapshot = await getDocs(q);
 
-      return snapshot.docs.map((doc) =>
-        firestoreToSubCategory(doc.id, doc.data())
+      return snapshot.docs.map(
+        (doc: FirebaseFirestoreTypes.QueryDocumentSnapshot) =>
+          firestoreToSubCategory(doc.id, doc.data()),
       );
     } catch (error) {
       logger.error("getSubCategories", error);

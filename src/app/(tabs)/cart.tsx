@@ -21,8 +21,11 @@ import {
 import { calculateOrderDiscount } from "@/src/utils/orderDiscounts";
 import Loading from "@/src/components/common/Loading";
 
+import { useAuth } from "@/src/contexts/AuthContext";
+
 export default function CartScreen() {
-  const isLoggedIn = true;
+  const { user } = useAuth();
+  const isLoggedIn = !!user;
 
   // Fetch cart data
   const { data: cart, isLoading, error } = useCart();

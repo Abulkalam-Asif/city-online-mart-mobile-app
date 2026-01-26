@@ -1,4 +1,4 @@
-import { collection, getDocs, query, orderBy, where } from "firebase/firestore";
+import { collection, getDocs, query, orderBy, where, FirebaseFirestoreTypes } from "@react-native-firebase/firestore";
 import { convertEmulatorUrl, db } from "../../firebaseConfig";
 import type { BannerMinimal } from "@/src/types";
 import { logger } from "../utils/logger";
@@ -31,7 +31,7 @@ const bannerService = {
       );
       const querySnapshot = await getDocs(q);
 
-      const banners = querySnapshot.docs.map((doc) =>
+      const banners = querySnapshot.docs.map((doc: FirebaseFirestoreTypes.QueryDocumentSnapshot) =>
         firestoreToBanner(doc.id, doc.data())
       );
 

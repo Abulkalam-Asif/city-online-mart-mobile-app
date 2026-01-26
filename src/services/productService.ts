@@ -1,15 +1,16 @@
 import {
   collection,
   getDocs,
-  getDoc,
-  doc,
   query,
   where,
-  QueryConstraint,
-  startAfter,
-  limit,
   orderBy,
-} from "firebase/firestore";
+  limit,
+  startAfter,
+  doc,
+  getDoc,
+  FirebaseFirestoreTypes,
+  QueryConstraint,
+} from "@react-native-firebase/firestore";
 import { Product, ProductSortType } from "../types";
 import { db, convertEmulatorUrl } from "@/firebaseConfig";
 import { logger } from "../utils/logger";
@@ -81,7 +82,7 @@ export const productService = {
    */
   async getPaginatedProductsBySubCategory(subCategoryId: string, sortBy: ProductSortType, pageSize: number, startAfterDoc?: string | undefined): Promise<PaginatedResult<Product>> {
     try {
-      const queryConstraints: QueryConstraint[] = [
+      const queryConstraints: any[] = [
         where("info.subCategoryId", "==", subCategoryId),
         where("info.isActive", "==", true)
       ];
@@ -119,7 +120,7 @@ export const productService = {
       const docs = hasMore ? snapshot.docs.slice(0, pageSize) : snapshot.docs;
 
       const products =
-        docs.map((doc) => firestoreToProduct(doc.id, doc.data()))
+        docs.map((doc: FirebaseFirestoreTypes.QueryDocumentSnapshot) => firestoreToProduct(doc.id, doc.data()))
 
       // Get lastDocId for next page cursor
       const lastDocId = docs.length > 0 ? docs[docs.length - 1].id : undefined;
@@ -146,28 +147,28 @@ export const productService = {
   async getPaginatedProductsBySpecialCategory(specialCategoryId: string, sortBy: ProductSortType, pageSize: number, startAfterDoc?: string | undefined): Promise<PaginatedResult<Product>> {
     try {
       const queryConstraints: QueryConstraint[] = [
-        where("info.specialCategoryIds", "array-contains", specialCategoryId),
-        where("info.isActive", "==", true)
+        where("info.specialCategoryIds", "array-contains", specialCategoryId) as QueryConstraint,
+        where("info.isActive", "==", true) as QueryConstraint
       ];
 
       if (sortBy === "price-asc") {
-        queryConstraints.push(orderBy("price", "asc"));
+        queryConstraints.push(orderBy("price", "asc") as QueryConstraint);
       } else if (sortBy === "price-desc") {
-        queryConstraints.push(orderBy("price", "desc"));
+        queryConstraints.push(orderBy("price", "desc") as QueryConstraint);
       } else {
-        queryConstraints.push(orderBy("__name__", "asc"));
+        queryConstraints.push(orderBy("__name__", "asc") as QueryConstraint);
       }
 
       // If startAfterDoc is provided, add it to the query constraints
       if (startAfterDoc) {
         const lastDoc = await getDoc(doc(db, PRODUCTS_COLLECTION, startAfterDoc));
         if (lastDoc.exists()) {
-          queryConstraints.push(startAfter(lastDoc));
+          queryConstraints.push(startAfter(lastDoc) as QueryConstraint);
         }
       }
 
       // Add limit + 1 to check if there are more documents
-      queryConstraints.push(limit(pageSize + 1));
+      queryConstraints.push(limit(pageSize + 1) as QueryConstraint);
 
       const q = query(
         collection(db, PRODUCTS_COLLECTION),
@@ -183,7 +184,7 @@ export const productService = {
       const docs = hasMore ? snapshot.docs.slice(0, pageSize) : snapshot.docs;
 
       const products =
-        docs.map((doc) => firestoreToProduct(doc.id, doc.data()))
+        docs.map((doc: FirebaseFirestoreTypes.QueryDocumentSnapshot) => firestoreToProduct(doc.id, doc.data()))
 
       // Get lastDocId for next page cursor
       const lastDocId = docs.length > 0 ? docs[docs.length - 1].id : undefined;
@@ -212,18 +213,18 @@ export const productService = {
   ): Promise<Product[]> {
     try {
       const queryConstraints: QueryConstraint[] = [
-        where("info.specialCategoryIds", "array-contains", specialCategoryId),
-        where("info.isActive", "==", true)
+        where("info.specialCategoryIds", "array-contains", specialCategoryId) as QueryConstraint,
+        where("info.isActive", "==", true) as QueryConstraint
       ];
       if (filters?.limit) {
-        queryConstraints.push(limit(filters.limit));
+        queryConstraints.push(limit(filters.limit) as QueryConstraint);
       }
       const q = query(
         collection(db, PRODUCTS_COLLECTION),
         ...queryConstraints
       );
       const snapshot = await getDocs(q);
-      const products = snapshot.docs.map((doc) => firestoreToProduct(doc.id, doc.data()));
+      const products = snapshot.docs.map((doc: FirebaseFirestoreTypes.QueryDocumentSnapshot) => firestoreToProduct(doc.id, doc.data()));
 
       return products;
     } catch (error) {

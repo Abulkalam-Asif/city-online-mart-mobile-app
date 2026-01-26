@@ -3,8 +3,16 @@ import React from "react";
 import { theme } from "@/src/constants/theme";
 import ProfileTopSection from "@/src/components/tabs/profile/ProfileTopSection";
 import AccountSettingsSection from "@/src/components/tabs/profile/AccountSettingsSection";
+import { useAuth } from "@/src/contexts/AuthContext";
+import GuestProfileView from "@/src/components/tabs/profile/GuestProfileView";
 
 const ProfileScreen = () => {
+  const { user } = useAuth();
+
+  if (!user) {
+    return <GuestProfileView />;
+  }
+
   return (
     <ScrollView
       style={styles.container}

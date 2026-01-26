@@ -140,6 +140,14 @@ export const queryKeys = {
   },
 
   // ========================================
+  // SETTINGS
+  // ========================================
+  settings: {
+    all: ["settings"] as const,
+    byDomain: (domain: string) => [...queryKeys.settings.all, domain] as const,
+  },
+
+  // ========================================
   // ORDERS
   // ========================================
   orders: {

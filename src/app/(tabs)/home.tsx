@@ -82,6 +82,12 @@ const HomeScreen = () => {
 
   return (
     <>
+      {/* Popup Banner Modal - Shows on app start */}
+      <PopupBanner />
+      <Sidebar
+        isOpen={isSidebarOpen}
+        closeSidebarHandler={() => setIsSidebarOpen(false)}
+      />
       <ScrollView
         style={styles.container}
         contentContainerStyle={styles.containerContent}
@@ -120,12 +126,7 @@ const HomeScreen = () => {
         ) : null}
       </ScrollView>
 
-      {/* Popup Banner Modal - Shows on app start */}
-      <PopupBanner />
-      <Sidebar
-        isOpen={isSidebarOpen}
-        closeSidebarHandler={() => setIsSidebarOpen(false)}
-      />
+
     </>
   );
 };

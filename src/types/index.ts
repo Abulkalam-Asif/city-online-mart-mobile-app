@@ -8,3 +8,4 @@ export * from "./banner.types";
 export * from "./order.types";
 export * from "./cart.types";
 export * from "./discount.types";
+export * from "./settings.types";

@@ -1,30 +1,17 @@
-// Import the functions you need from the SDKs you need
-import { initializeApp, getApps } from "firebase/app";
-import { getAuth, connectAuthEmulator } from "firebase/auth";
-import { getFirestore, connectFirestoreEmulator } from "firebase/firestore";
-import { getStorage, connectStorageEmulator } from "firebase/storage";
-// Note: Analytics and Messaging removed - they're web-only and break React Native release builds
-// Use @react-native-firebase packages if you need these features
+import { getAuth, connectAuthEmulator } from "@react-native-firebase/auth";
+import { getFirestore, connectFirestoreEmulator } from "@react-native-firebase/firestore";
+import { connectFunctionsEmulator, getFunctions } from "@react-native-firebase/functions";
+import { getStorage, connectStorageEmulator } from "@react-native-firebase/storage";
 
-// Your web app's Firebase configuration
-const firebaseConfig = {
-  apiKey: "AIzaSyB7-pL5y1WFoC9GX1lZYuZ58A-DpUM6cxc",
-  authDomain: "e-commerce-14d5c.firebaseapp.com",
-  projectId: "e-commerce-14d5c",
-  storageBucket: "e-commerce-14d5c.firebasestorage.app",
-  messagingSenderId: "25168298985",
-  appId: "1:25168298985:web:09c204c72a11c166280178",
-  measurementId: "G-J3BPV9PN4L",
-};
-
-// Initialize Firebase
-const app =
-  getApps().length === 0 ? initializeApp(firebaseConfig) : getApps()[0];
 
 // Initialize Firebase services
-export const auth = getAuth(app);
-export const db = getFirestore(app);
-export const storage = getStorage(app);
+export const auth = getAuth();
+
+export const db = getFirestore();
+
+export const storage = getStorage();
+
+export const functions = getFunctions();
 
 // Connect to Firebase Emulators in development
 const USE_EMULATOR = false;
@@ -36,12 +23,14 @@ const USE_EMULATOR = false;
 // const EMULATOR_HOST = "10.0.2.2";
 const EMULATOR_HOST = "192.168.1.6";
 
+const isEmulatorConnected = {
+  auth: false,
+  firestore: false,
+  storage: false,
+  functions: false,
+};
+
 if (USE_EMULATOR) {
-  const isEmulatorConnected = {
-    auth: false,
-    firestore: false,
-    storage: false,
-  };
 
   // Connect Auth Emulator
   if (!isEmulatorConnected.auth) {
@@ -65,6 +54,13 @@ if (USE_EMULATOR) {
     isEmulatorConnected.storage = true;
     console.log(`🔧 Connected to Storage Emulator at ${EMULATOR_HOST}:9199`);
   }
+
+  // Connect Functions Emulator
+  if (!isEmulatorConnected.functions) {
+    connectFunctionsEmulator(functions, EMULATOR_HOST, 5001);
+    isEmulatorConnected.functions = true;
+    console.log(`🔧 Connected to Functions Emulator at ${EMULATOR_HOST}:5001`);
+  }
 }
 
 // Utility function to convert localhost URLs to work with Android emulator
@@ -74,5 +70,3 @@ export const convertEmulatorUrl = (url: string): string => {
   // Replace localhost with the emulator host for Android
   return url.replace("localhost", EMULATOR_HOST);
 };
-
-export { app };

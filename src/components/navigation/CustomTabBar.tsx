@@ -1,6 +1,7 @@
 import React from "react";
 import { View, Text, StyleSheet, Pressable, Linking } from "react-native";
 import { BottomTabBarProps } from "@react-navigation/bottom-tabs";
+import { CommonActions } from "@react-navigation/native";
 import MaterialIcons from "@expo/vector-icons/MaterialIcons";
 import MaterialCommunityIcons from "@expo/vector-icons/MaterialCommunityIcons";
 import { theme } from "@/src/constants/theme";
@@ -117,6 +118,15 @@ const CustomTabBar: React.FC<BottomTabBarProps> = ({
 
             if (!isFocused && !event.defaultPrevented) {
               navigation.navigate(route.name);
+            } else if (isFocused) {
+              // Reset stack to root when tapping active tab
+              navigation.dispatch({
+                ...CommonActions.reset({
+                  index: 0,
+                  routes: [{ name: route.name }],
+                }),
+                target: state.key,
+              });
             }
           };
 

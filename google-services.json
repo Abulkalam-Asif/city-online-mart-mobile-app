@@ -1,0 +1,48 @@
+{
+  "project_info": {
+    "project_number": "25168298985",
+    "firebase_url": "https://e-commerce-14d5c-default-rtdb.asia-southeast1.firebasedatabase.app",
+    "project_id": "e-commerce-14d5c",
+    "storage_bucket": "e-commerce-14d5c.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:25168298985:android:911168ab98ddc877280178",
+        "android_client_info": {
+          "package_name": "com.abulkalamasif.ecommercemobileapp"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "25168298985-u2uha6r1aefl8sqchsp1dm0c8bbrcnir.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.abulkalamasif.ecommercemobileapp",
+            "certificate_hash": "5e8f16062ea3cd2c4a0d547876baa6f38cabf625"
+          }
+        },
+        {
+          "client_id": "25168298985-umldoocg6v7eja20t7hsq4rnuip884b9.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyC5BMHc5GSS7icfW2BI8-4MqZrHsjZa_R8"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "25168298985-umldoocg6v7eja20t7hsq4rnuip884b9.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

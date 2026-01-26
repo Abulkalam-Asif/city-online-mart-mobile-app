@@ -1,5 +1,6 @@
-import { ScrollView, StyleSheet, Switch, View } from "react-native";
+import { ScrollView, StyleSheet, Switch, View, Alert } from "react-native";
 import React, { useState } from "react";
+import { router } from "expo-router";
 import GeneralTopBar from "@/src/components/general/GeneralTopBar";
 import SettingsButton from "@/src/components/tabs/profile/settings/SettingsButton";
 import {
@@ -8,9 +9,12 @@ import {
   MaterialCommunityIcons,
 } from "@expo/vector-icons";
 import { theme } from "@/src/constants/theme";
+import { useSignOut } from "@/src/hooks/useAuthUser";
 
 const SettingsScreen = () => {
   const [notificationsEnabled, setNotificationsEnabled] = useState(true);
+
+  const signOutMutation = useSignOut();
 
   const toggleNotifications = () => {
     setNotificationsEnabled((prev) => !prev);
@@ -36,8 +40,24 @@ const SettingsScreen = () => {
           />
         </SettingsButton>
         <SettingsButton
-          text="Log Out"
-          pressHandler={() => {}}
+          text="Sign Out"
+          pressHandler={() => {
+            Alert.alert(
+              "Sign Out",
+              "Are you sure you want to sign out?",
+              [
+                { text: "Cancel", style: "cancel" },
+                {
+                  text: "Sign Out",
+                  style: "destructive",
+                  onPress: async () => {
+                    await signOutMutation.mutateAsync();
+                    router.replace("/home");
+                  },
+                },
+              ]
+            );
+          }}
           icon={
             <MaterialCommunityIcons
               name="logout"
@@ -49,7 +69,7 @@ const SettingsScreen = () => {
         />
         <SettingsButton
           text="Delete Account"
-          pressHandler={() => {}}
+          pressHandler={() => { }}
           icon={<Feather name="user-x" size={16} />}
           iconBgColor={theme.colors.error_light}
         />

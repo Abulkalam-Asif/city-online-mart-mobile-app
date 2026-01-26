@@ -6,7 +6,7 @@ import { db } from '@/firebaseConfig';
  * @param subtotal - Order subtotal after product/category discounts
  * @returns Promise<{discountAmount: number, discountName?: string}> - Discount amount and name
  */
-export async function calculateOrderDiscount(subtotal: number): Promise<{discountAmount: number, discountName?: string}> {
+export async function calculateOrderDiscount(subtotal: number): Promise<{ discountAmount: number, discountName?: string }> {
   try {
     console.log('🔍 Calculating order discount for subtotal:', subtotal);
 
