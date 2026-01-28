@@ -95,7 +95,9 @@ export class AuthService {
         "mobileGenerateCustomToken",
       );
 
-      const result = await generateToken({ phoneNumber });
+      const e164Phone = this.convertToE164(phoneNumber);
+      const result = await generateToken({ phoneNumber: e164Phone });
+
       const { token } = result.data as { token: string };
 
       if (!token) throw new Error("No custom token received");
@@ -129,7 +131,7 @@ export class AuthService {
       });
     } else {
       const newUser: User = {
-        phoneNumber: firebaseUser.phoneNumber || "",
+        phoneNumber: this.convertToLocal(firebaseUser.phoneNumber || ""),
         role: "user",
         isActive: true,
         createdAt: serverTimestamp() as Timestamp,
@@ -240,5 +242,14 @@ export class AuthService {
     if (cleaned.startsWith("0")) return `+92${cleaned.substring(1)}`;
     if (cleaned.startsWith("92")) return `+${cleaned}`;
     return phoneNumber.startsWith("+") ? phoneNumber : `+${phoneNumber}`;
+  }
+
+  private convertToLocal(phoneNumber: string): string {
+    const cleaned = phoneNumber.replace(/\D/g, "");
+    if (cleaned.startsWith("92")) return `0${cleaned.substring(2)}`;
+    if (cleaned.startsWith("0")) return cleaned;
+    // For numbers already in E.164 but maybe without +
+    if (cleaned.length === 10) return `0${cleaned}`;
+    return cleaned;
   }
 }
