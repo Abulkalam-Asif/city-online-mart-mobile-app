@@ -18,53 +18,60 @@ import {
   useRemoveFromCart,
   useClearCart,
 } from "@/src/hooks/useCart";
-import { calculateOrderDiscount } from "@/src/utils/orderDiscounts";
 import Loading from "@/src/components/common/Loading";
 
 import { useAuth } from "@/src/contexts/AuthContext";
+import { useOrderSettings } from "@/src/hooks/useSettings";
+import ErrorBanner from "@/src/components/common/ErrorBanner";
+import { useGetValidOrderDiscounts } from "@/src/hooks/useDiscounts";
+import { getBestOrderDiscount } from "@/src/utils/discountUtils";
+import { Discount } from "@/src/types";
+import { cartService } from "@/src/services";
 
 export default function CartScreen() {
   const { user } = useAuth();
   const isLoggedIn = !!user;
+  const [showMinOrderError, setShowMinOrderError] = useState(false);
+  const [bestOrderDiscount, setBestOrderDiscount] = useState<Discount | null>(null);
+
+  // Fetch settings data and valid order discounts
+  const { data: orderSettings, isLoading: loadingOrderSettings } = useOrderSettings();
+  const { data: validOrderDiscounts, isLoading: loadingValidOrderDiscounts } = useGetValidOrderDiscounts();
 
   // Fetch cart data
-  const { data: cart, isLoading, error } = useCart();
+  const { data: cart, isLoading: loadingCart, error } = useCart();
 
-  // Order discount state
-  const [orderDiscount, setOrderDiscount] = useState(0);
-  const [discountName, setDiscountName] = useState<string | undefined>();
+  // Calculate best order discount
+  useEffect(() => {
+    const updateDiscount = async () => {
+      if (validOrderDiscounts && cart) {
+        const best = getBestOrderDiscount(validOrderDiscounts, cart.total);
+        setBestOrderDiscount(best);
+
+        // Call service directly (no mutation hook needed)
+        if (best) {
+          const amount = Math.floor((cart.total * best.percentage) / 100);
+          await cartService.updateAppliedOrderDiscount(
+            best.id,
+            best.name,
+            best.percentage,
+            amount
+          );
+        }
+      }
+    };
+
+    updateDiscount();
+  }, [validOrderDiscounts, cart?.total]);
 
   // Cart mutations
   const updateCartItemMutation = useUpdateCartItem();
   const removeFromCartMutation = useRemoveFromCart();
   const clearCartMutation = useClearCart();
 
-  // Calculate order discount when cart changes
-  useEffect(() => {
-    const calculateDiscount = async () => {
-      if (cart?.total) {
-        try {
-          const { discountAmount, discountName: name } =
-            await calculateOrderDiscount(cart.total);
-          setOrderDiscount(discountAmount);
-          setDiscountName(name);
-        } catch (error) {
-          console.error("Failed to calculate order discount:", error);
-          setOrderDiscount(0);
-          setDiscountName(undefined);
-        }
-      } else {
-        setOrderDiscount(0);
-        setDiscountName(undefined);
-      }
-    };
-
-    calculateDiscount();
-  }, [cart?.total]);
-
-  const handleQuantityChange = (id: number, newQuantity: number) => {
+  const handleQuantityChange = (productId: string, newQuantity: number) => {
     // Find the actual productId from the transformed item
-    const item = cart?.items.find((_, index) => index + 1 === id);
+    const item = cart?.items.find((item) => item.productId === productId);
     if (item) {
       updateCartItemMutation.mutate({
         productId: item.productId,
@@ -79,9 +86,9 @@ export default function CartScreen() {
     }
   };
 
-  const handleRemoveItem = (id: number) => {
+  const handleRemoveItem = (productId: string) => {
     // Find the actual productId from the transformed item
-    const item = cart?.items.find((_, index) => index + 1 === id);
+    const item = cart?.items.find((item) => item.productId === productId);
     if (item) {
       removeFromCartMutation.mutate(item.productId,
         {
@@ -102,7 +109,7 @@ export default function CartScreen() {
       });
   };
 
-  if (isLoading) {
+  if (loadingCart || loadingOrderSettings || loadingValidOrderDiscounts) {
     return (
       <View style={styles.mainContainer}>
         <GeneralTopBar text="My Cart" />
@@ -124,123 +131,129 @@ export default function CartScreen() {
     );
   }
 
-  // Transform cart items to match CartItem component expectations
-  const cartItems =
-    cart?.items.map((item, index) => ({
-      Id: index + 1, // Temporary ID for component
-      MainImageUrl: item.imageUrl || require("@/src/assets/default-image.png"), // Use stored image or placeholder
-      Name: item.productName,
-      Price: item.unitPrice,
-      OldPrice: undefined, // Could be added later
-      quantity: item.quantity,
-      discount: undefined,
-      productId: item.productId, // Keep original ID for operations
-    })) || [];
-
-  // Check if cart meets minimum order requirement
-  const cartTotal = cart?.total || 0;
-  const finalTotal = cartTotal - orderDiscount;
-  const minimumOrderAmount = 1500;
-  const canProceedToCheckout = cartTotal >= minimumOrderAmount;
+  const minimumOrderAmount = orderSettings?.minimumOrderAmount || 0;
+  const itemsSubtotal = cart?.total || 0;
+  // Use bestOrderDiscount state for UI (avoids race condition with AsyncStorage)
+  const orderDiscountAmount = bestOrderDiscount
+    ? Math.floor((itemsSubtotal * bestOrderDiscount.percentage) / 100)
+    : 0;
+  const finalSubtotal = itemsSubtotal - orderDiscountAmount;
+  const canProceedToCheckout = finalSubtotal >= minimumOrderAmount;
 
   // Check if cart is empty
-  const isCartEmpty = cartItems.length === 0;
+  const isCartEmpty = cart?.items.length === 0;
 
   return (
-    <View style={styles.mainContainer}>
-      <GeneralTopBar text="My Cart" />
+    <>
+      <View style={styles.mainContainer}>
+        <GeneralTopBar text="My Cart" />
 
-      {isCartEmpty ? (
-        <EmptyCart />
-      ) : (
-        <>
-          <View style={styles.infoContainer}>
-            <Text style={styles.itemsCountText}>{cartItems.length} items</Text>
-            <View style={styles.buttonRow}>
+        {isCartEmpty ? (
+          <EmptyCart />
+        ) : (
+          <>
+            <View style={styles.infoContainer}>
+              <Text style={styles.itemsCountText}>{cart?.items.length} items</Text>
+              <View style={styles.buttonRow}>
+                <Pressable
+                  onPress={handleClearCart}
+                  style={({ pressed }) => [
+                    pressed && styles.clearCartButtonPressed,
+                  ]}>
+                  <Text style={styles.clearCartText}>Clear All</Text>
+                </Pressable>
+              </View>
+            </View>
+            <FlatList
+              style={styles.container}
+              contentContainerStyle={styles.containerContent}
+              data={cart?.items}
+              renderItem={({ item }) => (
+                <CartItem
+                  item={item}
+                  onQuantityChange={handleQuantityChange}
+                  onRemove={handleRemoveItem}
+                />
+              )}
+              keyExtractor={(item) => item.productId}
+              showsVerticalScrollIndicator={false}
+            />
+            <View style={styles.summaryContainer}>
+              <View style={styles.minimumOrderRow}>
+                <Text style={styles.minimumOrderText}>Minimum Order Price: </Text>
+                <Text
+                  style={[styles.minimumOrderText, styles.minimumOrderValueText]}>
+                  {minimumOrderAmount}
+                </Text>
+              </View>
+
+              <View style={styles.amountRow}>
+                <Text style={styles.amountLabel}>Subtotal</Text>
+                <Text style={styles.amountValue}>Rs. {cart?.total || 0}</Text>
+              </View>
+
+              {bestOrderDiscount && (
+                <View style={styles.amountRow}>
+                  <View style={styles.discountLabelContainer}>
+                    <Text style={styles.discountLabel}>
+                      Order Discount
+                    </Text>
+                    <Text style={styles.discountTag}>
+                      {bestOrderDiscount.percentage}% off
+                    </Text>
+                  </View>
+                  <Text style={styles.discountValue}>Rs. {orderDiscountAmount}</Text>
+                </View>
+              )}
+
+              <View style={[styles.amountRow, styles.totalRow]}>
+                <Text style={styles.totalLabel}>Total</Text>
+                <Text style={styles.totalValue}>Rs. {finalSubtotal}</Text>
+              </View>
+
               <Pressable
-                onPress={handleClearCart}
                 style={({ pressed }) => [
-                  pressed && styles.clearCartButtonPressed,
-                ]}>
-                <Text style={styles.clearCartText}>Clear All</Text>
+                  styles.proceedButton,
+                  pressed && styles.proceedButtonPressed,
+                ]}
+                onPress={() => {
+                  if (!isLoggedIn) {
+                    router.push("/login");
+                    return;
+                  }
+
+                  if (!canProceedToCheckout) {
+                    setShowMinOrderError(true);
+                    return;
+                  }
+
+                  router.push("/checkout");
+                }}
+              >
+                <Text
+                  style={styles.proceedButtonText}>
+                  {isLoggedIn
+                    ? canProceedToCheckout
+                      ? "Proceed to Checkout"
+                      : `Add Rs. ${minimumOrderAmount - finalSubtotal
+                      } more to proceed`
+                    : "Login / Create Account"}
+                </Text>
               </Pressable>
             </View>
-          </View>
-          <FlatList
-            style={styles.container}
-            contentContainerStyle={styles.containerContent}
-            data={cartItems}
-            renderItem={({ item }) => (
-              <CartItem
-                item={item}
-                onQuantityChange={handleQuantityChange}
-                onRemove={handleRemoveItem}
-              />
-            )}
-            keyExtractor={(item) => item.Id.toString()}
-            showsVerticalScrollIndicator={false}
-          />
-          <View style={styles.summaryContainer}>
-            <View style={styles.minimumOrderRow}>
-              <Text style={styles.minimumOrderText}>Minimum Order Price: </Text>
-              <Text
-                style={[styles.minimumOrderText, styles.minimumOrderValueText]}>
-                1500
-              </Text>
-            </View>
+          </>
+        )}
+      </View>
 
-            <View style={styles.amountRow}>
-              <Text style={styles.amountLabel}>Subtotal</Text>
-              <Text style={styles.amountValue}>Rs. {cart?.total || 0}</Text>
-            </View>
-
-            {orderDiscount > 0 && (
-              <View style={styles.amountRow}>
-                <Text style={styles.discountLabel}>
-                  Order Discount{discountName ? ` (${discountName})` : ""}
-                </Text>
-                <Text style={styles.discountValue}>-Rs. {orderDiscount}</Text>
-              </View>
-            )}
-
-            <View style={[styles.amountRow, styles.totalRow]}>
-              <Text style={styles.totalLabel}>Total</Text>
-              <Text style={styles.totalValue}>Rs. {finalTotal}</Text>
-            </View>
-
-            <Pressable
-              style={({ pressed }) => [
-                styles.proceedButton,
-                !canProceedToCheckout && styles.proceedButtonDisabled,
-                pressed && canProceedToCheckout && styles.proceedButtonPressed,
-              ]}
-              onPress={() => {
-                if (!canProceedToCheckout) return;
-
-                if (isLoggedIn) {
-                  router.push("/checkout");
-                } else {
-                  router.push("/login");
-                }
-              }}
-              disabled={!canProceedToCheckout}>
-              <Text
-                style={[
-                  styles.proceedButtonText,
-                  !canProceedToCheckout && styles.proceedButtonTextDisabled,
-                ]}>
-                {isLoggedIn
-                  ? canProceedToCheckout
-                    ? "Proceed to Checkout"
-                    : `Add Rs. ${minimumOrderAmount - cartTotal
-                    } more to proceed`
-                  : "Login /Create Account"}
-              </Text>
-            </Pressable>
-          </View>
-        </>
+      {/* Error Banner */}
+      {showMinOrderError && (
+        <ErrorBanner
+          title="Minimum Order Required"
+          message={`Please add Rs. ${minimumOrderAmount - finalSubtotal} more worth of items to place your order.`}
+          onDismiss={() => setShowMinOrderError(false)}
+        />
       )}
-    </View>
+    </>
   );
 }
 
@@ -315,6 +328,11 @@ const styles = StyleSheet.create({
     fontFamily: theme.fonts.semibold,
     color: theme.colors.secondary,
   },
+  discountLabelContainer: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+  },
   discountLabel: {
     fontSize: 14,
     fontFamily: theme.fonts.medium,
@@ -325,6 +343,17 @@ const styles = StyleSheet.create({
     fontFamily: theme.fonts.semibold,
     color: theme.colors.primary,
   },
+  discountTag: {
+    backgroundColor: theme.colors.tag,
+    fontSize: 8,
+    lineHeight: 16,
+    fontFamily: theme.fonts.semibold,
+    paddingHorizontal: 6,
+    paddingVertical: 1,
+    borderRadius: 10,
+    color: "black",
+  },
+
   totalRow: {
     borderTopWidth: 1,
     borderTopColor: "#f0f0f0",
@@ -348,18 +377,10 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
   },
-  proceedButtonDisabled: {
-    backgroundColor: theme.colors.background,
-    borderWidth: 1,
-    borderColor: theme.colors.placeholder,
-  },
   proceedButtonText: {
     fontSize: 16,
     fontFamily: theme.fonts.semibold,
     color: "#fff",
-  },
-  proceedButtonTextDisabled: {
-    color: theme.colors.text_secondary,
   },
   proceedButtonPressed: {
     opacity: 0.8,

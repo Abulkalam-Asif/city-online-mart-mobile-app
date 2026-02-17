@@ -91,8 +91,6 @@ export const productService = {
         queryConstraints.push(orderBy("price", "asc"));
       } else if (sortBy === "price-desc") {
         queryConstraints.push(orderBy("price", "desc"));
-      } else {
-        queryConstraints.push(orderBy("__name__", "asc"));
       }
 
       // If startAfterDoc is provided, add it to the query constraints
@@ -155,8 +153,6 @@ export const productService = {
         queryConstraints.push(orderBy("price", "asc") as QueryConstraint);
       } else if (sortBy === "price-desc") {
         queryConstraints.push(orderBy("price", "desc") as QueryConstraint);
-      } else {
-        queryConstraints.push(orderBy("__name__", "asc") as QueryConstraint);
       }
 
       // If startAfterDoc is provided, add it to the query constraints
@@ -195,7 +191,7 @@ export const productService = {
         lastDocId,
       };
     } catch (error) {
-      logger.error("getPaginatedProductsBySubCategory", error);
+      logger.error("getPaginatedProductsBySpecialCategory", error);
       throw error;
     }
   },

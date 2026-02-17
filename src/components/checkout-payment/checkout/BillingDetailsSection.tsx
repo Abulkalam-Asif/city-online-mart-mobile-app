@@ -1,45 +1,24 @@
 import { StyleSheet, Text, View } from "react-native";
-import React, { useEffect, useState } from "react";
+import React from "react";
 import { theme } from "@/src/constants/theme";
 import { useCart } from "@/src/hooks/useCart";
-import { calculateOrderDiscount } from "@/src/utils/orderDiscounts";
+import { queryClient, queryKeys } from "@/src/lib/react-query";
+import { OrderSettings } from "@/src/types";
 
 const BillingDetailsSection = () => {
   const { data: cart } = useCart();
 
-  // Order discount state
-  const [orderDiscount, setOrderDiscount] = useState(0);
-  const [discountName, setDiscountName] = useState<string | undefined>();
+  const orderSettings = queryClient.getQueryData<OrderSettings>(
+    queryKeys.settings.byDomain("order")
+  );
 
-  // Calculate order discount when cart changes
-  useEffect(() => {
-    const calculateDiscount = async () => {
-      if (cart?.total) {
-        try {
-          const { discountAmount, discountName: name } =
-            await calculateOrderDiscount(cart.total);
-          setOrderDiscount(discountAmount);
-          setDiscountName(name);
-        } catch (error) {
-          console.error("Failed to calculate order discount:", error);
-          setOrderDiscount(0);
-          setDiscountName(undefined);
-        }
-      } else {
-        setOrderDiscount(0);
-        setDiscountName(undefined);
-      }
-    };
-
-    calculateDiscount();
-  }, [cart?.total]);
-
-  // Calculate totals from real cart items
-  const cartTotal = cart?.total || 0;
-  const subtotal = cartTotal - orderDiscount; // Subtotal after order discount
-  const serviceFee = 0;
-  const deliveryFee = 0;
-  const totalAmount = subtotal + serviceFee + deliveryFee;
+  // Calculate totals from cart data
+  const itemsSubtotal = cart?.total || 0;
+  const orderDiscount = cart?.appliedOrderDiscount?.amount || 0;
+  const discountPercentage = cart?.appliedOrderDiscount?.percentage || 0;
+  const finalSubtotal = itemsSubtotal - orderDiscount;
+  const deliveryFee = orderSettings?.deliveryFee || 0;
+  const totalAmount = finalSubtotal + deliveryFee;
 
   return (
     <>
@@ -47,38 +26,36 @@ const BillingDetailsSection = () => {
       <View style={styles.container}>
         <View style={styles.billingRow}>
           <View style={styles.leftSection}>
-            <Text style={styles.labelText}>Subtotal</Text>
-            {orderDiscount > 0 && (
-              <View style={styles.discountTag}>
-                <Text style={styles.discountText}>
-                  {discountName
-                    ? `${discountName} applied`
-                    : "Discount applied"}
-                </Text>
-              </View>
-            )}
+            <Text style={styles.labelText}>Items Subtotal</Text>
           </View>
-          <Text style={styles.amount}>Rs. {subtotal}</Text>
+          <Text style={styles.amount}>Rs. {itemsSubtotal}</Text>
         </View>
 
         {orderDiscount > 0 && (
           <View style={styles.billingRow}>
-            <Text style={styles.labelText}>Order Discount</Text>
+            <View style={styles.leftSection}>
+              <Text style={styles.labelText}>Order Discount</Text>
+              <View style={styles.tag}>
+                <Text style={styles.discountText}>{discountPercentage}% off</Text>
+              </View>
+            </View>
             <Text style={styles.discountAmount}>-Rs. {orderDiscount}</Text>
           </View>
         )}
 
         <View style={styles.billingRow}>
-          <Text style={styles.labelText}>Service Fee</Text>
-          <Text style={styles.amount}>Rs. {serviceFee}</Text>
+          <Text style={styles.labelText}>Final Subtotal</Text>
+          <Text style={styles.amount}>Rs. {finalSubtotal}</Text>
         </View>
 
         <View style={styles.billingRow}>
           <View style={styles.leftSection}>
             <Text style={styles.labelText}>Delivery Fee</Text>
-            {/* <View style={styles.freeDeliveryTag}>
-              <Text style={styles.freeDeliveryText}>Free Delivery</Text>
-            </View> */}
+            {deliveryFee === 0 &&
+              <View style={styles.tag}>
+                <Text style={styles.freeDeliveryText}>Free Delivery</Text>
+              </View>
+            }
           </View>
           <View style={styles.rightSection}>
             <Text style={styles.amount}>Rs. {deliveryFee}</Text>
@@ -128,19 +105,12 @@ const styles = StyleSheet.create({
     fontSize: 12,
     fontFamily: theme.fonts.regular,
     color: theme.colors.text_secondary,
-    marginRight: 10,
+    marginRight: 8,
   },
   amount: {
     fontSize: 12,
     fontFamily: theme.fonts.regular,
     color: theme.colors.text,
-  },
-  discountTag: {
-    backgroundColor: theme.colors.primary,
-    paddingHorizontal: 6,
-    paddingVertical: 2,
-    borderRadius: 10,
-    marginLeft: 8,
   },
   discountText: {
     fontSize: 10,
@@ -152,15 +122,15 @@ const styles = StyleSheet.create({
     fontFamily: theme.fonts.semibold,
     color: theme.colors.primary,
   },
-  freeDeliveryTag: {
+  tag: {
     backgroundColor: theme.colors.primary,
+    color: "white",
     fontSize: 8,
     lineHeight: 16,
-    fontFamily: theme.fonts.medium,
+    fontFamily: theme.fonts.semibold,
     paddingHorizontal: 6,
-    paddingVertical: 2,
+    paddingVertical: 1,
     borderRadius: 10,
-    color: "black",
   },
   freeDeliveryText: {
     fontSize: 10,

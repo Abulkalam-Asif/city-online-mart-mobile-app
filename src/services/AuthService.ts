@@ -89,7 +89,6 @@ export class AuthService {
       // Note: In native SDK, we call functions directly on the instance, but httpsCallable is on the module instance we passed
       // functions is invoked like functions().httpsCallable(...)
       // But in our constructor we passed 'functions' which is likely the initialized module, e.g. functions("us-central1")
-
       const generateToken = httpsCallable(
         this.functions,
         "mobileGenerateCustomToken",

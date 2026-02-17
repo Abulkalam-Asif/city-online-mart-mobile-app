@@ -91,7 +91,7 @@ const OrderDetailsContent = ({
   // Calculate billing details from real order data
   const subtotal = orderData?.subtotal || 0;
   const discount = orderData?.discount || 0;
-  const serviceFee = 0; // TODO: Add to order type if needed
+  const serviceFee = 0;
   const deliveryFee = orderData?.deliveryFee || 0;
   const totalAmount = orderData?.total || 0;
 

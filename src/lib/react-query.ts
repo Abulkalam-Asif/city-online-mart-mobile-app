@@ -127,16 +127,7 @@ export const queryKeys = {
   // PAYMENT METHODS
   // ========================================
   paymentMethods: {
-    // Base key - invalidates ALL payment method queries
     all: ["paymentMethods"] as const,
-
-    // Active payment methods
-    active: () => [...queryKeys.paymentMethods.all, "active"] as const,
-
-    // Single payment method detail
-    details: () => [...queryKeys.paymentMethods.all, "detail"] as const,
-    detail: (id: string) =>
-      [...queryKeys.paymentMethods.details(), id] as const,
   },
 
   // ========================================
@@ -145,6 +136,15 @@ export const queryKeys = {
   settings: {
     all: ["settings"] as const,
     byDomain: (domain: string) => [...queryKeys.settings.all, domain] as const,
+  },
+
+  // ========================================
+  // DISCOUNTS
+  // ========================================
+  discounts: {
+    // Base key - invalidates ALL discount queries
+    all: ["discounts"] as const,
+    validOrderDiscounts: () => [...queryKeys.discounts.all, "validOrderDiscounts"] as const,
   },
 
   // ========================================

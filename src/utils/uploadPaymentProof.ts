@@ -18,7 +18,8 @@ export const uploadPaymentProof = async (imageUri: string, orderId: string): Pro
 
     // Create storage reference with organized path
     const timestamp = Date.now();
-    const storagePath = `ORDERS/${orderId}/payment-proof/${timestamp}.jpg`;
+    const extension = file.name.split('.').pop() || 'jpg';
+    const storagePath = `ORDERS/${orderId}/payment-proof/${timestamp}.${extension}`;
     const storageRef = ref(storage, storagePath);
 
     // Upload the file

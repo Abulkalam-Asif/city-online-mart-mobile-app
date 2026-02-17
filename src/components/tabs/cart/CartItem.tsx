@@ -4,19 +4,12 @@ import { Image } from "expo-image";
 import { theme } from "@/src/constants/theme";
 import { FontAwesome6 } from "@expo/vector-icons";
 import { router } from "expo-router";
+import { ICartItem } from "@/src/types";
 
 type CartItemProps = {
-  item: {
-    Id: number;
-    MainImageUrl: any;
-    Name: string;
-    Price: number;
-    OldPrice?: number;
-    quantity: number;
-    discount?: string;
-  };
-  onQuantityChange: (id: number, newQuantity: number) => void;
-  onRemove: (id: number) => void;
+  item: ICartItem;
+  onQuantityChange: (productId: string, newQuantity: number) => void;
+  onRemove: (productId: string) => void;
 };
 
 const CartItem = ({ item, onQuantityChange, onRemove }: CartItemProps) => {
@@ -25,25 +18,16 @@ const CartItem = ({ item, onQuantityChange, onRemove }: CartItemProps) => {
   const handleIncrement = () => {
     const newQuantity = quantity + 1;
     setQuantity(newQuantity);
-    onQuantityChange(item.Id, newQuantity);
+    onQuantityChange(item.productId, newQuantity);
   };
 
   const handleDecrement = () => {
     if (quantity > 1) {
       const newQuantity = quantity - 1;
       setQuantity(newQuantity);
-      onQuantityChange(item.Id, newQuantity);
+      onQuantityChange(item.productId, newQuantity);
     }
   };
-
-  const calculateDiscount = () => {
-    if (item.OldPrice && item.OldPrice > item.Price) {
-      return item.OldPrice - item.Price;
-    }
-    return 0;
-  };
-
-  const discount = calculateDiscount();
 
   return (
     <Pressable
@@ -51,11 +35,11 @@ const CartItem = ({ item, onQuantityChange, onRemove }: CartItemProps) => {
         styles.itemCard,
         pressed && styles.itemCardPressed,
       ]}
-      onPress={() => router.push(`/product-details?id=${item.Id}`)}>
+      onPress={() => router.push(`/product-details?id=${item.productId}`)}>
       {/* Product Image */}
       <View style={styles.imageContainer}>
         <Image
-          source={item.MainImageUrl}
+          source={item.imageUrl}
           style={styles.productImage}
           contentFit="contain"
         />
@@ -64,16 +48,16 @@ const CartItem = ({ item, onQuantityChange, onRemove }: CartItemProps) => {
       {/* Product Details */}
       <View style={styles.detailsContainer}>
         <Text style={styles.productNameText} numberOfLines={2}>
-          {item.Name}
+          {item.productName}
         </Text>
 
         <View style={styles.priceRow}>
-          <Text style={styles.currentPriceText}>Rs. {item.Price}</Text>
-          {item.OldPrice && item.OldPrice > item.Price && (
-            <Text style={styles.oldPriceText}>Rs. {item.OldPrice}</Text>
+          <Text style={styles.discountedUnitPriceText}>Rs. {item.discountedUnitPrice * item.quantity}</Text>
+          {item.discountPercentage > 0 && (
+            <Text style={styles.unitPriceText}>Rs. {item.unitPrice * item.quantity}</Text>
           )}
-          {discount > 0 && (
-            <Text style={styles.discountTag}>{`Rs. ${discount} off`}</Text>
+          {item.discountPercentage > 0 && (
+            <Text style={styles.discountTag}>{`${item.discountPercentage}% off`}</Text>
           )}
         </View>
       </View>
@@ -85,7 +69,7 @@ const CartItem = ({ item, onQuantityChange, onRemove }: CartItemProps) => {
             styles.quantityButton,
             pressed && styles.quantityButtonPressed,
           ]}
-          onPress={quantity > 1 ? handleDecrement : () => onRemove(item.Id)}>
+          onPress={quantity > 1 ? handleDecrement : () => onRemove(item.productId)}>
           {quantity > 1 ? (
             <FontAwesome6 name="minus" size={14} color={theme.colors.text} />
           ) : (
@@ -154,12 +138,12 @@ const styles = StyleSheet.create({
     flexWrap: "wrap",
     columnGap: 10,
   },
-  currentPriceText: {
+  discountedUnitPriceText: {
     fontSize: 16,
     fontFamily: theme.fonts.semibold,
     color: theme.colors.secondary,
   },
-  oldPriceText: {
+  unitPriceText: {
     fontSize: 12,
     color: "red",
     textDecorationLine: "line-through",
@@ -171,7 +155,7 @@ const styles = StyleSheet.create({
     lineHeight: 16,
     fontFamily: theme.fonts.semibold,
     paddingHorizontal: 6,
-    paddingVertical: 2,
+    paddingVertical: 1,
     borderRadius: 10,
     color: "black",
   },

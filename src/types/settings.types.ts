@@ -2,10 +2,10 @@ export interface AuthSettings {
   requireOTP: boolean;
 }
 
-export interface SettingsState {
-  auth: AuthSettings | null;
-  isLoading: boolean;
-  error: string | null;
+export interface OrderSettings {
+  deliveryFee: number;
+  cancellationTimeLimitMinutes: number;
+  minimumOrderAmount: number;
 }
 
-export type SettingsType = "auth";
+export type SettingsType = "auth" | "order";

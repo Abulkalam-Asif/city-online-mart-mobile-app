@@ -7,4 +7,8 @@ export const CONSTANTS = {
     homepageProductsPerSpecialCategory: 6,
     productsPerPage: 6,
   },
+
+  checkout: {
+    addressMinLength: 5,
+  }
 };

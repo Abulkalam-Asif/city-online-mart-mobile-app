@@ -15,7 +15,7 @@ import { db } from "@/firebaseConfig";
 import { generateOrderId } from "../utils/orderIdGenerator";
 
 const ORDERS_COLLECTION = "ORDERS";
-const CUSTOMERS_COLLECTION = "CUSTOMERS";
+const CUSTOMERS_COLLECTION = "USERS";
 const BATCHES_COLLECTION = "BATCHES";
 
 // Helper function to convert Firestore data to Order

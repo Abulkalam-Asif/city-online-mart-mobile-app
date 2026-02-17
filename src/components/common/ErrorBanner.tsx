@@ -28,7 +28,7 @@ const ErrorBanner = ({
         <View style={styles.modalCard}>
           {/* Close button (only if dismissible via onDismiss) */}
           {onDismiss && (
-            <Pressable style={styles.closeButton} onPress={onDismiss}>
+            <Pressable style={({ pressed }) => [styles.closeButton, pressed && styles.closeButtonPressed]} onPress={onDismiss}>
               <Ionicons name="close" size={24} color={"black"} />
             </Pressable>
           )}
@@ -89,7 +89,11 @@ const styles = StyleSheet.create({
     position: "absolute",
     top: 12,
     right: 12,
-    padding: 4,
+    padding: 6,
+    borderRadius: 20,
+  },
+  closeButtonPressed: {
+    backgroundColor: "rgba(0, 0, 0, 0.1)",
   },
   iconContainer: {
     marginBottom: 16,

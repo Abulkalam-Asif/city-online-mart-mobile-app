@@ -1,13 +1,19 @@
 import { auth, db, functions } from "../../firebaseConfig";
 import { AuthService } from "./AuthService";
+import { CartService } from "./CartService";
+import { DiscountService } from "./DiscountService";
+import { PaymentMethodService } from "./PaymentMethodService";
 import { SettingsService } from "./SettingsService";
 
 // Initialize services with dependencies (DI pattern)
 const authService = new AuthService(auth, db, functions);
 const settingsService = new SettingsService(db);
+const cartService = new CartService();
+const discountService = new DiscountService(db);
+const paymentMethodService = new PaymentMethodService(db);
 
 // Export service instances
-export { authService, settingsService };
+export { authService, settingsService, cartService, discountService, paymentMethodService };
 
 /**
  * Note: Existing services (cartService, productService, etc.) are currently 

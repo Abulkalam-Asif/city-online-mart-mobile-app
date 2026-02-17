@@ -1,22 +1,12 @@
 import { useQuery } from "@tanstack/react-query";
 import { queryKeys } from "../lib/react-query";
-import { paymentMethodService } from "../services/paymentMethodService";
+import { paymentMethodService } from "../services";
 
 // Hook for fetching active payment methods
-export function useGetActivePaymentMethods() {
+export function useGetAllPaymentMethods() {
   return useQuery({
-    queryKey: queryKeys.paymentMethods.active(),
-    queryFn: () => paymentMethodService.getActivePaymentMethods(),
-    staleTime: 1000 * 60 * 10, // 10 minutes - payment methods don't change often
-  });
-}
-
-// Hook for fetching a single payment method by ID
-export function useGetPaymentMethodById(paymentMethodId: string) {
-  return useQuery({
-    queryKey: queryKeys.paymentMethods.detail(paymentMethodId),
-    queryFn: () => paymentMethodService.getPaymentMethodById(paymentMethodId),
-    enabled: !!paymentMethodId,
-    staleTime: 1000 * 60 * 10, // 10 minutes
+    queryKey: queryKeys.paymentMethods.all,
+    queryFn: () => paymentMethodService.getAllPaymentMethods(),
+    staleTime: 1000 * 60 * 30, // 30 minutes
   });
 }

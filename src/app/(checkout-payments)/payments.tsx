@@ -5,16 +5,16 @@ import { theme } from "@/src/constants/theme";
 import { useModal } from "@/src/contexts/ModalContext";
 import { useCart, useClearCart } from "@/src/hooks/useCart";
 import { usePlaceOrder } from "@/src/hooks/useOrders";
-import { useGetActivePaymentMethods } from "@/src/hooks/usePaymentMethods";
+import { useGetAllPaymentMethods } from "@/src/hooks/usePaymentMethods";
 import {
   updateOrderWithPaymentProof,
   uploadPaymentProof,
 } from "@/src/utils/uploadPaymentProof";
-import { calculateOrderDiscount } from "@/src/utils/orderDiscounts";
 import { generateOrderId } from "@/src/utils/orderIdGenerator";
 import React, { useEffect, useState } from "react";
 import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 import { useLocalSearchParams } from "expo-router";
+import Loading from "@/src/components/common/Loading";
 
 const mockCustomerId = "customer123"; // In real app, get from auth context
 
@@ -48,11 +48,11 @@ export default function PaymentsScreen() {
   const { showModal } = useModal();
 
   // Fetch active payment methods
-  const { data: paymentMethods, isLoading: paymentMethodsLoading } =
-    useGetActivePaymentMethods();
+  const { data: paymentMethods, isLoading: loadingPaymentMethods } =
+    useGetAllPaymentMethods();
 
   // Fetch cart data
-  const { data: cart, isLoading: cartLoading } = useCart();
+  const { data: cart, isLoading: loadingCart } = useCart();
 
   // Clear cart mutation
   const clearCartMutation = useClearCart();
@@ -110,6 +110,17 @@ export default function PaymentsScreen() {
     (selectedMethod !== "Cash on Delivery" && (!isChecked || !screenshot)) ||
     placeOrderMutation.isPending;
 
+  if (loadingPaymentMethods || loadingCart) {
+    return (
+      <View style={styles.mainContainer}>
+        <GeneralTopBar text="Payments" />
+        <View style={styles.centeringContainer}>
+          <Loading text="Loading..." />
+        </View>
+      </View>
+    );
+  }
+
   return (
     <View style={styles.mainContainer}>
       <GeneralTopBar text="Payments" />
@@ -118,9 +129,7 @@ export default function PaymentsScreen() {
         style={styles.container}
         contentContainerStyle={styles.contentContainer}>
         <Text style={styles.payWithText}>Pay with</Text>
-        {paymentMethodsLoading || cartLoading ? (
-          <Text style={styles.loadingText}>Loading...</Text>
-        ) : (
+        {
           paymentMethods?.map((method) => {
             const getImage = (type: string) => {
               switch (type) {
@@ -170,7 +179,7 @@ export default function PaymentsScreen() {
               </PaymentOption>
             );
           })
-        )}
+        }
       </ScrollView>
 
       <View style={styles.proceedButtonContainer}>
@@ -236,8 +245,7 @@ export default function PaymentsScreen() {
 
               console.log("🔍 About to calculate order discount...");
               // Calculate order-level discount (applied to subtotal after product discounts)
-              const { discountAmount: orderDiscount, discountName } =
-                await calculateOrderDiscount(cartTotalAfterProductDiscounts);
+              const { discountAmount: orderDiscount, discountName } = { discountAmount: 0, discountName: "" };
               console.log("✅ Order discount calculation completed");
 
               // Subtotal for display should be after order discount (consistent with cart screen)
@@ -342,5 +350,11 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontFamily: theme.fonts.semibold,
     color: "#fff",
+  },
+
+  centeringContainer: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
   },
 });

@@ -1,6 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { queryKeys } from "../lib/react-query";
-import { cartService } from "../services/cartService";
+import { cartService } from "../services";
 
 // Hook for fetching current cart
 export function useCart() {
@@ -11,7 +11,9 @@ export function useCart() {
   });
 }
 
-// Hook for adding item to cart
+/**
+ * Hook for adding item to cart
+ */
 export function useAddToCart() {
   const queryClient = useQueryClient();
 
@@ -20,19 +22,22 @@ export function useAddToCart() {
       productId,
       productName,
       unitPrice,
-      quantity = 1,
-      imageUrl = "",
+      quantity,
+      discountPercentage,
+      imageUrl,
     }: {
       productId: string;
       productName: string;
       unitPrice: number;
-      quantity?: number;
-      imageUrl?: string;
+      quantity: number;
+      discountPercentage: number;
+      imageUrl: string;
     }) =>
       cartService.addToCart(
         productId,
         productName,
         unitPrice,
+        discountPercentage,
         quantity,
         imageUrl
       ),
@@ -42,13 +47,12 @@ export function useAddToCart() {
         queryKey: queryKeys.cart.current(),
       });
     },
-    onError: (error) => {
-      console.error("Failed to add item to cart:", error);
-    },
   });
 }
 
-// Hook for updating cart item quantity
+/**
+ * Hook for updating cart item quantity
+ */
 export function useUpdateCartItem() {
   const queryClient = useQueryClient();
 
@@ -66,13 +70,12 @@ export function useUpdateCartItem() {
         queryKey: queryKeys.cart.current(),
       });
     },
-    onError: (error) => {
-      console.error("Failed to update cart item:", error);
-    },
   });
 }
 
-// Hook for removing item from cart
+/**
+ * Hook for removing item from cart
+ */
 export function useRemoveFromCart() {
   const queryClient = useQueryClient();
 
@@ -84,13 +87,12 @@ export function useRemoveFromCart() {
         queryKey: queryKeys.cart.current(),
       });
     },
-    onError: (error) => {
-      console.error("Failed to remove item from cart:", error);
-    },
   });
 }
 
-// Hook for clearing cart
+/**
+ * Hook for clearing cart
+ */
 export function useClearCart() {
   const queryClient = useQueryClient();
 
@@ -102,13 +104,12 @@ export function useClearCart() {
         queryKey: queryKeys.cart.current(),
       });
     },
-    onError: (error) => {
-      console.error("Failed to clear cart:", error);
-    },
   });
 }
 
-// Hook for getting cart item count
+/**
+ * Hook for getting cart item count
+ */
 export function useCartItemCount() {
   const cartQuery = useCart();
   return cartQuery.data ? cartQuery.data.items.length : 0;

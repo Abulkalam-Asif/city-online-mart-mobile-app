@@ -9,3 +9,4 @@ export * from "./order.types";
 export * from "./cart.types";
 export * from "./discount.types";
 export * from "./settings.types";
+export * from "./payment_method.types";

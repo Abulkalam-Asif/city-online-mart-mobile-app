@@ -44,12 +44,12 @@ const ProductCard = ({
   const hasDiscount = product.validApplicableDiscounts.length > 0;
   const discountedPrice =
     highestDiscount > 0
-      ? Math.round(product.price * (1 - highestDiscount / 100))
+      ? Math.floor(product.price * (1 - highestDiscount / 100))
       : product.price;
   const originalPrice = product.price;
 
   // Get primary image (first image in array)
-  const primaryImage = product.multimedia?.images?.[0] || "";
+  const primaryImage = product.multimedia?.images?.[0] || require("@/src/assets/default-image.png");
 
   return (
     <Pressable
@@ -146,7 +146,13 @@ const ProductCard = ({
                   productId: product.id,
                   productName: product.info.name,
                   unitPrice: product.price,
+                  discountPercentage: product.validApplicableDiscounts.reduce(
+                    (max, discount) =>
+                      discount.percentage > max ? discount.percentage : max,
+                    0
+                  ), // highest discount percentage
                   imageUrl: primaryImage,
+                  quantity: 1,
                 },
                 {
                   onError: (error) => {

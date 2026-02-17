@@ -6,55 +6,72 @@ import ExpectedDeliveryTimeSection from "@/src/components/checkout-payment/check
 import BillingDetailsSection from "@/src/components/checkout-payment/checkout/BillingDetailsSection";
 import { router } from "expo-router";
 import AddressInfoSection from "@/src/components/checkout-payment/checkout/AddressInfoSection";
+import ErrorBanner from "@/src/components/common/ErrorBanner";
+import { CONSTANTS } from "@/src/constants/constants";
 
 export default function CheckoutScreen() {
   const [address, setAddress] = useState("");
+  const [showAddressError, setShowAddressError] = useState(false);
 
   // Check if address is valid (not empty and has minimum length)
-  const isAddressValid = address.trim().length >= 5;
+  const MIN_ADDRESS_LENGTH = CONSTANTS.checkout.addressMinLength;
+  const isAddressValid = address.trim().length >= MIN_ADDRESS_LENGTH;
+  const remainingChars = MIN_ADDRESS_LENGTH - address.trim().length;
 
   return (
-    <View style={styles.mainContainer}>
-      <GeneralTopBar text="Checkout" />
-      <ScrollView
-        style={styles.container}
-        contentContainerStyle={styles.contentContainer}>
-        <Text style={styles.infoText}>
-          Add your delivery address,so that order can be provided to you at good
-          time
-        </Text>
-        <AddressInfoSection address={address} onAddressChange={setAddress} />
-        <ExpectedDeliveryTimeSection />
-        <BillingDetailsSection />
-      </ScrollView>
-      <View style={styles.proceedButtonContainer}>
-        <Pressable
-          style={({ pressed }) => [
-            styles.proceedButton,
-            !isAddressValid && styles.proceedButtonDisabled,
-            pressed && isAddressValid && styles.proceedButtonPressed,
-          ]}
-          onPress={() => {
-            if (!isAddressValid) {
-              alert("Please enter a valid delivery address (minimum 10 characters)");
-              return;
-            }
-            // Pass address to payments screen
-            router.push({
-              pathname: "/payments",
-              params: { deliveryAddress: address }
-            });
-          }}
-          disabled={!isAddressValid}>
-          <Text style={[
-            styles.proceedButtonText,
-            !isAddressValid && styles.proceedButtonTextDisabled
-          ]}>
-            Proceed to Payments
+    <>
+      <View style={styles.mainContainer}>
+        <GeneralTopBar text="Checkout" />
+        <ScrollView
+          style={styles.container}
+          contentContainerStyle={styles.contentContainer}>
+          <Text style={styles.infoText}>
+            Add your delivery address,so that order can be provided to you at good
+            time
           </Text>
-        </Pressable>
+          <AddressInfoSection
+            address={address}
+            onAddressChange={setAddress}
+            isValid={isAddressValid}
+            remainingChars={remainingChars}
+          />
+          {/* TODO: Expected delivery time calculation is pending */}
+          <ExpectedDeliveryTimeSection />
+          <BillingDetailsSection />
+        </ScrollView>
+        <View style={styles.proceedButtonContainer}>
+          <Pressable
+            style={({ pressed }) => [
+              styles.proceedButton,
+              pressed && styles.proceedButtonPressed,
+            ]}
+            onPress={() => {
+              if (!isAddressValid) {
+                setShowAddressError(true);
+                return;
+              }
+              // Pass address to payments screen
+              router.push({
+                pathname: "/payments",
+                params: { deliveryAddress: address }
+              });
+            }}>
+            <Text style={styles.proceedButtonText}>
+              Proceed to Payments
+            </Text>
+          </Pressable>
+        </View>
       </View>
-    </View>
+
+      {/* Error Banner */}
+      {showAddressError && (
+        <ErrorBanner
+          title="Address Required"
+          message={`Please enter a valid delivery address (minimum ${MIN_ADDRESS_LENGTH} characters). You need ${remainingChars} more character${remainingChars !== 1 ? 's' : ''}.`}
+          onDismiss={() => setShowAddressError(false)}
+        />
+      )}
+    </>
   );
 }
 
@@ -96,15 +113,9 @@ const styles = StyleSheet.create({
   proceedButtonPressed: {
     opacity: 0.8,
   },
-  proceedButtonDisabled: {
-    backgroundColor: theme.colors.background,
-  },
   proceedButtonText: {
     fontSize: 16,
     fontFamily: theme.fonts.semibold,
     color: "#fff",
-  },
-  proceedButtonTextDisabled: {
-    color: theme.colors.text_secondary,
   },
 });
