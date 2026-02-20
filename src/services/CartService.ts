@@ -10,11 +10,11 @@ export class CartService {
   private static readonly CART_STORAGE_KEY = "@cart_data";
 
   /**
-   * Calculates the total price of all items in the cart.
+   * Calculates the subtotal price of all items in the cart after applying product discounts
    * @param items - The array of cart items.
-   * @returns The total price of all items in the cart.
+   * @returns The subtotal price of all items in the cart.
    */
-  private static calculateCartTotal = (items: ICartItem[]): number => {
+  private static calculateCartItemsSubtotal = (items: ICartItem[]): number => {
     return items.reduce(
       (sum, item) => sum + (item.discountedUnitPrice * item.quantity),
       0
@@ -54,6 +54,14 @@ export class CartService {
   }
 
   /**
+   * Public method to save cart directly (used by CartContext)
+   * @param cart - The cart data to save.
+   */
+  async saveCartDirectly(cart: Cart): Promise<void> {
+    await CartService.saveCart(cart);
+  }
+
+  /**
    * Get cart for current customer
    * @returns The cart data for the current customer.
    */
@@ -64,7 +72,7 @@ export class CartService {
         // Return empty cart if none exists
         return {
           items: [],
-          total: 0,
+          itemsSubtotal: 0,
         }
       }
 
@@ -80,8 +88,11 @@ export class CartService {
    * @param productId - The ID of the product to add to the cart.
    * @param productName - The name of the product to add to the cart.
    * @param unitPrice - The unit price of the product to add to the cart.
+   * @param discountPercentage - The discount percentage to apply.
    * @param quantity - The quantity of the product to add to the cart.
    * @param imageUrl - The image URL of the product to add to the cart.
+   * @param appliedDiscountId - The ID of the applied discount (for snapshot).
+   * @param appliedDiscountSource - The source of the applied discount (for snapshot).
    */
   async addToCart(
     productId: string,
@@ -90,11 +101,13 @@ export class CartService {
     discountPercentage: number,
     quantity: number,
     imageUrl: string,
+    appliedDiscountId?: string,
+    appliedDiscountSource?: string,
   ): Promise<void> {
     try {
-      const cart = (await CartService.getStoredCart()) || {
+      const cart: Cart = (await CartService.getStoredCart()) || {
         items: [],
-        total: 0,
+        itemsSubtotal: 0,
       }
 
       let items: ICartItem[] = cart.items || [];
@@ -105,8 +118,14 @@ export class CartService {
       );
 
       if (existingItemIndex >= 0) {
-        // Update quantity
+        // Update quantity and discount fields (in case discount changed)
         items[existingItemIndex].quantity += quantity;
+        items[existingItemIndex].discountPercentage = discountPercentage;
+        items[existingItemIndex].discountedUnitPrice = discountPercentage > 0
+          ? Math.round(unitPrice - (unitPrice * discountPercentage / 100))
+          : unitPrice;
+        items[existingItemIndex].appliedDiscountId = appliedDiscountId;
+        items[existingItemIndex].appliedDiscountSource = appliedDiscountSource;
       } else {
         // Add new item
         const newItem: ICartItem = {
@@ -116,16 +135,18 @@ export class CartService {
           unitPrice,
           discountPercentage,
           imageUrl,
-          discountedUnitPrice: discountPercentage > 0 ? Math.floor(unitPrice - (unitPrice * discountPercentage / 100)) : unitPrice,
+          discountedUnitPrice: discountPercentage > 0 ? Math.round(unitPrice - (unitPrice * discountPercentage / 100)) : unitPrice,
+          appliedDiscountId,
+          appliedDiscountSource,
         }
         items.push(newItem);
       }
 
-      const total = CartService.calculateCartTotal(items);
+      const itemsSubtotal = CartService.calculateCartItemsSubtotal(items);
 
       const updatedCart: Cart = {
         items,
-        total,
+        itemsSubtotal,
       }
 
       await CartService.saveCart(updatedCart);
@@ -156,18 +177,17 @@ export class CartService {
       }
 
       if (quantity <= 0) {
-        // Remove item if quantity is 0 or less
         items.splice(itemIndex, 1);
       } else {
         items[itemIndex].quantity = quantity;
       }
 
-      const total = CartService.calculateCartTotal(items);
+      const itemsSubtotal = CartService.calculateCartItemsSubtotal(items);
 
       const updatedCart: Cart = {
         ...cart,
         items,
-        total,
+        itemsSubtotal,
       }
 
       await CartService.saveCart(updatedCart);
@@ -192,12 +212,12 @@ export class CartService {
       let items: ICartItem[] = cart.items || [];
       items = items.filter((item) => item.productId !== productId);
 
-      const total = CartService.calculateCartTotal(items);
+      const itemsSubtotal = CartService.calculateCartItemsSubtotal(items);
 
       const updatedCart: Cart = {
         ...cart,
         items,
-        total,
+        itemsSubtotal,
       }
 
       await CartService.saveCart(updatedCart);
@@ -243,7 +263,7 @@ export class CartService {
     try {
       const emptyCart: Cart = {
         items: [],
-        total: 0,
+        itemsSubtotal: 0,
       }
 
       await CartService.saveCart(emptyCart);

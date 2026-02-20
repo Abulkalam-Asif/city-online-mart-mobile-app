@@ -8,6 +8,7 @@ import { queryClient } from "../lib/react-query";
 import { theme } from "../constants/theme";
 import { ModalProvider } from "../contexts/ModalContext";
 import { AuthProvider } from "../contexts/AuthContext";
+import { CartProvider } from "../contexts/CartContext";
 import { ModalPortal } from "../components/common/ModalPortal";
 import NotificationManager from "../components/notifications/NotificationManager";
 
@@ -32,22 +33,24 @@ export default function RootLayout() {
   return (
     <QueryClientProvider client={queryClient}>
       <AuthProvider>
-        <SafeAreaProvider>
-          <ModalProvider>
-            <SafeAreaView style={{ flex: 1 }}>
-              <StatusBar style="auto" backgroundColor={theme.colors.primary} />
-              <Stack
-                screenOptions={{
-                  headerShown: false,
-                }}>
-                <Stack.Screen name="index" />
-                <Stack.Screen name="(tabs)" />
-              </Stack>
-              <ModalPortal />
-              <NotificationManager />
-            </SafeAreaView>
-          </ModalProvider>
-        </SafeAreaProvider>
+        <CartProvider>
+          <SafeAreaProvider>
+            <ModalProvider>
+              <SafeAreaView style={{ flex: 1 }}>
+                <StatusBar style="auto" backgroundColor={theme.colors.primary} />
+                <Stack
+                  screenOptions={{
+                    headerShown: false,
+                  }}>
+                  <Stack.Screen name="index" />
+                  <Stack.Screen name="(tabs)" />
+                </Stack>
+                <ModalPortal />
+                <NotificationManager />
+              </SafeAreaView>
+            </ModalProvider>
+          </SafeAreaProvider>
+        </CartProvider>
       </AuthProvider>
     </QueryClientProvider>
   );

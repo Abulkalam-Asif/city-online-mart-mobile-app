@@ -1,68 +1,94 @@
+import { FirebaseFirestoreTypes } from "@react-native-firebase/firestore";
 import { PaymentMethod } from "./payment_method.types";
 
-export interface OrderItem {
-  productId: string;
-  productName: string;
-  quantity: number;
-  unitPrice: number; // Price at time of order
-  discount: number; // Discount applied to this item
-  subtotal: number;
-}
-
+// Order Types
 export type OrderStatus =
-  | "pending" // When order is created
-  | "confirmed" // When admin confirms the order
-  | "shipped" // When order is shipped
+  | "pending" // When order is created (Mobile or Admin)
+  | "confirmed" // When admin acknowledges the order
+  | "shipped" // When batches are scanned and order is dispatched
   | "delivered" // When order is delivered to customer
-  | "cancelled" // When admin or user cancels the order
-  | "refunded"; // When order is refunded
+  | "cancelled"; // When admin or user (within time limit) cancels
 
 export type PaymentStatus =
-  | "pending" // Either payment method not selected or cash on delivery selected
-  | "awaiting_confirmation" // For online payments, waiting for payment confirmation by admin
-  | "confirmed" // Payment confirmed by admin
-  | "refunded" // Payment refunded
-  | "cancelled"; // Payment cancelled
+  | "pending" // For COD, or before any online payment action
+  | "awaiting_confirmation" // For online payments, waiting for admin to verify screenshot
+  | "confirmed" // Payment verified by admin or COD delivered
+  | "cancelled";
+
+export interface OrderLog {
+  action: string;
+  status: OrderStatus | PaymentStatus;
+  actor: "user" | "admin" | "system";
+  timestamp: FirebaseFirestoreTypes.Timestamp;
+  comment?: string;
+}
 
 export interface Order {
   id: string;
   customerId: string;
+  customerName: string;
+  customerPhone: string;
+  source: "mobile" | "admin";
 
   // Items
   items: OrderItem[];
 
   // Pricing
   subtotal: number;
-  discount: number;
+  discount: number; // Sum of all discounts (item-level + order-level)
+  appliedOrderDiscount?: {
+    id: string;
+    name: string;
+    percentage: number;
+    amount: number;
+  };
   deliveryFee: number;
   total: number;
 
   // Payment
   paymentMethod: PaymentMethod;
   paymentStatus: PaymentStatus;
-  paymentStatusHistory: {
-    status: PaymentStatus;
-    updatedAt: Date;
-  }[];
-  proofOfPaymentUrl?: string; // For bank transfers
+  proofOfPaymentUrl?: string; // Screenshot for online payments
 
   // Delivery
   deliveryAddress: string;
+  deliveryNotes?: string;
 
   // Status
-  status:
-  | "pending"
-  | "confirmed"
-  | "shipped"
-  | "delivered"
-  | "cancelled"
-  | "refunded";
-  statusHistory: {
-    status: OrderStatus;
-    updatedAt: Date;
-  }[];
+  status: OrderStatus;
 
+  // Audit Logs
+  logs: OrderLog[];
+
+  // Metadata
   riderId?: string;
-  createdAt: Date;
-  deliveredAt?: Date;
+  cancelledBy?: "user" | "admin";
+
+  // Timestamps
+  createdAt: FirebaseFirestoreTypes.Timestamp;
+  confirmedAt?: FirebaseFirestoreTypes.Timestamp;
+  shippedAt?: FirebaseFirestoreTypes.Timestamp;
+  deliveredAt?: FirebaseFirestoreTypes.Timestamp;
+  updatedAt: FirebaseFirestoreTypes.Timestamp;
+}
+
+export interface OrderItem {
+  productId: string;
+  productName: string;
+  quantity: number;
+  unitPrice: number;
+  discount: number; // Total discount amount for this item (quantity * amountPerUnit)
+  appliedDiscount?: {
+    id: string;
+    percentage: number;
+    amountPerUnit: number;
+    totalAmount: number;
+    source: string;
+  };
+  subtotal: number;
+  batchAssignments?: {
+    docId: string; // Firestore document ID (used for DB operations)
+    batchId: string; // Human-readable batch ID (for display)
+    quantity: number;
+  }[];
 }

@@ -6,19 +6,19 @@ import { queryClient, queryKeys } from "@/src/lib/react-query";
 import { OrderSettings } from "@/src/types";
 
 const BillingDetailsSection = () => {
-  const { data: cart } = useCart();
+  const { cart } = useCart();
 
   const orderSettings = queryClient.getQueryData<OrderSettings>(
     queryKeys.settings.byDomain("order")
   );
 
   // Calculate totals from cart data
-  const itemsSubtotal = cart?.total || 0;
+  const itemsSubtotal = cart?.itemsSubtotal || 0;
   const orderDiscount = cart?.appliedOrderDiscount?.amount || 0;
-  const discountPercentage = cart?.appliedOrderDiscount?.percentage || 0;
-  const finalSubtotal = itemsSubtotal - orderDiscount;
+  const orderSubTotal = itemsSubtotal - orderDiscount;
+  const orderDiscountPercentage = cart?.appliedOrderDiscount?.percentage || 0;
   const deliveryFee = orderSettings?.deliveryFee || 0;
-  const totalAmount = finalSubtotal + deliveryFee;
+  const finalBill = orderSubTotal + deliveryFee;
 
   return (
     <>
@@ -36,7 +36,7 @@ const BillingDetailsSection = () => {
             <View style={styles.leftSection}>
               <Text style={styles.labelText}>Order Discount</Text>
               <View style={styles.tag}>
-                <Text style={styles.discountText}>{discountPercentage}% off</Text>
+                <Text style={styles.discountText}>{orderDiscountPercentage}% off</Text>
               </View>
             </View>
             <Text style={styles.discountAmount}>-Rs. {orderDiscount}</Text>
@@ -44,13 +44,13 @@ const BillingDetailsSection = () => {
         )}
 
         <View style={styles.billingRow}>
-          <Text style={styles.labelText}>Final Subtotal</Text>
-          <Text style={styles.amount}>Rs. {finalSubtotal}</Text>
+          <Text style={styles.labelText}>Order Subtotal</Text>
+          <Text style={styles.amount}>Rs. {orderSubTotal}</Text>
         </View>
 
         <View style={styles.billingRow}>
           <View style={styles.leftSection}>
-            <Text style={styles.labelText}>Delivery Fee</Text>
+            <Text style={styles.labelText}>Delivery Charges</Text>
             {deliveryFee === 0 &&
               <View style={styles.tag}>
                 <Text style={styles.freeDeliveryText}>Free Delivery</Text>
@@ -65,8 +65,8 @@ const BillingDetailsSection = () => {
         <View style={styles.separator} />
 
         <View style={styles.totalRow}>
-          <Text style={styles.totalLabelText}>Total Amount</Text>
-          <Text style={styles.totalAmount}>Rs. {totalAmount}</Text>
+          <Text style={styles.totalLabelText}>Final Bill</Text>
+          <Text style={styles.finalBill}>Rs. {finalBill}</Text>
         </View>
       </View>
     </>
@@ -153,7 +153,7 @@ const styles = StyleSheet.create({
     fontFamily: theme.fonts.semibold,
     color: theme.colors.text,
   },
-  totalAmount: {
+  finalBill: {
     fontSize: 12,
     fontFamily: theme.fonts.semibold,
     color: theme.colors.text,

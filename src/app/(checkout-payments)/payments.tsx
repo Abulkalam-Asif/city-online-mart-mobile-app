@@ -5,18 +5,12 @@ import { theme } from "@/src/constants/theme";
 import { useModal } from "@/src/contexts/ModalContext";
 import { useCart, useClearCart } from "@/src/hooks/useCart";
 import { usePlaceOrder } from "@/src/hooks/useOrders";
+import { useAuth } from "@/src/contexts/AuthContext";
 import { useGetAllPaymentMethods } from "@/src/hooks/usePaymentMethods";
-import {
-  updateOrderWithPaymentProof,
-  uploadPaymentProof,
-} from "@/src/utils/uploadPaymentProof";
-import { generateOrderId } from "@/src/utils/orderIdGenerator";
 import React, { useEffect, useState } from "react";
 import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 import { useLocalSearchParams } from "expo-router";
 import Loading from "@/src/components/common/Loading";
-
-const mockCustomerId = "customer123"; // In real app, get from auth context
 
 const getDisplayName = (type: string) => {
   switch (type) {
@@ -52,7 +46,8 @@ export default function PaymentsScreen() {
     useGetAllPaymentMethods();
 
   // Fetch cart data
-  const { data: cart, isLoading: loadingCart } = useCart();
+  const { cart, loading: loadingCart } = useCart();
+  const { user } = useAuth();
 
   // Clear cart mutation
   const clearCartMutation = useClearCart();
@@ -65,17 +60,6 @@ export default function PaymentsScreen() {
     const handleOrderSuccess = async () => {
       if (placeOrderMutation.isSuccess && !cartCleared) {
         const orderId = placeOrderMutation.data;
-
-        // Upload payment proof if screenshot exists
-        if (screenshot) {
-          try {
-            const downloadUrl = await uploadPaymentProof(screenshot, orderId);
-            await updateOrderWithPaymentProof(orderId, downloadUrl);
-          } catch (error) {
-            console.error("Failed to upload payment proof:", error);
-            // Don't fail the order for upload errors - order is already placed
-          }
-        }
 
         // Clear the cart after successful order (only once)
         clearCartMutation.mutate();
@@ -217,71 +201,21 @@ export default function PaymentsScreen() {
             console.log("✅ Starting checkout process...");
 
             try {
-              // Generate order ID first
-              const orderId = generateOrderId();
-
-              // Upload payment proof if screenshot exists
-              let proofOfPaymentUrl: string | undefined;
-              if (screenshot) {
-                proofOfPaymentUrl = await uploadPaymentProof(
-                  screenshot,
-                  orderId
-                );
-              }
-
-              // Convert cart items to order items format
-              const orderItems = cart.items.map((item) => ({
-                productId: item.productId,
-                productName: item.productName,
-                quantity: item.quantity,
-                unitPrice: item.unitPrice,
-                discount: 0, // Could be calculated from product discounts
-                subtotal: item.unitPrice * item.quantity,
-              }));
-
-              // Calculate order totals
-              const cartTotalAfterProductDiscounts = cart.total; // cart.total already includes product discounts
-              const deliveryFee = 100; // In real app, calculate based on location/delivery options
-
-              console.log("🔍 About to calculate order discount...");
-              // Calculate order-level discount (applied to subtotal after product discounts)
-              const { discountAmount: orderDiscount, discountName } = { discountAmount: 0, discountName: "" };
-              console.log("✅ Order discount calculation completed");
-
-              // Subtotal for display should be after order discount (consistent with cart screen)
-              const subtotalForDisplay =
-                cartTotalAfterProductDiscounts - orderDiscount;
-
-              console.log("🛒 Checkout calculation:");
-              console.log(
-                "📦 Cart total (after product discounts):",
-                cartTotalAfterProductDiscounts
-              );
-              console.log(
-                "💰 Order discount applied:",
-                orderDiscount,
-                discountName ? `(${discountName})` : ""
-              );
-              console.log(
-                "📊 Subtotal for display (after order discount):",
-                subtotalForDisplay
-              );
-              console.log("🚚 Delivery fee:", deliveryFee);
-              console.log("💵 Final total:", subtotalForDisplay + deliveryFee);
-
-              const total = subtotalForDisplay + deliveryFee;
-
+              // Now we follow the admin pattern exactly:
+              // 1. Pass the local URI directly to createOrder.
+              // 2. OrderService will generate the ID and handle the upload internally.
               placeOrderMutation.mutate({
-                customerId: mockCustomerId,
-                items: orderItems,
-                subtotal: cartTotalAfterProductDiscounts, // Original subtotal before order discount
-                discount: orderDiscount,
-                deliveryFee,
-                total,
+                customerId: user?.uid || "anonymous",
+                customerName: user?.displayName || "Guest",
+                customerPhone: user?.phoneNumber || "",
+                source: "mobile",
+                items: cart.items.map((item) => ({
+                  productId: item.productId,
+                  quantity: item.quantity,
+                })),
                 paymentMethod: selectedPaymentMethod,
-                deliveryAddress: deliveryAddress || "Address not provided", // Use actual address from checkout
-                proofOfPaymentUrl,
-                orderId, // Use pre-generated ID
+                deliveryAddress: deliveryAddress || "Address not provided",
+                proofOfPaymentUri: screenshot || undefined,
               });
             } catch (error) {
               console.error("Failed to process order:", error);
@@ -290,7 +224,7 @@ export default function PaymentsScreen() {
           }}
           disabled={isProceedDisabled}>
           <Text style={styles.proceedButtonText}>
-            {placeOrderMutation.isPending ? "Placing Order..." : "Proceed"}
+            {placeOrderMutation.isPending ? "Placing Order..." : "Place Order"}
           </Text>
         </Pressable>
       </View>

@@ -1,9 +1,10 @@
-import { auth, db, functions } from "../../firebaseConfig";
+import { auth, db, functions, storage } from "../../firebaseConfig";
 import { AuthService } from "./AuthService";
 import { CartService } from "./CartService";
 import { DiscountService } from "./DiscountService";
 import { PaymentMethodService } from "./PaymentMethodService";
 import { SettingsService } from "./SettingsService";
+import { OrderService } from "./OrderService";
 
 // Initialize services with dependencies (DI pattern)
 const authService = new AuthService(auth, db, functions);
@@ -11,9 +12,13 @@ const settingsService = new SettingsService(db);
 const cartService = new CartService();
 const discountService = new DiscountService(db);
 const paymentMethodService = new PaymentMethodService(db);
+const orderService = new OrderService(db, storage);
+
+// Wire circular dependency (matches admin-side pattern)
+orderService.discountService = discountService;
 
 // Export service instances
-export { authService, settingsService, cartService, discountService, paymentMethodService };
+export { authService, settingsService, cartService, discountService, paymentMethodService, orderService };
 
 /**
  * Note: Existing services (cartService, productService, etc.) are currently 

@@ -46,7 +46,7 @@ const OrderSuccessModal = ({ orderId }: OrderSuccessModalProps) => {
             </Text>
           </Pressable>
 
-          <Pressable
+          {/* <Pressable
             style={({ pressed }) => [
               styles.button,
               styles.primaryButton,
@@ -56,7 +56,7 @@ const OrderSuccessModal = ({ orderId }: OrderSuccessModalProps) => {
             <Text style={[styles.buttonText, styles.primaryButtonText]}>
               View Orders
             </Text>
-          </Pressable>
+          </Pressable> */}
         </View>
       </View>
     </View>

@@ -3,7 +3,7 @@ import React, { useState } from "react";
 import GeneralTopBar from "@/src/components/general/GeneralTopBar";
 import OrderTabs from "@/src/components/tabs/profile/orders/OrderTabs";
 import OrderItem from "@/src/components/tabs/profile/orders/OrderItem";
-import { useGetCustomerOrders } from "@/src/hooks/useOrders";
+// import { useGetCustomerOrders } from "@/src/hooks/useOrders";
 import { theme } from "@/src/constants/theme";
 import { OrderStatus } from "@/src/types";
 import Loading from "@/src/components/common/Loading";
@@ -21,7 +21,11 @@ const OrdersScreen = () => {
     data: orders,
     isLoading,
     error,
-  } = useGetCustomerOrders(mockCustomerId);
+  } = {
+    data: [],
+    isLoading: false,
+    error: null,
+  };
 
   // Format date from Date object to readable string
   const formatDate = (date: Date): string => {
@@ -36,7 +40,8 @@ const OrdersScreen = () => {
   const filteredOrders =
     orders?.filter((order) => {
       if (activeTab === "all") return true;
-      return order.status === activeTab;
+      // return order.status === activeTab;
+      return true;
     }) || [];
 
   // Handle loading state
@@ -80,17 +85,18 @@ const OrdersScreen = () => {
           </View>
         ) : (
           filteredOrders.map((order) => (
-            <OrderItem
-              key={order.id}
-              orderId={order.id}
-              date={formatDate(order.createdAt)}
-              itemCount={order.items.reduce(
-                (total, item) => total + item.quantity,
-                0
-              )}
-              price={order.total}
-              status={order.status}
-            />
+            // <OrderItem
+            //   key={order.id}
+            //   orderId={order.id}
+            //   date={formatDate(order.createdAt)}
+            //   itemCount={order.items.reduce(
+            //     (total, item) => total + item.quantity,
+            //     0
+            //   )}
+            //   price={order.total}
+            //   status={order.status}
+            // />
+            <></>
           ))
         )}
       </ScrollView>

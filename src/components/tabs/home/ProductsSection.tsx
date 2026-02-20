@@ -27,7 +27,7 @@ const ProductsSection = ({
     error: errorGettingProducts,
   } = useGetProductsBySpecialCategory(category.id, { limit: CONSTANTS.limits.homepageProductsPerSpecialCategory });
 
-  const { data: cart } = useCart();
+  const { cart } = useCart();
 
   const handleViewAll = () => {
     router.push({
@@ -61,7 +61,7 @@ const ProductsSection = ({
           products.length > 0 &&
           (<>
             {products?.map((product) => {
-              const cartItem = cart?.items.find(i => i.productId === product.id);
+              const cartItem = cart?.items.find((i: { productId: string }) => i.productId === product.id);
               return (
                 <ProductCard key={product.id} product={product}
                   quantityInCart={cartItem?.quantity || 0}

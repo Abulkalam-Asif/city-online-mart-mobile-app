@@ -65,7 +65,7 @@ const CategoriesScreen = () => {
   );
 
   // Get cart data
-  const { data: cart } = useCart();
+  const { cart } = useCart();
 
   // Derive currentCategory from categories array
   const currentCategory = categories.find(

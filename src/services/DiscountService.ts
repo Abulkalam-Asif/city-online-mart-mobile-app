@@ -1,19 +1,21 @@
-import { Discount } from "../types";
+import {
+  collection,
+  getDocs,
+  query,
+  where,
+  FirebaseFirestoreTypes,
+} from "@react-native-firebase/firestore";
+import { Discount } from "../types/discount.types";
 import { convertTimestamp } from "../utils/firestoreUtils";
 import { logger } from "../utils/logger";
-import { collection, FirebaseFirestoreTypes, getDocs, query, where } from "@react-native-firebase/firestore";
 
 export class DiscountService {
-
   private static readonly COLLECTION_NAME = "DISCOUNTS";
 
   constructor(private db: FirebaseFirestoreTypes.Module) { }
 
   /**
-   * Helper function to convert Firestore data to Discount
-   * @param id - Document ID
-   * @param data - Firestore document data
-   * @returns Discount object
+   * Converts raw Firestore data to a typed Discount object.
    */
   private static firestoreToDiscount(id: string, data: any): Discount {
     return {
@@ -21,19 +23,17 @@ export class DiscountService {
       name: data.name || "",
       description: data.description || undefined,
       percentage: data.percentage || 0,
-      isActive: data.isActive !== undefined ? data.isActive : true, // Default to true for existing discounts
+      isActive: data.isActive !== undefined ? data.isActive : true,
       type: data.type,
       minPurchaseAmount: data.minPurchaseAmount || 0,
       startDate: convertTimestamp(data.startDate),
       endDate: convertTimestamp(data.endDate),
     };
-  };
+  }
 
   /**
-   * Validate if a discount is currently valid
-   * @param discount - Discount object with isActive, startDate, endDate
-   * @returns true if discount is active and within valid date range
-  */
+   * Validates if a discount is currently active and within its date range.
+   */
   private static isDiscountValid(discount: {
     isActive: boolean;
     startDate: Date;
@@ -48,8 +48,8 @@ export class DiscountService {
   }
 
   /**
-   * Fetches all valid order-level discounts
-   * @returns Array of valid order-level discounts
+   * Fetches all valid order-level discounts.
+   * Firestore query filters by type and isActive; date validation is done client-side.
    */
   async getValidOrderDiscounts(): Promise<Discount[]> {
     try {
@@ -60,16 +60,15 @@ export class DiscountService {
         where("isActive", "==", true)
       );
       const snapshot = await getDocs(q);
-      const discounts = snapshot.docs.map((doc: FirebaseFirestoreTypes.DocumentData) =>
-        DiscountService.firestoreToDiscount(doc.id, doc.data())
+      const discounts = snapshot.docs.map((d: FirebaseFirestoreTypes.DocumentData) =>
+        DiscountService.firestoreToDiscount(d.id, d.data())
       );
 
-      // Final filtering by date on the client/service side (Firestore doesn't support multiple range filters easily with isActive)
+      // Final date-range filter (Firestore doesn't support multiple range filters easily)
       return discounts.filter((d: Discount) => DiscountService.isDiscountValid(d));
     } catch (error) {
       logger.error("Error fetching valid order discounts:", error);
       throw error;
     }
   }
-
-};
+}

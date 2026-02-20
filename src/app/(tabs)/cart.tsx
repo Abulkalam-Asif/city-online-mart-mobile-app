@@ -12,12 +12,8 @@ import CartItem from "@/src/components/tabs/cart/CartItem";
 import EmptyCart from "@/src/components/tabs/cart/EmptyCart";
 import { theme } from "@/src/constants/theme";
 import { router } from "expo-router";
-import {
-  useCart,
-  useUpdateCartItem,
-  useRemoveFromCart,
-  useClearCart,
-} from "@/src/hooks/useCart";
+import { useCart, useUpdateCartItem, useRemoveFromCart, useClearCart } from "@/src/hooks/useCart";
+import { useCartContext } from "@/src/contexts/CartContext";
 import Loading from "@/src/components/common/Loading";
 
 import { useAuth } from "@/src/contexts/AuthContext";
@@ -26,7 +22,7 @@ import ErrorBanner from "@/src/components/common/ErrorBanner";
 import { useGetValidOrderDiscounts } from "@/src/hooks/useDiscounts";
 import { getBestOrderDiscount } from "@/src/utils/discountUtils";
 import { Discount } from "@/src/types";
-import { cartService } from "@/src/services";
+
 
 export default function CartScreen() {
   const { user } = useAuth();
@@ -39,30 +35,28 @@ export default function CartScreen() {
   const { data: validOrderDiscounts, isLoading: loadingValidOrderDiscounts } = useGetValidOrderDiscounts();
 
   // Fetch cart data
-  const { data: cart, isLoading: loadingCart, error } = useCart();
+  const { cart, loading: loadingCart, isPending: isCartPending } = useCart();
+  const { updateAppliedOrderDiscount } = useCartContext();
 
   // Calculate best order discount
   useEffect(() => {
-    const updateDiscount = async () => {
-      if (validOrderDiscounts && cart) {
-        const best = getBestOrderDiscount(validOrderDiscounts, cart.total);
-        setBestOrderDiscount(best);
+    if (loadingValidOrderDiscounts || !validOrderDiscounts || !cart) return;
 
-        // Call service directly (no mutation hook needed)
-        if (best) {
-          const amount = Math.floor((cart.total * best.percentage) / 100);
-          await cartService.updateAppliedOrderDiscount(
-            best.id,
-            best.name,
-            best.percentage,
-            amount
-          );
-        }
+    const best = getBestOrderDiscount(validOrderDiscounts, cart.itemsSubtotal);
+    setBestOrderDiscount(best);
+
+    // Update context if best discount changed
+    const currentApplied = cart.appliedOrderDiscount;
+    if (best) {
+      const amount = Math.round((cart.itemsSubtotal * best.percentage) / 100);
+      if (currentApplied?.id !== best.id || currentApplied?.amount !== amount) {
+        updateAppliedOrderDiscount(best.id, best.name, best.percentage, amount);
       }
-    };
-
-    updateDiscount();
-  }, [validOrderDiscounts, cart?.total]);
+    } else if (currentApplied) {
+      // Clear discount if none apply anymore
+      updateAppliedOrderDiscount("", "", 0, 0);
+    }
+  }, [validOrderDiscounts, cart?.itemsSubtotal, loadingValidOrderDiscounts]);
 
   // Cart mutations
   const updateCartItemMutation = useUpdateCartItem();
@@ -76,13 +70,7 @@ export default function CartScreen() {
       updateCartItemMutation.mutate({
         productId: item.productId,
         quantity: newQuantity,
-      },
-        {
-          onError: (error) => {
-            Alert.alert('Error', error.message || 'Failed to update cart item');
-          },
-        }
-      );
+      });
     }
   };
 
@@ -90,23 +78,12 @@ export default function CartScreen() {
     // Find the actual productId from the transformed item
     const item = cart?.items.find((item) => item.productId === productId);
     if (item) {
-      removeFromCartMutation.mutate(item.productId,
-        {
-          onError: (error) => {
-            Alert.alert('Error', error.message || 'Failed to remove cart item');
-          },
-        }
-      );
+      removeFromCartMutation.mutate(item.productId);
     }
   };
 
   const handleClearCart = () => {
-    clearCartMutation.mutate(undefined,
-      {
-        onError: (error) => {
-          Alert.alert('Error', error.message || 'Failed to clear cart');
-        },
-      });
+    clearCartMutation.mutate();
   };
 
   if (loadingCart || loadingOrderSettings || loadingValidOrderDiscounts) {
@@ -120,22 +97,11 @@ export default function CartScreen() {
     );
   }
 
-  if (error) {
-    return (
-      <View style={styles.mainContainer}>
-        <GeneralTopBar text="My Cart" />
-        <View style={styles.centeringContainer}>
-          <Text style={styles.errorText}>Failed to load cart</Text>
-        </View>
-      </View>
-    );
-  }
-
   const minimumOrderAmount = orderSettings?.minimumOrderAmount || 0;
-  const itemsSubtotal = cart?.total || 0;
+  const itemsSubtotal = cart?.itemsSubtotal || 0;
   // Use bestOrderDiscount state for UI (avoids race condition with AsyncStorage)
   const orderDiscountAmount = bestOrderDiscount
-    ? Math.floor((itemsSubtotal * bestOrderDiscount.percentage) / 100)
+    ? Math.round((itemsSubtotal * bestOrderDiscount.percentage) / 100)
     : 0;
   const finalSubtotal = itemsSubtotal - orderDiscountAmount;
   const canProceedToCheckout = finalSubtotal >= minimumOrderAmount;
@@ -157,10 +123,11 @@ export default function CartScreen() {
               <View style={styles.buttonRow}>
                 <Pressable
                   onPress={handleClearCart}
+                  disabled={isCartPending}
                   style={({ pressed }) => [
                     pressed && styles.clearCartButtonPressed,
                   ]}>
-                  <Text style={styles.clearCartText}>Clear All</Text>
+                  <Text style={[styles.clearCartText, isCartPending && styles.disabledButtonText]}>Clear All</Text>
                 </Pressable>
               </View>
             </View>
@@ -180,7 +147,7 @@ export default function CartScreen() {
             />
             <View style={styles.summaryContainer}>
               <View style={styles.minimumOrderRow}>
-                <Text style={styles.minimumOrderText}>Minimum Order Price: </Text>
+                <Text style={styles.minimumOrderText}>Minimum Order Subtotal: </Text>
                 <Text
                   style={[styles.minimumOrderText, styles.minimumOrderValueText]}>
                   {minimumOrderAmount}
@@ -188,8 +155,8 @@ export default function CartScreen() {
               </View>
 
               <View style={styles.amountRow}>
-                <Text style={styles.amountLabel}>Subtotal</Text>
-                <Text style={styles.amountValue}>Rs. {cart?.total || 0}</Text>
+                <Text style={styles.amountLabel}>Items Subtotal</Text>
+                <Text style={styles.amountValue}>Rs. {cart?.itemsSubtotal || 0}</Text>
               </View>
 
               {bestOrderDiscount && (
@@ -207,7 +174,7 @@ export default function CartScreen() {
               )}
 
               <View style={[styles.amountRow, styles.totalRow]}>
-                <Text style={styles.totalLabel}>Total</Text>
+                <Text style={styles.totalLabel}>Order Subtotal</Text>
                 <Text style={styles.totalValue}>Rs. {finalSubtotal}</Text>
               </View>
 
@@ -215,7 +182,9 @@ export default function CartScreen() {
                 style={({ pressed }) => [
                   styles.proceedButton,
                   pressed && styles.proceedButtonPressed,
+                  (isCartPending) && styles.proceedButtonDisabled,
                 ]}
+                disabled={isCartPending}
                 onPress={() => {
                   if (!isLoggedIn) {
                     router.push("/login");
@@ -395,5 +364,11 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontFamily: theme.fonts.medium,
     color: "red",
+  },
+  disabledButtonText: {
+    color: "#ccc",
+  },
+  proceedButtonDisabled: {
+    backgroundColor: "#ccc",
   },
 });

@@ -24,7 +24,7 @@ const ProductDetailsContent = ({
   const [isShowMoreDescription, setIsShowMoreDescription] = React.useState(false);
 
   // Get cart data
-  const { data: cart } = useCart();
+  const { cart } = useCart();
 
   // Check if product is in cart
   const cartItem = useMemo(() => {

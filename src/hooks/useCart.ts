@@ -1,116 +1,73 @@
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { queryKeys } from "../lib/react-query";
-import { cartService } from "../services";
-
-// Hook for fetching current cart
-export function useCart() {
-  return useQuery({
-    queryKey: queryKeys.cart.current(),
-    queryFn: () => cartService.getCart(),
-    staleTime: 1000 * 60 * 2, // 2 minutes - cart changes frequently
-  });
-}
-
 /**
- * Hook for adding item to cart
+ * Cart hooks - now powered by CartContext for real-time updates.
+ * AsyncStorage is used only for persistence.
  */
-export function useAddToCart() {
-  const queryClient = useQueryClient();
+import { useCart } from "../contexts/CartContext";
 
-  return useMutation({
-    mutationFn: ({
-      productId,
-      productName,
-      unitPrice,
-      quantity,
-      discountPercentage,
-      imageUrl,
-    }: {
+export { useCart };
+
+// Re-export individual action hooks for backwards compatibility
+export function useAddToCart() {
+  const { addToCart, isPending } = useCart();
+  return {
+    mutate: (params: {
       productId: string;
       productName: string;
       unitPrice: number;
       quantity: number;
       discountPercentage: number;
       imageUrl: string;
+      appliedDiscountId?: string;
+      appliedDiscountSource?: string;
     }) =>
-      cartService.addToCart(
-        productId,
-        productName,
-        unitPrice,
-        discountPercentage,
-        quantity,
-        imageUrl
+      addToCart(
+        params.productId,
+        params.productName,
+        params.unitPrice,
+        params.discountPercentage,
+        params.quantity,
+        params.imageUrl,
+        params.appliedDiscountId,
+        params.appliedDiscountSource
       ),
-    onSuccess: () => {
-      // Invalidate cart to refetch
-      queryClient.invalidateQueries({
-        queryKey: queryKeys.cart.current(),
-      });
-    },
-  });
+    isPending,
+  };
 }
 
-/**
- * Hook for updating cart item quantity
- */
 export function useUpdateCartItem() {
-  const queryClient = useQueryClient();
-
-  return useMutation({
-    mutationFn: ({
-      productId,
-      quantity,
-    }: {
-      productId: string;
-      quantity: number;
-    }) => cartService.updateCartItem(productId, quantity),
-    onSuccess: () => {
-      // Invalidate cart to refetch
-      queryClient.invalidateQueries({
-        queryKey: queryKeys.cart.current(),
-      });
+  const { updateCartItem, isPending } = useCart();
+  return {
+    mutate: (
+      params: { productId: string; quantity: number },
+      options?: { onError?: (error: Error) => void }
+    ) => {
+      try {
+        updateCartItem(params.productId, params.quantity);
+      } catch (error) {
+        options?.onError?.(error as Error);
+      }
     },
-  });
+    isPending,
+  };
 }
 
-/**
- * Hook for removing item from cart
- */
 export function useRemoveFromCart() {
-  const queryClient = useQueryClient();
-
-  return useMutation({
-    mutationFn: (productId: string) => cartService.removeFromCart(productId),
-    onSuccess: () => {
-      // Invalidate cart to refetch
-      queryClient.invalidateQueries({
-        queryKey: queryKeys.cart.current(),
-      });
-    },
-  });
+  const { removeFromCart, isPending } = useCart();
+  return {
+    mutate: (productId: string) => removeFromCart(productId),
+    isPending,
+  };
 }
 
-/**
- * Hook for clearing cart
- */
 export function useClearCart() {
-  const queryClient = useQueryClient();
-
-  return useMutation({
-    mutationFn: () => cartService.clearCart(),
-    onSuccess: () => {
-      // Invalidate cart to refetch
-      queryClient.invalidateQueries({
-        queryKey: queryKeys.cart.current(),
-      });
-    },
-  });
+  const { clearCart, isPending } = useCart();
+  return {
+    mutate: () => clearCart(),
+    isPending,
+  };
 }
 
-/**
- * Hook for getting cart item count
- */
 export function useCartItemCount() {
-  const cartQuery = useCart();
-  return cartQuery.data ? cartQuery.data.items.length : 0;
+  const { cart } = useCart();
+  return cart ? cart.items.length : 0;
 }

@@ -1,5 +1,5 @@
 import React from "react";
-import OrderDetailsContent from "@/src/components/order-details/OrderDetailsContent";
+// import OrderDetailsContent from "@/src/components/order-details/OrderDetailsContent";
 import { useLocalSearchParams } from "expo-router";
 
 export default function OrderDetailsScreen() {
@@ -8,5 +8,6 @@ export default function OrderDetailsScreen() {
     status?: string;
   }>();
 
-  return <OrderDetailsContent orderId={id} />;
+  // return <OrderDetailsContent orderId={id} />;
+  return <></>
 }

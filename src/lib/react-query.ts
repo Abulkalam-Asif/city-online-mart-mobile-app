@@ -148,23 +148,6 @@ export const queryKeys = {
   },
 
   // ========================================
-  // ORDERS
-  // ========================================
-  orders: {
-    // Base key - invalidates ALL order queries
-    all: ["orders"] as const,
-
-    // Lists
-    lists: () => [...queryKeys.orders.all, "list"] as const,
-    byStatus: (status: string) =>
-      [...queryKeys.orders.lists(), "status", status] as const,
-
-    // Single order detail
-    details: () => [...queryKeys.orders.all, "detail"] as const,
-    detail: (id: string) => [...queryKeys.orders.details(), id] as const,
-  },
-
-  // ========================================
   // CART
   // ========================================
   cart: {
@@ -186,5 +169,6 @@ export const queryKeys = {
     profile: () => [...queryKeys.user.all, "profile"] as const,
     addresses: () => [...queryKeys.user.all, "addresses"] as const,
     wishlist: () => [...queryKeys.user.all, "wishlist"] as const,
+    orders: () => [...queryKeys.user.all, "orders"] as const,
   },
 };

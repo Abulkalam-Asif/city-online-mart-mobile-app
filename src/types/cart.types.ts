@@ -6,11 +6,13 @@ export interface ICartItem {
   discountPercentage: number;
   discountedUnitPrice: number;
   imageUrl: string;
+  appliedDiscountId?: string; // From ProductDiscount.id
+  appliedDiscountSource?: string; // From ProductDiscount.source
 }
 
 export interface Cart {
   items: ICartItem[];
-  total: number;
+  itemsSubtotal: number; // Subtotal of all items after product discounts
   appliedOrderDiscount?: {
     id: string;
     name: string;

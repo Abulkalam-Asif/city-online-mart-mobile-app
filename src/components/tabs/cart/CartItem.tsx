@@ -1,5 +1,5 @@
 import { StyleSheet, Text, View, Pressable } from "react-native";
-import React, { useState } from "react";
+import React from "react";
 import { Image } from "expo-image";
 import { theme } from "@/src/constants/theme";
 import { FontAwesome6 } from "@expo/vector-icons";
@@ -13,19 +13,13 @@ type CartItemProps = {
 };
 
 const CartItem = ({ item, onQuantityChange, onRemove }: CartItemProps) => {
-  const [quantity, setQuantity] = useState(item.quantity);
-
   const handleIncrement = () => {
-    const newQuantity = quantity + 1;
-    setQuantity(newQuantity);
-    onQuantityChange(item.productId, newQuantity);
+    onQuantityChange(item.productId, item.quantity + 1);
   };
 
   const handleDecrement = () => {
-    if (quantity > 1) {
-      const newQuantity = quantity - 1;
-      setQuantity(newQuantity);
-      onQuantityChange(item.productId, newQuantity);
+    if (item.quantity > 1) {
+      onQuantityChange(item.productId, item.quantity - 1);
     }
   };
 
@@ -69,15 +63,15 @@ const CartItem = ({ item, onQuantityChange, onRemove }: CartItemProps) => {
             styles.quantityButton,
             pressed && styles.quantityButtonPressed,
           ]}
-          onPress={quantity > 1 ? handleDecrement : () => onRemove(item.productId)}>
-          {quantity > 1 ? (
+          onPress={item.quantity > 1 ? handleDecrement : () => onRemove(item.productId)}>
+          {item.quantity > 1 ? (
             <FontAwesome6 name="minus" size={14} color={theme.colors.text} />
           ) : (
             <FontAwesome6 name="trash" size={14} color={theme.colors.text} />
           )}
         </Pressable>
 
-        <Text style={styles.quantityText}>{quantity}</Text>
+        <Text style={styles.quantityText}>{item.quantity}</Text>
 
         <Pressable
           style={({ pressed }) => [

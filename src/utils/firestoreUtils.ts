@@ -26,6 +26,11 @@ export function sanitizeForFirestore(value: any): any {
       .filter((v) => v !== undefined); // Remove undefined entries
   }
 
+  // Preserve Firestore Timestamps — do NOT recurse into them
+  if (value instanceof Timestamp) {
+    return value;
+  }
+
   // Handle objects recursively
   if (typeof value === "object") {
     const sanitized: any = {};

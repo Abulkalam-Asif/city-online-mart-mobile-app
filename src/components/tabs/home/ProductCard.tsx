@@ -6,21 +6,27 @@ import { FontAwesome6 } from "@expo/vector-icons";
 import { router } from "expo-router";
 import { Product } from "@/src/types";
 import { useSinglePress } from "@/src/hooks/useSinglePress";
-import { useAddToCart, useUpdateCartItem } from "@/src/hooks/useCart";
+import { useAddToCart, useUpdateCartItem, useCart } from "@/src/hooks/useCart";
 import { productUtils } from "@/src/utils/productUtils";
 
 type ProductCardProps = {
   product: Product;
   cardWidth?: number | `${number}%`;
-  quantityInCart: number;
+  quantityInCart?: number; // Deprecated: now derived from CartContext
 };
 
 const ProductCard = ({
   product,
   cardWidth = 150,
-  quantityInCart,
 }: ProductCardProps) => {
   const canPress = useSinglePress();
+
+  // Read quantity directly from CartContext (always fresh, no stale prop issue)
+  const { cart } = useCart();
+  const quantityInCart = useMemo(
+    () => cart?.items.find((item) => item.productId === product.id)?.quantity ?? 0,
+    [cart?.items, product.id]
+  );
 
   // Cart mutations
   const addToCartMutation = useAddToCart();
@@ -35,10 +41,14 @@ const ProductCard = ({
     });
   };
 
-  const highestDiscount = useMemo(() => product.validApplicableDiscounts.reduce(
-    (max, discount) => (discount.percentage > max ? discount.percentage : max),
-    0
-  ), [product.validApplicableDiscounts]);
+  const bestDiscount = useMemo(() =>
+    product.validApplicableDiscounts.reduce(
+      (best, current) => (current.percentage > (best?.percentage || 0) ? current : best),
+      null as typeof product.validApplicableDiscounts[0] | null
+    ), [product.validApplicableDiscounts]
+  );
+
+  const highestDiscount = bestDiscount?.percentage || 0;
 
   // Calculate discount information
   const hasDiscount = product.validApplicableDiscounts.length > 0;
@@ -90,7 +100,9 @@ const ProductCard = ({
               style={({ pressed }) => [
                 styles.quantityChangeButton,
                 pressed && styles.quantityChangeButtonPressed,
+                (updateCartItemMutation.isPending || addToCartMutation.isPending) && styles.quantityChangeButtonDisabled,
               ]}
+              disabled={updateCartItemMutation.isPending || addToCartMutation.isPending}
               onPress={() => {
                 if (quantityInCart > 1) {
                   updateCartItemMutation.mutate({
@@ -112,22 +124,14 @@ const ProductCard = ({
               style={({ pressed }) => [
                 styles.quantityChangeButton,
                 pressed && styles.quantityChangeButtonPressed,
+                (updateCartItemMutation.isPending || addToCartMutation.isPending) && styles.quantityChangeButtonDisabled,
               ]}
+              disabled={updateCartItemMutation.isPending || addToCartMutation.isPending}
               onPress={() => {
-                updateCartItemMutation.mutate(
-                  {
-                    productId: product.id,
-                    quantity: quantityInCart + 1,
-                  },
-                  {
-                    onError: (error) => {
-                      Alert.alert(
-                        "Error",
-                        error.message || "Failed to update cart item"
-                      );
-                    },
-                  }
-                );
+                updateCartItemMutation.mutate({
+                  productId: product.id,
+                  quantity: quantityInCart + 1,
+                });
               }}>
               <FontAwesome6 name="plus" />
             </Pressable>
@@ -141,28 +145,16 @@ const ProductCard = ({
           onPress={() => {
             if (quantityInCart === 0) {
               // Add to cart for first time
-              addToCartMutation.mutate(
-                {
-                  productId: product.id,
-                  productName: product.info.name,
-                  unitPrice: product.price,
-                  discountPercentage: product.validApplicableDiscounts.reduce(
-                    (max, discount) =>
-                      discount.percentage > max ? discount.percentage : max,
-                    0
-                  ), // highest discount percentage
-                  imageUrl: primaryImage,
-                  quantity: 1,
-                },
-                {
-                  onError: (error) => {
-                    Alert.alert(
-                      "Error",
-                      error.message || "Failed to add to cart"
-                    );
-                  },
-                }
-              );
+              addToCartMutation.mutate({
+                productId: product.id,
+                productName: product.info.name,
+                unitPrice: product.price,
+                discountPercentage: highestDiscount,
+                appliedDiscountId: bestDiscount?.id,
+                appliedDiscountSource: bestDiscount?.source,
+                imageUrl: primaryImage,
+                quantity: 1,
+              });
             } else {
               // Navigate to cart
               router.push("/cart");
@@ -183,7 +175,7 @@ const styles = StyleSheet.create({
   card: {
     justifyContent: "flex-start",
     borderRadius: 16,
-    padding: 10,
+    padding: 8,
     position: "relative",
     backgroundColor: theme.colors.background_3,
   },
@@ -248,7 +240,7 @@ const styles = StyleSheet.create({
   addToCartSection: {
     marginTop: 10,
     flexDirection: "row",
-    gap: 8,
+    gap: 4,
   },
   quantitySection: {
     flexDirection: "row",
@@ -262,11 +254,14 @@ const styles = StyleSheet.create({
     flex: 1,
     flexDirection: "row",
     justifyContent: "center",
-    padding: 7,
+    padding: 5,
     borderRadius: 20,
   },
   quantityChangeButtonPressed: {
     backgroundColor: theme.colors.background,
+  },
+  quantityChangeButtonDisabled: {
+    opacity: 0.5,
   },
   quantityText: {
     fontFamily: theme.fonts.medium,
@@ -277,7 +272,7 @@ const styles = StyleSheet.create({
   addToCartButton: {
     flex: 1,
     backgroundColor: theme.colors.primary,
-    paddingVertical: 6,
+    paddingVertical: 4,
     borderRadius: 20,
   },
   addToCartButtonPressed: {
