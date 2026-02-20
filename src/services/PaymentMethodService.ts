@@ -30,6 +30,8 @@ export class PaymentMethodService {
 
   /**
    * Get all active payment methods from Firestore
+   * Index required: PAYMENT_METHODS
+   * isActive, displayOrder, __name__
    * @returns Promise<PaymentMethod[]>
    */
   async getAllPaymentMethods(): Promise<PaymentMethod[]> {
