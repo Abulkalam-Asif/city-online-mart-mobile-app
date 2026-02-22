@@ -182,7 +182,7 @@ export class AuthService {
 
       const authUser: AuthUser = {
         uid: firebaseUser.uid,
-        phoneNumber: firebaseUser.phoneNumber || null,
+        phoneNumber: userData?.phoneNumber || null,
         displayName: userData?.displayName || null,
         role: role,
       };
@@ -236,6 +236,11 @@ export class AuthService {
     }
   }
 
+  /**
+   * Convert phone number to E.164 format
+   * @param phoneNumber Phone number in local format (e.g. 03001234567)
+   * @returns Phone number in E.164 format (e.g. +923001234567)
+   */
   private convertToE164(phoneNumber: string): string {
     const cleaned = phoneNumber.replace(/\D/g, "");
     if (cleaned.startsWith("0")) return `+92${cleaned.substring(1)}`;
@@ -243,6 +248,11 @@ export class AuthService {
     return phoneNumber.startsWith("+") ? phoneNumber : `+${phoneNumber}`;
   }
 
+  /**
+   * Convert phone number to local format
+   * @param phoneNumber Phone number in E.164 format (e.g. +923001234567)
+   * @returns Phone number in local format (e.g. 03001234567)
+   */
   private convertToLocal(phoneNumber: string): string {
     const cleaned = phoneNumber.replace(/\D/g, "");
     if (cleaned.startsWith("92")) return `0${cleaned.substring(2)}`;

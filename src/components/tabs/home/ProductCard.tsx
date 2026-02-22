@@ -1,5 +1,5 @@
 import { Alert, Pressable, StyleSheet, Text, View } from "react-native";
-import React, { useMemo } from "react";
+import React, { useCallback, useMemo } from "react";
 import { Image } from "expo-image";
 import { theme } from "@/src/constants/theme";
 import { FontAwesome6 } from "@expo/vector-icons";
@@ -32,14 +32,14 @@ const ProductCard = ({
   const addToCartMutation = useAddToCart();
   const updateCartItemMutation = useUpdateCartItem();
 
-  const handleProductPress = () => {
+  const handleProductPress = useCallback(() => {
     if (!canPress()) return;
 
     router.push({
       pathname: "/product-details",
       params: { id: product.id },
     });
-  };
+  }, [canPress, product.id]);
 
   const bestDiscount = useMemo(() =>
     product.validApplicableDiscounts.reduce(
@@ -48,18 +48,59 @@ const ProductCard = ({
     ), [product.validApplicableDiscounts]
   );
 
-  const highestDiscount = bestDiscount?.percentage || 0;
-
-  // Calculate discount information
-  const hasDiscount = product.validApplicableDiscounts.length > 0;
-  const discountedPrice =
-    highestDiscount > 0
-      ? Math.floor(product.price * (1 - highestDiscount / 100))
-      : product.price;
-  const originalPrice = product.price;
+  const { highestDiscount, discountedPrice, originalPrice, hasDiscount } = useMemo(() => {
+    const highestDiscount = bestDiscount?.percentage || 0;
+    const discountedPrice = highestDiscount > 0 ? Math.floor(product.price * (1 - highestDiscount / 100)) : product.price;
+    const originalPrice = product.price;
+    const hasDiscount = product.validApplicableDiscounts.length > 0;
+    return { highestDiscount, discountedPrice, originalPrice, hasDiscount };
+  }, [bestDiscount, product.price, product.validApplicableDiscounts]);
 
   // Get primary image (first image in array)
   const primaryImage = product.multimedia?.images?.[0] || require("@/src/assets/default-image.png");
+
+
+  // Event handlers
+  const handleDecrement = useCallback(() => {
+    if (quantityInCart > 1) {
+      updateCartItemMutation.mutate({
+        productId: product.id,
+        quantity: quantityInCart - 1,
+      });
+    } else {
+      // If quantity is 1, remove the item
+      updateCartItemMutation.mutate({
+        productId: product.id,
+        quantity: 0,
+      });
+    }
+  }, [quantityInCart, product.id, updateCartItemMutation]);
+
+  const handleIncrement = useCallback(() => {
+    updateCartItemMutation.mutate({
+      productId: product.id,
+      quantity: quantityInCart + 1,
+    });
+  }, [quantityInCart, product.id, updateCartItemMutation]);
+
+  const handleAddOrViewCart = useCallback(() => {
+    if (quantityInCart === 0) {
+      // Add to cart for first time
+      addToCartMutation.mutate({
+        productId: product.id,
+        productName: product.info.name,
+        unitPrice: product.price,
+        discountPercentage: highestDiscount,
+        appliedDiscountId: bestDiscount?.id,
+        appliedDiscountSource: bestDiscount?.source,
+        imageUrl: primaryImage,
+        quantity: 1,
+      });
+    } else {
+      // Navigate to cart
+      router.push("/cart");
+    }
+  }, [quantityInCart, product.id, addToCartMutation, bestDiscount, highestDiscount, primaryImage]);
 
   return (
     <Pressable
@@ -103,20 +144,7 @@ const ProductCard = ({
                 (updateCartItemMutation.isPending || addToCartMutation.isPending) && styles.quantityChangeButtonDisabled,
               ]}
               disabled={updateCartItemMutation.isPending || addToCartMutation.isPending}
-              onPress={() => {
-                if (quantityInCart > 1) {
-                  updateCartItemMutation.mutate({
-                    productId: product.id,
-                    quantity: quantityInCart - 1,
-                  });
-                } else {
-                  // If quantity is 1, remove the item
-                  updateCartItemMutation.mutate({
-                    productId: product.id,
-                    quantity: 0,
-                  });
-                }
-              }}>
+              onPress={handleDecrement}>
               <FontAwesome6 name="minus" />
             </Pressable>
             <Text style={styles.quantityText}>{quantityInCart}</Text>
@@ -127,12 +155,7 @@ const ProductCard = ({
                 (updateCartItemMutation.isPending || addToCartMutation.isPending) && styles.quantityChangeButtonDisabled,
               ]}
               disabled={updateCartItemMutation.isPending || addToCartMutation.isPending}
-              onPress={() => {
-                updateCartItemMutation.mutate({
-                  productId: product.id,
-                  quantity: quantityInCart + 1,
-                });
-              }}>
+              onPress={handleIncrement}>
               <FontAwesome6 name="plus" />
             </Pressable>
           </View>
@@ -142,24 +165,7 @@ const ProductCard = ({
             styles.addToCartButton,
             pressed && styles.addToCartButtonPressed,
           ]}
-          onPress={() => {
-            if (quantityInCart === 0) {
-              // Add to cart for first time
-              addToCartMutation.mutate({
-                productId: product.id,
-                productName: product.info.name,
-                unitPrice: product.price,
-                discountPercentage: highestDiscount,
-                appliedDiscountId: bestDiscount?.id,
-                appliedDiscountSource: bestDiscount?.source,
-                imageUrl: primaryImage,
-                quantity: 1,
-              });
-            } else {
-              // Navigate to cart
-              router.push("/cart");
-            }
-          }}>
+          onPress={handleAddOrViewCart}>
           <Text style={styles.addToCartText}>
             {quantityInCart === 0 ? "Add to Cart" : `View cart`}
           </Text>

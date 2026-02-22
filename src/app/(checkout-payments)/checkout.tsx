@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useCallback, useState } from "react";
 import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 import GeneralTopBar from "@/src/components/general/GeneralTopBar";
 import { theme } from "@/src/constants/theme";
@@ -17,6 +17,18 @@ export default function CheckoutScreen() {
   const MIN_ADDRESS_LENGTH = CONSTANTS.checkout.addressMinLength;
   const isAddressValid = address.trim().length >= MIN_ADDRESS_LENGTH;
   const remainingChars = MIN_ADDRESS_LENGTH - address.trim().length;
+
+  const handleProceed = useCallback(() => {
+    if (!isAddressValid) {
+      setShowAddressError(true);
+      return;
+    }
+    // Pass address to payments screen
+    router.push({
+      pathname: "/payments",
+      params: { deliveryAddress: address }
+    });
+  }, [address, isAddressValid]);
 
   return (
     <>
@@ -45,17 +57,7 @@ export default function CheckoutScreen() {
               styles.proceedButton,
               pressed && styles.proceedButtonPressed,
             ]}
-            onPress={() => {
-              if (!isAddressValid) {
-                setShowAddressError(true);
-                return;
-              }
-              // Pass address to payments screen
-              router.push({
-                pathname: "/payments",
-                params: { deliveryAddress: address }
-              });
-            }}>
+            onPress={handleProceed}>
             <Text style={styles.proceedButtonText}>
               Proceed to Payments
             </Text>

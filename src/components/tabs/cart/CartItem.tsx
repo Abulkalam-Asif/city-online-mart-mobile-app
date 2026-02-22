@@ -1,5 +1,5 @@
 import { StyleSheet, Text, View, Pressable } from "react-native";
-import React from "react";
+import React, { useCallback } from "react";
 import { Image } from "expo-image";
 import { theme } from "@/src/constants/theme";
 import { FontAwesome6 } from "@expo/vector-icons";
@@ -13,15 +13,19 @@ type CartItemProps = {
 };
 
 const CartItem = ({ item, onQuantityChange, onRemove }: CartItemProps) => {
-  const handleIncrement = () => {
+  const handleIncrement = useCallback(() => {
     onQuantityChange(item.productId, item.quantity + 1);
-  };
+  }, [item.productId, onQuantityChange]);
 
-  const handleDecrement = () => {
+  const handleDecrement = useCallback(() => {
     if (item.quantity > 1) {
       onQuantityChange(item.productId, item.quantity - 1);
     }
-  };
+  }, [item.productId, onQuantityChange]);
+
+  const handleRemove = useCallback(() => {
+    onRemove(item.productId);
+  }, [item.productId, onRemove]);
 
   return (
     <Pressable
@@ -63,7 +67,7 @@ const CartItem = ({ item, onQuantityChange, onRemove }: CartItemProps) => {
             styles.quantityButton,
             pressed && styles.quantityButtonPressed,
           ]}
-          onPress={item.quantity > 1 ? handleDecrement : () => onRemove(item.productId)}>
+          onPress={item.quantity > 1 ? handleDecrement : handleRemove}>
           {item.quantity > 1 ? (
             <FontAwesome6 name="minus" size={14} color={theme.colors.text} />
           ) : (
@@ -86,7 +90,7 @@ const CartItem = ({ item, onQuantityChange, onRemove }: CartItemProps) => {
   );
 };
 
-export default CartItem;
+export default React.memo(CartItem);
 
 const styles = StyleSheet.create({
   itemCard: {

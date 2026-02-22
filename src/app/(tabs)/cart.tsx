@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useState } from "react";
 import {
   Alert,
   FlatList,
@@ -21,7 +21,7 @@ import { useOrderSettings } from "@/src/hooks/useSettings";
 import ErrorBanner from "@/src/components/common/ErrorBanner";
 import { useGetValidOrderDiscounts } from "@/src/hooks/useDiscounts";
 import { getBestOrderDiscount } from "@/src/utils/discountUtils";
-import { Discount } from "@/src/types";
+import { Discount, ICartItem } from "@/src/types";
 
 
 export default function CartScreen() {
@@ -63,7 +63,7 @@ export default function CartScreen() {
   const removeFromCartMutation = useRemoveFromCart();
   const clearCartMutation = useClearCart();
 
-  const handleQuantityChange = (productId: string, newQuantity: number) => {
+  const handleQuantityChange = useCallback((productId: string, newQuantity: number) => {
     // Find the actual productId from the transformed item
     const item = cart?.items.find((item) => item.productId === productId);
     if (item) {
@@ -72,19 +72,49 @@ export default function CartScreen() {
         quantity: newQuantity,
       });
     }
-  };
+  }, [cart?.items, updateCartItemMutation]);
 
-  const handleRemoveItem = (productId: string) => {
+  const handleRemoveItem = useCallback((productId: string) => {
     // Find the actual productId from the transformed item
     const item = cart?.items.find((item) => item.productId === productId);
     if (item) {
       removeFromCartMutation.mutate(item.productId);
     }
-  };
+  }, [cart?.items, removeFromCartMutation]);
 
-  const handleClearCart = () => {
+  const handleClearCart = useCallback(() => {
     clearCartMutation.mutate();
-  };
+  }, [clearCartMutation])
+
+  const { minimumOrderAmount, itemsSubtotal, orderDiscountAmount, finalSubtotal, canProceedToCheckout, isCartEmpty } = useMemo(() => {
+    const minimumOrderAmount = orderSettings?.minimumOrderAmount || 0;
+    const itemsSubtotal = cart?.itemsSubtotal || 0;
+    const orderDiscountAmount = bestOrderDiscount
+      ? Math.round((itemsSubtotal * bestOrderDiscount.percentage) / 100)
+      : 0;
+    const finalSubtotal = itemsSubtotal - orderDiscountAmount;
+    return {
+      minimumOrderAmount,
+      itemsSubtotal,
+      orderDiscountAmount,
+      finalSubtotal,
+      canProceedToCheckout: finalSubtotal >= minimumOrderAmount,
+      isCartEmpty: cart?.items.length === 0,
+    };
+  }, [orderSettings, cart?.itemsSubtotal, cart?.items.length, bestOrderDiscount]);
+
+
+  const renderCartItem = useCallback(({ item }: { item: ICartItem }) => (
+    <CartItem item={item} onQuantityChange={handleQuantityChange} onRemove={handleRemoveItem} />
+  ), [handleQuantityChange, handleRemoveItem]);
+
+  const keyExtractor = useCallback((item: ICartItem) => item.productId, []);
+
+  const handleProceed = useCallback(() => {
+    if (!isLoggedIn) { router.push("/login"); return; }
+    if (!canProceedToCheckout) { setShowMinOrderError(true); return; }
+    router.push("/checkout");
+  }, [isLoggedIn, canProceedToCheckout]);
 
   if (loadingCart || loadingOrderSettings || loadingValidOrderDiscounts) {
     return (
@@ -96,18 +126,6 @@ export default function CartScreen() {
       </View>
     );
   }
-
-  const minimumOrderAmount = orderSettings?.minimumOrderAmount || 0;
-  const itemsSubtotal = cart?.itemsSubtotal || 0;
-  // Use bestOrderDiscount state for UI (avoids race condition with AsyncStorage)
-  const orderDiscountAmount = bestOrderDiscount
-    ? Math.round((itemsSubtotal * bestOrderDiscount.percentage) / 100)
-    : 0;
-  const finalSubtotal = itemsSubtotal - orderDiscountAmount;
-  const canProceedToCheckout = finalSubtotal >= minimumOrderAmount;
-
-  // Check if cart is empty
-  const isCartEmpty = cart?.items.length === 0;
 
   return (
     <>
@@ -127,7 +145,7 @@ export default function CartScreen() {
                   style={({ pressed }) => [
                     pressed && styles.clearCartButtonPressed,
                   ]}>
-                  <Text style={[styles.clearCartText, isCartPending && styles.disabledButtonText]}>Clear All</Text>
+                  <Text style={[styles.clearCartText]}>Clear All</Text>
                 </Pressable>
               </View>
             </View>
@@ -135,14 +153,8 @@ export default function CartScreen() {
               style={styles.container}
               contentContainerStyle={styles.containerContent}
               data={cart?.items}
-              renderItem={({ item }) => (
-                <CartItem
-                  item={item}
-                  onQuantityChange={handleQuantityChange}
-                  onRemove={handleRemoveItem}
-                />
-              )}
-              keyExtractor={(item) => item.productId}
+              renderItem={renderCartItem}
+              keyExtractor={keyExtractor}
               showsVerticalScrollIndicator={false}
             />
             <View style={styles.summaryContainer}>
@@ -182,22 +194,9 @@ export default function CartScreen() {
                 style={({ pressed }) => [
                   styles.proceedButton,
                   pressed && styles.proceedButtonPressed,
-                  (isCartPending) && styles.proceedButtonDisabled,
                 ]}
                 disabled={isCartPending}
-                onPress={() => {
-                  if (!isLoggedIn) {
-                    router.push("/login");
-                    return;
-                  }
-
-                  if (!canProceedToCheckout) {
-                    setShowMinOrderError(true);
-                    return;
-                  }
-
-                  router.push("/checkout");
-                }}
+                onPress={handleProceed}
               >
                 <Text
                   style={styles.proceedButtonText}>
@@ -364,11 +363,5 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontFamily: theme.fonts.medium,
     color: "red",
-  },
-  disabledButtonText: {
-    color: "#ccc",
-  },
-  proceedButtonDisabled: {
-    backgroundColor: "#ccc",
   },
 });

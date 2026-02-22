@@ -23,6 +23,7 @@ const HomeScreen = () => {
     productsCountGreaterThanZero: true,
   });
 
+
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
 
   const [refreshing, setRefreshing] = useState(false);

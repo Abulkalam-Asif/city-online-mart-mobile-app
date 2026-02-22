@@ -56,7 +56,7 @@ const VerifyOTPScreen = () => {
     } catch (error: any) {
       Alert.alert(
         "Verification Failed",
-        error.message || "Invalid OTP code. Please try again.",
+        "Invalid OTP code. Please try again.",
       );
       setOtpCode(""); // Clear on failure
     } finally {

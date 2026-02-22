@@ -1,5 +1,5 @@
 import { Pressable, StyleSheet, Text, View } from "react-native";
-import React, { useEffect } from "react";
+import React, { useCallback, useEffect } from "react";
 import { Image } from "expo-image";
 import { FontAwesome6 } from "@expo/vector-icons";
 import Animated, {
@@ -17,7 +17,6 @@ type PaymentOptionProps = {
   selectedMethod: string;
   onSelect: (method: string) => void;
   children?: React.ReactNode;
-  contentHeight?: number;
   screenshotRequired: boolean;
   isChecked: boolean;
   setChecked: (checked: boolean) => void;
@@ -25,13 +24,15 @@ type PaymentOptionProps = {
   setScreenshot: (screenshot: string | null) => void;
 };
 
+// Large enough ceiling for any payment method's content
+const MAX_CONTENT_HEIGHT = 500;
+
 const PaymentOption = ({
   name,
   image,
   selectedMethod,
   onSelect,
   children,
-  contentHeight = 100,
   screenshotRequired,
   isChecked,
   setChecked,
@@ -66,26 +67,28 @@ const PaymentOption = ({
 
   const contentAnimatedStyle = useAnimatedStyle(() => {
     const opacity = interpolate(heightValue.value, [0, 1], [0, 1]);
-    const height = interpolate(heightValue.value, [0, 1], [0, contentHeight]); // Adjust max height as needed
+    const maxHeight = interpolate(heightValue.value, [0, 1], [0, MAX_CONTENT_HEIGHT]);
 
     return {
       opacity,
-      height,
+      maxHeight,
       overflow: "hidden",
     };
   });
+
+  const handlePress = useCallback(() => {
+    if (!isSelected) {
+      onSelect(name);
+    } else {
+      onSelect("");
+    }
+  }, [isSelected, onSelect, name])
 
   return (
     <View>
       <Pressable
         style={[styles.button, isSelected && styles.buttonSelected]}
-        onPress={() => {
-          if (!isSelected) {
-            onSelect(name);
-          } else {
-            onSelect("");
-          }
-        }}>
+        onPress={handlePress}>
         <Image source={image} style={styles.image} />
         <Text style={styles.nameText}>{name}</Text>
         {hasChildren && (

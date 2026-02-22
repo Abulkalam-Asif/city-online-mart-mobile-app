@@ -5,7 +5,7 @@ import {
   TouchableOpacity,
   Pressable,
 } from "react-native";
-import React from "react";
+import React, { useCallback } from "react";
 import * as ImagePicker from "expo-image-picker";
 import { Image } from "expo-image";
 import { Checkbox } from "expo-checkbox";
@@ -24,7 +24,7 @@ const UploadScreenshot = ({
   screenshot,
   setScreenshot,
 }: UploadScreenshotProps) => {
-  const pickImage = async () => {
+  const pickImage = useCallback(async () => {
     const result = await ImagePicker.launchImageLibraryAsync({
       mediaTypes: ["images"],
       quality: 1,
@@ -33,7 +33,7 @@ const UploadScreenshot = ({
     if (!result.canceled && result.assets && result.assets.length > 0) {
       setScreenshot(result.assets[0].uri);
     }
-  };
+  }, [setScreenshot]);
 
   return (
     <View style={styles.container}>

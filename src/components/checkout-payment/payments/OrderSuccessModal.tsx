@@ -4,11 +4,7 @@ import { theme } from "@/src/constants/theme";
 import { useModal } from "@/src/contexts/ModalContext";
 import { router } from "expo-router";
 
-type OrderSuccessModalProps = {
-  orderId: string;
-};
-
-const OrderSuccessModal = ({ orderId }: OrderSuccessModalProps) => {
+const OrderSuccessModal = () => {
   const { hideModal } = useModal();
 
   const handleViewOrders = () => {
@@ -46,7 +42,7 @@ const OrderSuccessModal = ({ orderId }: OrderSuccessModalProps) => {
             </Text>
           </Pressable>
 
-          {/* <Pressable
+          <Pressable
             style={({ pressed }) => [
               styles.button,
               styles.primaryButton,
@@ -56,7 +52,7 @@ const OrderSuccessModal = ({ orderId }: OrderSuccessModalProps) => {
             <Text style={[styles.buttonText, styles.primaryButtonText]}>
               View Orders
             </Text>
-          </Pressable> */}
+          </Pressable>
         </View>
       </View>
     </View>
@@ -112,12 +108,12 @@ const styles = StyleSheet.create({
   },
   buttonContainer: {
     flexDirection: "row",
-    gap: 12,
+    gap: 8,
     width: "100%",
   },
   button: {
-    flex: 1,
     paddingVertical: 12,
+    paddingHorizontal: 16,
     borderRadius: 25,
     alignItems: "center",
   },
