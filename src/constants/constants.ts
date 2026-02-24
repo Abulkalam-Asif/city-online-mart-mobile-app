@@ -6,6 +6,7 @@ export const CONSTANTS = {
   limits: {
     homepageProductsPerSpecialCategory: 6,
     productsPerPage: 6,
+    similarProductsPageSize: 4,
   },
 
   checkout: {

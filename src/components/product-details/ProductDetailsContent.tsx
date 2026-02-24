@@ -7,9 +7,9 @@ import ImagesCarousel from "./ImagesCarousel";
 import ProductDetailsTopBg from "./ProductDetailsTopBg";
 import ProductDetailsTopBar from "./ProductDetailsTopBar";
 import { Entypo, FontAwesome6 } from "@expo/vector-icons";
-// import ProductsSection from "./ProductsSection";
 import { router } from "expo-router";
 import { useCart } from "@/src/hooks/useCart";
+import SimilarProductsSection from "./SimilarProductsSection";
 
 type ProductDetailsContentProps = {
   product: Product,
@@ -188,16 +188,13 @@ const ProductDetailsContent = ({
               />
             )} */}
 
-      {/* Show similar products if available */}
-      {/* {similarProducts.length > 0 && (
-              <ProductsSection
-                sectionTitle="Similar products"
-                products={similarProducts}
-                onEndReached={fetchNextSimilarPage}
-                hasNextPage={hasNextSimilarPage ?? false}
-                isFetchingNextPage={isFetchingNextSimilarPage}
-              />
-            )} */}
+      {/* Show products from the same sub category as Similar Products */}
+      {product.info.subCategoryId && (
+        <SimilarProductsSection
+          productId={product.id}
+          subCategoryId={product.info.subCategoryId}
+        />
+      )}
     </ScrollView>
   );
 };
