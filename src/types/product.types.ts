@@ -1,5 +1,7 @@
 export type ProductSortType = "default" | "price-asc" | "price-desc"
 
+export type StockStatus = "In Stock" | "Out of Stock" | "Low Stock";
+
 // Discount information cached in products (only valid discounts)
 export interface ProductDiscount {
   id: string;        // Discount document ID

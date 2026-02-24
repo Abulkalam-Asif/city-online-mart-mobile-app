@@ -28,12 +28,9 @@ const CartItem = ({ item, onQuantityChange, onRemove }: CartItemProps) => {
   }, [item.productId, onRemove]);
 
   return (
-    <Pressable
-      style={({ pressed }) => [
-        styles.itemCard,
-        pressed && styles.itemCardPressed,
-      ]}
-      onPress={() => router.push(`/product-details?id=${item.productId}`)}>
+    <View
+      style={styles.itemCard}
+    >
       {/* Product Image */}
       <View style={styles.imageContainer}>
         <Image
@@ -44,7 +41,12 @@ const CartItem = ({ item, onQuantityChange, onRemove }: CartItemProps) => {
       </View>
 
       {/* Product Details */}
-      <View style={styles.detailsContainer}>
+      <Pressable style={({ pressed }) => [styles.detailsContainer, pressed && styles.detailsContainerPressed]}
+        onPress={() => router.push({
+          pathname: "/product-details",
+          params: { id: item.productId },
+        })}
+      >
         <Text style={styles.productNameText} numberOfLines={2}>
           {item.productName}
         </Text>
@@ -58,7 +60,7 @@ const CartItem = ({ item, onQuantityChange, onRemove }: CartItemProps) => {
             <Text style={styles.discountTag}>{`${item.discountPercentage}% off`}</Text>
           )}
         </View>
-      </View>
+      </Pressable>
 
       {/* Quantity Controls */}
       <View style={styles.quantityContainer}>
@@ -86,7 +88,7 @@ const CartItem = ({ item, onQuantityChange, onRemove }: CartItemProps) => {
           <FontAwesome6 name="plus" size={14} color={theme.colors.text} />
         </Pressable>
       </View>
-    </Pressable>
+    </View>
   );
 };
 
@@ -101,10 +103,6 @@ const styles = StyleSheet.create({
     marginBottom: 1,
     alignItems: "center",
   },
-  itemCardPressed: {
-    backgroundColor: theme.colors.background_3,
-    opacity: 0.8,
-  },
   imageContainer: {
     width: 60,
     height: 60,
@@ -113,18 +111,21 @@ const styles = StyleSheet.create({
     borderColor: theme.colors.background,
     justifyContent: "center",
     alignItems: "center",
-    marginRight: 12,
+    marginRight: 8,
   },
   productImage: {
-    width: 40,
-    height: 40,
+    width: 50,
+    height: 50,
   },
   detailsContainer: {
     flex: 1,
-    marginRight: 12,
+    marginRight: 8,
+  },
+  detailsContainerPressed: {
+    opacity: 0.7
   },
   productNameText: {
-    fontSize: 14,
+    fontSize: 12,
     fontFamily: theme.fonts.semibold,
     color: "#333",
     lineHeight: 20,
@@ -137,12 +138,12 @@ const styles = StyleSheet.create({
     columnGap: 10,
   },
   discountedUnitPriceText: {
-    fontSize: 16,
+    fontSize: 13,
     fontFamily: theme.fonts.semibold,
     color: theme.colors.secondary,
   },
   unitPriceText: {
-    fontSize: 12,
+    fontSize: 11,
     color: "red",
     textDecorationLine: "line-through",
     fontFamily: theme.fonts.regular,

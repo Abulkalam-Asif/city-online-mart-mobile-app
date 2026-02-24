@@ -5,6 +5,7 @@ import { DiscountService } from "./DiscountService";
 import { PaymentMethodService } from "./PaymentMethodService";
 import { SettingsService } from "./SettingsService";
 import { OrderService } from "./OrderService";
+import { ProductService } from "./ProductService";
 
 // Initialize services with dependencies (DI pattern)
 const authService = new AuthService(auth, db, functions);
@@ -13,12 +14,13 @@ const cartService = new CartService();
 const discountService = new DiscountService(db);
 const paymentMethodService = new PaymentMethodService(db);
 const orderService = new OrderService(db, storage);
+const productService = new ProductService(db);
 
 // Wire circular dependency (matches admin-side pattern)
 orderService.discountService = discountService;
 
 // Export service instances
-export { authService, settingsService, cartService, discountService, paymentMethodService, orderService };
+export { productService, authService, settingsService, cartService, discountService, paymentMethodService, orderService };
 
 /**
  * Note: Existing services (cartService, productService, etc.) are currently 

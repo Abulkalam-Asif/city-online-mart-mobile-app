@@ -1,7 +1,7 @@
 import { useQuery, useInfiniteQuery } from "@tanstack/react-query";
-import { productService } from "../services/productService";
-import { queryKeys } from "../lib/react-query";
-import { ProductSortType } from "../types";
+import { productService } from "../services";
+import { queryClient, queryKeys } from "../lib/react-query";
+import { Product, ProductSortType } from "../types";
 
 // Hook to get products by special category
 export function useGetProductsBySpecialCategory(
@@ -79,32 +79,37 @@ export function useGetInfiniteProductsBySpecialCategory(
   });
 }
 
-// Hook to get a product details by ID
-// export function useProductById(productId: string) {
-//   return useQuery({
-//     queryKey: queryKeys.products.detail(productId),
-//     queryFn: () => productService.getProductById(productId),
-//     enabled: !!productId,
-//     staleTime: 1000 * 60 * 2, // 2 minutes
-//   });
-// }
+// Hook to get product by id
+export function useProductById(productId: string) {
+  return useQuery({
+    queryKey: queryKeys.products.detail(productId),
+    queryFn: () => productService.getProductById(productId),
+    enabled: !!productId,
+    staleTime: 1000 * 60 * 15,
+    placeholderData: () => {
+      // Search all cached product lists for this product
+      const allListCaches = queryClient.getQueriesData<any>({
+        queryKey: queryKeys.products.lists(), // matches ALL list caches
+      });
 
-// Hook for infinite scrolling products by IDs (for similar/bought-together products)
-// export function useInfiniteProductsByIds(
-//   productIds: string[],
-//   type: "similar" | "bought-together",
-//   enabled: boolean = true
-// ) {
-//   return useInfiniteQuery({
-//     queryKey: queryKeys.products.byIdsInfinite(productIds, type),
-//     queryFn: ({ pageParam }: { pageParam: number | undefined }) =>
-//       productService.getProductsByIds(productIds, 5, pageParam ?? 0),
-//     getNextPageParam: (lastPage) => {
-//       // Return undefined if no more pages, otherwise return the next index
-//       return lastPage.nextIndex ?? undefined;
-//     },
-//     initialPageParam: 0 as number | undefined,
-//     enabled: enabled && productIds.length > 0,
-//     staleTime: 1000 * 60 * 2, // 2 minutes
-//   });
-// }
+      for (const [, data] of allListCaches) {
+        if (!data) continue;
+
+        // Flat array (bySpecialCategory)
+        if (Array.isArray(data)) {
+          const found = data.find((p: Product) => p.id === productId);
+          if (found) return found;
+        }
+
+        // InfiniteData (bySubCategory / bySpecialCategoryInfinite)
+        if (data.pages) {
+          for (const page of data.pages) {
+            const found = page.items?.find((p: Product) => p.id === productId);
+            if (found) return found;
+          }
+        }
+      }
+      return undefined;
+    },
+  });
+}

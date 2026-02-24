@@ -1,26 +1,33 @@
 import React from "react";
 import ProductDetailsContent from "@/src/components/product-details/ProductDetailsContent";
 import { useLocalSearchParams } from "expo-router";
-// import { useProductById } from "@/src/hooks/useProducts";
+import { useProductById } from "@/src/hooks/useProducts";
 import { StyleSheet, Text, View } from "react-native";
 import { theme } from "@/src/constants/theme";
+import Loading from "@/src/components/common/Loading";
 
 export default function ProductDetailsScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
 
-  // const { data: product, isLoading } = useProductById(id);
-  const product = null;
-  const isLoading = false;
+  const { data: product, isLoading } = useProductById(id);
 
-  if (!id || !product) {
+  if (isLoading) {
     return (
       <View style={styles.container}>
-        <Text style={styles.loadingText}>Product ID is missing</Text>
+        <Loading text="Loading..." />
       </View>
     );
   }
 
-  return <ProductDetailsContent product={product} isLoading={isLoading} />;
+  if (!id || !product) {
+    return (
+      <View style={styles.container}>
+        <Text style={styles.loadingText}>Product not found</Text>
+      </View>
+    );
+  }
+
+  return <ProductDetailsContent product={product} />;
 }
 
 const styles = StyleSheet.create({

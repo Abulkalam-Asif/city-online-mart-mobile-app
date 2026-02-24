@@ -103,37 +103,44 @@ const ProductCard = ({
   }, [quantityInCart, product.id, addToCartMutation, bestDiscount, highestDiscount, primaryImage]);
 
   return (
-    <Pressable
+    <View
       style={[
         styles.card,
         {
           width: cardWidth,
         },
-      ]}
-      onPress={handleProductPress}>
-      {productUtils.isMarkAsNewValid(
-        product.info.markAsNewStartDate,
-        product.info.markAsNewEndDate
-      ) ? (
-        <Text style={styles.newText}>New</Text>
-      ) : null}
-      {hasDiscount ? (
-        <Text style={styles.discountPercentageText}>
-          {highestDiscount}% off
-        </Text>
-      ) : null}
-      <View style={styles.imageContainer}>
-        <Image source={primaryImage} style={styles.image} />
-      </View>
-      <Text style={styles.nameText} numberOfLines={2} ellipsizeMode="tail">
-        {product.info.name}
-      </Text>
-      <View style={styles.priceContainer}>
-        <Text style={styles.priceText}>Rs. {discountedPrice}</Text>
-        {hasDiscount ? (
-          <Text style={styles.oldPriceText}>Rs. {originalPrice}</Text>
+      ]}>
+      <Pressable
+        onPress={handleProductPress}
+        style={({ pressed }) => [
+          styles.cardPressable,
+          pressed && styles.cardPressablePressed,
+        ]}
+      >
+        {productUtils.isMarkAsNewValid(
+          product.info.markAsNewStartDate,
+          product.info.markAsNewEndDate
+        ) ? (
+          <Text style={styles.newText}>New</Text>
         ) : null}
-      </View>
+        {hasDiscount ? (
+          <Text style={styles.discountPercentageText}>
+            {highestDiscount}% off
+          </Text>
+        ) : null}
+        <View style={styles.imageContainer}>
+          <Image source={primaryImage} style={styles.image} />
+        </View>
+        <Text style={styles.nameText} numberOfLines={2} ellipsizeMode="tail">
+          {product.info.name}
+        </Text>
+        <View style={styles.priceContainer}>
+          <Text style={styles.priceText}>Rs. {discountedPrice}</Text>
+          {hasDiscount ? (
+            <Text style={styles.oldPriceText}>Rs. {originalPrice}</Text>
+          ) : null}
+        </View>
+      </Pressable>
       <View style={styles.addToCartSection}>
         {quantityInCart > 0 && (
           <View style={styles.quantitySection}>
@@ -164,14 +171,16 @@ const ProductCard = ({
           style={({ pressed }) => [
             styles.addToCartButton,
             pressed && styles.addToCartButtonPressed,
+            (updateCartItemMutation.isPending || addToCartMutation.isPending) && styles.addToCartButtonDisabled,
           ]}
+          disabled={updateCartItemMutation.isPending || addToCartMutation.isPending}
           onPress={handleAddOrViewCart}>
           <Text style={styles.addToCartText}>
             {quantityInCart === 0 ? "Add to Cart" : `View cart`}
           </Text>
         </Pressable>
       </View>
-    </Pressable>
+    </View >
   );
 };
 
@@ -179,11 +188,19 @@ export default React.memo(ProductCard);
 
 const styles = StyleSheet.create({
   card: {
-    justifyContent: "flex-start",
+    flex: 1,
+    borderRadius: 16,
+    position: "relative",
+    backgroundColor: theme.colors.background_3,
+  },
+  cardPressable: {
+    flex: 1,
     borderRadius: 16,
     padding: 8,
     position: "relative",
-    backgroundColor: theme.colors.background_3,
+  },
+  cardPressablePressed: {
+    opacity: 0.7
   },
   newText: {
     position: "absolute",
@@ -244,9 +261,12 @@ const styles = StyleSheet.create({
     color: "red",
   },
   addToCartSection: {
-    marginTop: 10,
+    padding: 8,
     flexDirection: "row",
     gap: 4,
+  },
+  addToCartButtonDisabled: {
+    opacity: 0.5,
   },
   quantitySection: {
     flexDirection: "row",
