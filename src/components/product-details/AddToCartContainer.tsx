@@ -90,11 +90,9 @@ const AddToCartContainer = ({
         {quantityInCart > 0 && (
           <View style={styles.quantitySection}>
             <Pressable
-              disabled={addToCartMutation.isPending || updateCartItemMutation.isPending}
               style={({ pressed }) => [
                 styles.quantityChangeButton,
                 pressed && styles.quantityChangeButtonPressed,
-                (updateCartItemMutation.isPending || addToCartMutation.isPending) && styles.quantityChangeButtonDisabled,
               ]}
               onPress={handleDecrement}
             >
@@ -102,11 +100,9 @@ const AddToCartContainer = ({
             </Pressable>
             <Text style={styles.quantityText}>{quantityInCart}</Text>
             <Pressable
-              disabled={addToCartMutation.isPending || updateCartItemMutation.isPending}
               style={({ pressed }) => [
                 styles.quantityChangeButton,
                 pressed && styles.quantityChangeButtonPressed,
-                (updateCartItemMutation.isPending || addToCartMutation.isPending) && styles.quantityChangeButtonDisabled,
               ]}
               onPress={handleIncrement}>
               <FontAwesome6 size={20} name="plus" />
@@ -117,10 +113,8 @@ const AddToCartContainer = ({
           style={({ pressed }) => [
             styles.addToCartButton,
             pressed && styles.addToCartButtonPressed,
-            (updateCartItemMutation.isPending || addToCartMutation.isPending) && styles.addToCartButtonDisabled,
           ]}
           onPress={handleAddOrViewCart}
-          disabled={addToCartMutation.isPending || updateCartItemMutation.isPending}
         >
           <Text style={styles.addToCartText}>
             {quantityInCart === 0 ? "Add to Cart" : `View cart`}
@@ -162,9 +156,6 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     gap: 8,
   },
-  addToCartButtonDisabled: {
-    opacity: 0.5,
-  },
   quantitySection: {
     flexDirection: "row",
     alignItems: "center",
@@ -179,9 +170,6 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     padding: 11,
     borderRadius: 30,
-  },
-  quantityChangeButtonDisabled: {
-    opacity: 0.5,
   },
   quantityChangeButtonPressed: {
     backgroundColor: theme.colors.background,

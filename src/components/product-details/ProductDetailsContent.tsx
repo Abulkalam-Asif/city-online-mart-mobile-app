@@ -82,10 +82,10 @@ const ProductDetailsContent = ({
           style={styles.productNameText}
           numberOfLines={2}
           ellipsizeMode="tail">
-          {/* Product name here Product name here Product name here */}
           {product.info.name}
         </Text>
-        <Pressable
+        {/* TODO: Implement rating and review functionality */}
+        {/* <Pressable
           style={({ pressed }) => [
             styles.ratingSectionButton,
             pressed && styles.ratingSectionButtonPressed,
@@ -97,16 +97,15 @@ const ProductDetailsContent = ({
             });
           }}>
           <Entypo name="star" size={18} color={"#FFBB22"} />
-          {/* <Text style={styles.ratingText}>
-                  {product.ApprovedRatingSum} ({product.ApprovedTotalReviews}{" "}
-                  Review)
-                </Text> */}
+          <Text style={styles.ratingText}>
+            5 (12 Reviews)
+          </Text>
           <FontAwesome6
             name="chevron-right"
             size={16}
             color={theme.colors.text_secondary}
           />
-        </Pressable>
+        </Pressable> */}
       </View>
 
       <View style={styles.topContentContainer}>
@@ -177,16 +176,17 @@ const ProductDetailsContent = ({
         </Text>
       </View>
 
+      {/* TODO: Implement bought together products fetching functionality */}
       {/* Show bought together products only when quantity in cart > 0 */}
       {/* {quantityInCart > 0 && boughtTogetherProducts.length > 0 && (
-              <ProductsSection
-                sectionTitle="Frequently bought together"
-                products={boughtTogetherProducts}
-                onEndReached={fetchNextBoughtTogetherPage}
-                hasNextPage={hasNextBoughtTogetherPage ?? false}
-                isFetchingNextPage={isFetchingNextBoughtTogetherPage}
-              />
-            )} */}
+        <ProductsSection
+          sectionTitle="Frequently bought together"
+          products={boughtTogetherProducts}
+          onEndReached={fetchNextBoughtTogetherPage}
+          hasNextPage={hasNextBoughtTogetherPage ?? false}
+          isFetchingNextPage={isFetchingNextBoughtTogetherPage}
+        />
+      )} */}
 
       {/* Show products from the same sub category as Similar Products */}
       {product.info.subCategoryId && (

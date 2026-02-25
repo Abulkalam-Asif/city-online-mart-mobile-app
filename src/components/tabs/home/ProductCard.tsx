@@ -148,9 +148,7 @@ const ProductCard = ({
               style={({ pressed }) => [
                 styles.quantityChangeButton,
                 pressed && styles.quantityChangeButtonPressed,
-                (updateCartItemMutation.isPending || addToCartMutation.isPending) && styles.quantityChangeButtonDisabled,
               ]}
-              disabled={updateCartItemMutation.isPending || addToCartMutation.isPending}
               onPress={handleDecrement}>
               <FontAwesome6 name="minus" />
             </Pressable>
@@ -159,9 +157,7 @@ const ProductCard = ({
               style={({ pressed }) => [
                 styles.quantityChangeButton,
                 pressed && styles.quantityChangeButtonPressed,
-                (updateCartItemMutation.isPending || addToCartMutation.isPending) && styles.quantityChangeButtonDisabled,
               ]}
-              disabled={updateCartItemMutation.isPending || addToCartMutation.isPending}
               onPress={handleIncrement}>
               <FontAwesome6 name="plus" />
             </Pressable>
@@ -171,9 +167,7 @@ const ProductCard = ({
           style={({ pressed }) => [
             styles.addToCartButton,
             pressed && styles.addToCartButtonPressed,
-            (updateCartItemMutation.isPending || addToCartMutation.isPending) && styles.addToCartButtonDisabled,
           ]}
-          disabled={updateCartItemMutation.isPending || addToCartMutation.isPending}
           onPress={handleAddOrViewCart}>
           <Text style={styles.addToCartText}>
             {quantityInCart === 0 ? "Add to Cart" : `View cart`}
@@ -265,9 +259,6 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     gap: 4,
   },
-  addToCartButtonDisabled: {
-    opacity: 0.5,
-  },
   quantitySection: {
     flexDirection: "row",
     alignItems: "center",
@@ -285,9 +276,6 @@ const styles = StyleSheet.create({
   },
   quantityChangeButtonPressed: {
     backgroundColor: theme.colors.background,
-  },
-  quantityChangeButtonDisabled: {
-    opacity: 0.5,
   },
   quantityText: {
     fontFamily: theme.fonts.medium,
