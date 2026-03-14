@@ -249,4 +249,98 @@ export class ProductService {
 
     return ProductService.firestoreToProduct(docSnap.id, docSnap.data());
   }
+
+  /**
+   * Get multiple products by their IDs
+   * @param ids Array of product IDs
+   * @returns Array of found products
+   */
+  async getProductsByIds(ids: string[]): Promise<Product[]> {
+    if (!ids || ids.length === 0) return [];
+
+    try {
+      const products: Product[] = [];
+      const collectionRef = collection(this.db, ProductService.PRODUCTS_COLLECTION);
+
+      // Firestore 'in' query supports max 10 items. Batch if needed.
+      const chunkedIds: string[][] = [];
+      for (let i = 0; i < ids.length; i += 10) {
+        chunkedIds.push(ids.slice(i, i + 10));
+      }
+
+      // Execute batches concurrently
+      const snapshots = await Promise.all(
+        chunkedIds.map(batchIds => {
+          const q = query(collectionRef, where("__name__", "in", batchIds));
+          return getDocs(q);
+        })
+      );
+
+      // Flatten and transform results
+      snapshots.forEach((snapshot: FirebaseFirestoreTypes.QuerySnapshot) => {
+        products.push(...snapshot.docs.map((doc: FirebaseFirestoreTypes.QueryDocumentSnapshot) =>
+          ProductService.firestoreToProduct(doc.id, doc.data())
+        ));
+      });
+
+      return products;
+    } catch (error) {
+      logger.error("getProductsByIds", error);
+      throw error;
+    }
+  }
+
+  /**
+   * Fetch fresh stock data for all items in a cart and
+   * compare quantities against available limits and max limits.
+   * Returns adjustments and the fresh products array.
+   */
+  async calculateCartStockAdjustments(
+    cartItems: { productId: string; quantity: number }[],
+    maxCartQuantity: number
+  ) {
+    if (cartItems.length === 0) return { adjustments: [], freshProducts: [] };
+
+    const productIds = cartItems.map((item) => item.productId);
+    const freshProducts = await this.getProductsByIds(productIds);
+    const adjustments: { productId: string; name: string; oldQuantity: number; maxAllowed: number; reason: "out_of_stock" | "exceeds_max" }[] = [];
+
+    cartItems.forEach((cartItem) => {
+      const product = freshProducts.find((p) => p.id === cartItem.productId);
+
+      // If product deleted or deactivated, maxAllowed is 0
+      if (!product || !product.info.isActive) {
+        adjustments.push({
+          productId: cartItem.productId,
+          name: product?.info.name || "Unknown Product",
+          oldQuantity: cartItem.quantity,
+          maxAllowed: 0,
+          reason: "out_of_stock",
+        });
+        return;
+      }
+
+      const usableStock = product.batchStock?.usableStock || 0;
+      const committedStock = product.batchStock?.committedStock || 0;
+      const availableStock = Math.max(0, usableStock - committedStock);
+
+      // Max allowed is the minimum of available stock and global order limit
+      const maxAllowed = Math.min(availableStock, maxCartQuantity);
+
+      if (cartItem.quantity > maxAllowed) {
+        adjustments.push({
+          productId: cartItem.productId,
+          name: product.info.name,
+          oldQuantity: cartItem.quantity,
+          maxAllowed,
+          reason: availableStock < cartItem.quantity ? "out_of_stock" : "exceeds_max",
+        });
+      }
+    });
+
+    return {
+      adjustments,
+      freshProducts,
+    };
+  }
 };

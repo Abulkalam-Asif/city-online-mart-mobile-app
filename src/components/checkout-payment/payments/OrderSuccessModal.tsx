@@ -9,12 +9,15 @@ const OrderSuccessModal = () => {
 
   const handleViewOrders = () => {
     hideModal("order-success");
-    router.push("/profile/orders");
+    // Clear the stack so users can't hardware-back into the completed checkout
+    router.dismissAll();
+    router.replace("/profile/orders");
   };
 
   const handleContinueShopping = () => {
     hideModal("order-success");
-    router.push("/home");
+    router.dismissAll();
+    router.replace("/home");
   };
 
   return (

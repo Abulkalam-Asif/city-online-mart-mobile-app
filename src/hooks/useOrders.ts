@@ -22,6 +22,44 @@ export function usePlaceOrder() {
 }
 
 /**
+ * Mutation hook to submit payment proof for an existing order.
+ */
+export function useSubmitPaymentProof() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async ({ orderId, imageUri }: { orderId: string; imageUri: string }) => {
+      return await orderService.submitPaymentProof(orderId, imageUri);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: queryKeys.user.orders() });
+    },
+  });
+}
+
+/**
+ * Mutation hook to update order details (address, payment method) on back-navigation.
+ */
+export function useUpdateOrderDetails() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async ({
+      orderId,
+      updates,
+    }: {
+      orderId: string;
+      updates: Parameters<typeof orderService.updateOrderDetails>[1];
+    }) => {
+      return await orderService.updateOrderDetails(orderId, updates);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: queryKeys.user.orders() });
+    },
+  });
+}
+
+/**
  * Query hook to fetch all orders for a specific customer.
  */
 export function useGetCustomerOrders(customerId: string) {

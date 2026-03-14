@@ -6,6 +6,7 @@ export interface OrderSettings {
   deliveryFee: number;
   cancellationTimeLimitMinutes: number;
   minimumOrderAmount: number;
+  maxCartQuantityPerProduct: number;
 }
 
 export type SettingsType = "auth" | "order";

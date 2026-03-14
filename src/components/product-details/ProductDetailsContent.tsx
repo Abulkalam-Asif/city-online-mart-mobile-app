@@ -1,4 +1,4 @@
-import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
+import { ScrollView, StyleSheet, Text, View } from "react-native";
 import React, { useMemo } from "react";
 import { theme } from "@/src/constants/theme";
 import { Product, StockStatus } from "@/src/types";
@@ -6,8 +6,6 @@ import AddToCartContainer from "./AddToCartContainer";
 import ImagesCarousel from "./ImagesCarousel";
 import ProductDetailsTopBg from "./ProductDetailsTopBg";
 import ProductDetailsTopBar from "./ProductDetailsTopBar";
-import { Entypo, FontAwesome6 } from "@expo/vector-icons";
-import { router } from "expo-router";
 import { useCart } from "@/src/hooks/useCart";
 import SimilarProductsSection from "./SimilarProductsSection";
 
@@ -60,12 +58,16 @@ const ProductDetailsContent = ({
 
   const primaryImage = product.multimedia?.images?.[0] || require("@/src/assets/default-image.png");
 
+  // Calculate actual available stock
+  const usableStock = product.batchStock?.usableStock || 0;
+  const committedStock = product.batchStock?.committedStock || 0;
+  const availableStock = Math.max(0, usableStock - committedStock);
+
   const stockStatus: StockStatus = useMemo(() => {
-    if (!product || !product.batchStock) return "In Stock";
-    if (product.batchStock.usableStock === 0) return "Out of Stock";
-    if (product.batchStock.usableStock < product.minimumStockQuantity) return "Low Stock";
+    if (availableStock === 0) return "Out of Stock";
+    if (availableStock < product.minimumStockQuantity) return "Low Stock";
     return "In Stock";
-  }, [product]);
+  }, [product, availableStock]);
 
   return (
     <ScrollView
@@ -145,6 +147,7 @@ const ProductDetailsContent = ({
         imageUrl={primaryImage}
         discountedPrice={discountedPrice}
         quantityInCart={quantityInCart}
+        availableStock={availableStock}
       />
 
       <View style={styles.descriptionContainer}>

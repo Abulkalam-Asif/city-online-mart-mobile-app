@@ -1,21 +1,44 @@
 import { StyleSheet, Text, View, Pressable } from "react-native";
-import React, { useCallback } from "react";
+import React, { useCallback, useState } from "react";
 import { Image } from "expo-image";
 import { theme } from "@/src/constants/theme";
 import { FontAwesome6 } from "@expo/vector-icons";
 import { router } from "expo-router";
 import { ICartItem } from "@/src/types";
+import ErrorBanner from "@/src/components/common/ErrorBanner";
 
 type CartItemProps = {
   item: ICartItem;
   onQuantityChange: (productId: string, newQuantity: number) => void;
   onRemove: (productId: string) => void;
+  availableStock: number;
+  maxCartQuantity: number;
 };
 
-const CartItem = ({ item, onQuantityChange, onRemove }: CartItemProps) => {
+const CartItem = ({ item, onQuantityChange, onRemove, availableStock, maxCartQuantity }: CartItemProps) => {
+  const [error, setError] = useState<{ title: string; message: string } | null>(null);
+
   const handleIncrement = useCallback(() => {
-    onQuantityChange(item.productId, item.quantity + 1);
-  }, [item.productId, onQuantityChange]);
+    const newQuantity = item.quantity + 1;
+
+    if (newQuantity > availableStock) {
+      setError({
+        title: "Max Available Reached",
+        message: `You've added all available stock (${availableStock}) for this item.`
+      });
+      return;
+    }
+
+    if (newQuantity > maxCartQuantity) {
+      setError({
+        title: "Limit Reached",
+        message: `You can only order a maximum of ${maxCartQuantity} per order.`
+      });
+      return;
+    }
+
+    onQuantityChange(item.productId, newQuantity);
+  }, [item.productId, item.quantity, onQuantityChange, availableStock, maxCartQuantity]);
 
   const handleDecrement = useCallback(() => {
     if (item.quantity > 1) {
@@ -88,6 +111,14 @@ const CartItem = ({ item, onQuantityChange, onRemove }: CartItemProps) => {
           <FontAwesome6 name="plus" size={14} color={theme.colors.text} />
         </Pressable>
       </View>
+
+      {error && (
+        <ErrorBanner
+          title={error.title}
+          message={error.message}
+          onDismiss={() => setError(null)}
+        />
+      )}
     </View>
   );
 };
