@@ -64,5 +64,6 @@ export interface Product {
   batchStock?: {
     usableStock: number; // Non-expired stock
     expiredStock: number; // Expired stock
+    committedStock: number; // Stock committed to confirmed (not-yet-shipped) orders
   };
 }

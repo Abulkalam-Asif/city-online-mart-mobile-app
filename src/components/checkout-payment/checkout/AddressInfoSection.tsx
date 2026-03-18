@@ -54,7 +54,7 @@ export default AddressInfoSection;
 const styles = StyleSheet.create({
   container: {
     marginTop: 20,
-    padding: 16,
+    paddingHorizontal: 16,
     gap: 8,
   },
   labelRow: {

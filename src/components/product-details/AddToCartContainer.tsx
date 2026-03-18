@@ -1,9 +1,11 @@
 import { Pressable, StyleSheet, Text, View } from "react-native";
-import React, { useCallback } from "react";
+import React, { useCallback, useState } from "react";
 import { theme } from "@/src/constants/theme";
 import { FontAwesome6 } from "@expo/vector-icons";
 import { useAddToCart, useUpdateCartItem } from "@/src/hooks/useCart";
 import { router } from "expo-router";
+import { useOrderSettings } from "@/src/hooks/useSettings";
+import ErrorBanner from "@/src/components/common/ErrorBanner";
 
 type AddToCartContainerProps = {
   productId: string;
@@ -15,6 +17,7 @@ type AddToCartContainerProps = {
   imageUrl: string;
   discountedPrice: number;
   quantityInCart: number;
+  availableStock: number;
 };
 
 const AddToCartContainer = ({
@@ -27,10 +30,18 @@ const AddToCartContainer = ({
   imageUrl,
   discountedPrice,
   quantityInCart,
+  availableStock,
 }: AddToCartContainerProps) => {
   // Cart mutations
   const addToCartMutation = useAddToCart();
   const updateCartItemMutation = useUpdateCartItem();
+
+  // State
+  const [error, setError] = useState<{ title: string; message: string } | null>(null);
+
+  // Settings
+  const { data: orderSettings } = useOrderSettings();
+  const maxCartQuantity = orderSettings?.maxCartQuantityPerProduct || 50;
 
 
   // Event handlers
@@ -50,14 +61,40 @@ const AddToCartContainer = ({
   }, [quantityInCart, productId, updateCartItemMutation]);
 
   const handleIncrement = useCallback(() => {
+    const newQuantity = quantityInCart + 1;
+    
+    if (newQuantity > availableStock) {
+      setError({
+        title: "Max Available Reached",
+        message: `You've added all available stock (${availableStock}) for this item.`
+      });
+      return;
+    }
+    
+    if (newQuantity > maxCartQuantity) {
+      setError({
+        title: "Limit Reached",
+        message: `You can only order a maximum of ${maxCartQuantity} per order.`
+      });
+      return;
+    }
+
     updateCartItemMutation.mutate({
       productId,
-      quantity: quantityInCart + 1,
+      quantity: newQuantity,
     });
-  }, [quantityInCart, productId, updateCartItemMutation]);
+  }, [quantityInCart, productId, updateCartItemMutation, availableStock, maxCartQuantity]);
 
   const handleAddOrViewCart = useCallback(() => {
     if (quantityInCart === 0) {
+      if (availableStock < 1) {
+        setError({
+          title: "Out of Stock",
+          message: "This item is currently out of stock."
+        });
+        return;
+      }
+
       // Add to cart for first time
       addToCartMutation.mutate({
         productId,
@@ -73,7 +110,7 @@ const AddToCartContainer = ({
       // Navigate to cart
       router.push("/cart");
     }
-  }, [quantityInCart, productId, addToCartMutation, productName, unitPrice, discountPercentage, appliedDiscountId, appliedDiscountSource, imageUrl])
+  }, [quantityInCart, productId, addToCartMutation, productName, unitPrice, discountPercentage, appliedDiscountId, appliedDiscountSource, imageUrl, availableStock])
 
   return (
     <View style={styles.container}>
@@ -121,6 +158,14 @@ const AddToCartContainer = ({
           </Text>
         </Pressable>
       </View>
+
+      {error && (
+        <ErrorBanner
+          title={error.title}
+          message={error.message}
+          onDismiss={() => setError(null)}
+        />
+      )}
     </View>
   );
 };

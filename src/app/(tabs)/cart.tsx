@@ -15,12 +15,14 @@ import { router } from "expo-router";
 import { useCart, useUpdateCartItem, useRemoveFromCart, useClearCart } from "@/src/hooks/useCart";
 import { useCartContext } from "@/src/contexts/CartContext";
 import Loading from "@/src/components/common/Loading";
+import { useRefreshCartItemsStock } from "@/src/hooks/useProducts";
 
 import { useAuth } from "@/src/contexts/AuthContext";
 import { useOrderSettings } from "@/src/hooks/useSettings";
 import ErrorBanner from "@/src/components/common/ErrorBanner";
 import { useGetValidOrderDiscounts } from "@/src/hooks/useDiscounts";
 import { getBestOrderDiscount } from "@/src/utils/discountUtils";
+import { useIsFocused } from "@react-navigation/native";
 import { Discount, ICartItem } from "@/src/types";
 
 
@@ -28,6 +30,7 @@ export default function CartScreen() {
   const { user } = useAuth();
   const isLoggedIn = !!user;
   const [showMinOrderError, setShowMinOrderError] = useState(false);
+  const [stockAdjustmentMessage, setStockAdjustmentMessage] = useState<string | null>(null);
   const [bestOrderDiscount, setBestOrderDiscount] = useState<Discount | null>(null);
 
   // Fetch settings data and valid order discounts
@@ -37,6 +40,25 @@ export default function CartScreen() {
   // Fetch cart data
   const { cart, loading: loadingCart, isPending: isCartPending } = useCart();
   const { updateAppliedOrderDiscount } = useCartContext();
+
+  // Validate and auto-adjust cart items against fresh stock data
+  const maxCartQuantity = orderSettings?.maxCartQuantityPerProduct || 50;
+
+  const isFocused = useIsFocused();
+
+  // Create a stable cartItems array ref for the hook
+  const cartItemsForRefresh = useMemo(() => {
+    return (cart?.items || []).map(item => ({
+      productId: item.productId,
+      quantity: item.quantity
+    }));
+  }, [cart?.items]);
+
+  const { data: stockData, isLoading: loadingStock } = useRefreshCartItemsStock(
+    // Only run the query and pass items when the cart screen is actively focused
+    isFocused ? cartItemsForRefresh : [],
+    maxCartQuantity
+  );
 
   // Calculate best order discount
   useEffect(() => {
@@ -63,6 +85,40 @@ export default function CartScreen() {
   const removeFromCartMutation = useRemoveFromCart();
   const clearCartMutation = useClearCart();
 
+  // Monitor stock adjustments and apply them
+  useEffect(() => {
+    // Prevent this from running globally in the background
+    if (!isFocused || !stockData || stockData.adjustments.length === 0) return;
+
+    let messageLines: string[] = [];
+    let hasChanges = false;
+
+    stockData.adjustments.forEach((adj) => {
+      if (adj.maxAllowed === 0) {
+        // Item is out of stock entirely or deactivated
+        messageLines.push(`• ${adj.name} is no longer available and has been removed from your cart.`);
+        removeFromCartMutation.mutate(adj.productId);
+        hasChanges = true;
+      } else if (adj.oldQuantity !== adj.maxAllowed) {
+        // Quantity needs to be reduced
+        const reasonStr = adj.reason === "exceeds_max"
+          ? `You can only order a maximum of ${adj.maxAllowed} per order`
+          : `Only ${adj.maxAllowed} left in stock`;
+
+        messageLines.push(`• ${adj.name}: ${reasonStr}. Your cart has been updated.`);
+        updateCartItemMutation.mutate({
+          productId: adj.productId,
+          quantity: adj.maxAllowed,
+        });
+        hasChanges = true;
+      }
+    });
+
+    if (hasChanges && messageLines.length > 0) {
+      setStockAdjustmentMessage(`Some items in your cart were adjusted because of limited stock:\n\n${messageLines.join("\n")}`);
+    }
+  }, [stockData, removeFromCartMutation, updateCartItemMutation, isFocused]);
+
   const handleQuantityChange = useCallback((productId: string, newQuantity: number) => {
     // Find the actual productId from the transformed item
     const item = cart?.items.find((item) => item.productId === productId);
@@ -81,6 +137,32 @@ export default function CartScreen() {
       removeFromCartMutation.mutate(item.productId);
     }
   }, [cart?.items, removeFromCartMutation]);
+
+  const renderCartItem = useCallback(({ item }: { item: ICartItem }) => {
+    // Determine limits for the cart item controls based on fresh stock data
+    let availableStock = maxCartQuantity; // Fallback to maxCartQuantity if no stock data yet
+
+    if (stockData?.freshProducts) {
+      const product = stockData.freshProducts.find(p => p.id === item.productId);
+      if (product) {
+        const usableStock = product.batchStock?.usableStock || 0;
+        const committedStock = product.batchStock?.committedStock || 0;
+        availableStock = Math.max(0, usableStock - committedStock);
+      }
+    }
+
+    return (
+      <CartItem
+        item={item}
+        onQuantityChange={handleQuantityChange}
+        onRemove={handleRemoveItem}
+        availableStock={availableStock}
+        maxCartQuantity={maxCartQuantity}
+      />
+    );
+  }, [handleQuantityChange, handleRemoveItem, stockData, maxCartQuantity]);
+
+  const keyExtractor = useCallback((item: ICartItem) => item.productId, []);
 
   const handleClearCart = useCallback(() => {
     clearCartMutation.mutate();
@@ -104,19 +186,13 @@ export default function CartScreen() {
   }, [orderSettings, cart?.itemsSubtotal, cart?.items.length, bestOrderDiscount]);
 
 
-  const renderCartItem = useCallback(({ item }: { item: ICartItem }) => (
-    <CartItem item={item} onQuantityChange={handleQuantityChange} onRemove={handleRemoveItem} />
-  ), [handleQuantityChange, handleRemoveItem]);
-
-  const keyExtractor = useCallback((item: ICartItem) => item.productId, []);
-
   const handleProceed = useCallback(() => {
     if (!isLoggedIn) { router.push("/login"); return; }
     if (!canProceedToCheckout) { setShowMinOrderError(true); return; }
     router.push("/checkout");
   }, [isLoggedIn, canProceedToCheckout]);
 
-  if (loadingCart || loadingOrderSettings || loadingValidOrderDiscounts) {
+  if (loadingCart || loadingOrderSettings || loadingValidOrderDiscounts || loadingStock) {
     return (
       <View style={styles.mainContainer}>
         <GeneralTopBar text="My Cart" />
@@ -156,6 +232,7 @@ export default function CartScreen() {
               renderItem={renderCartItem}
               keyExtractor={keyExtractor}
               showsVerticalScrollIndicator={false}
+              extraData={stockData} // Forces re-render of items when fresh stock data arrives
             />
             <View style={styles.summaryContainer}>
               <View style={styles.minimumOrderRow}>
@@ -219,6 +296,15 @@ export default function CartScreen() {
           title="Minimum Order Required"
           message={`Please add Rs. ${minimumOrderAmount - finalSubtotal} more worth of items to place your order.`}
           onDismiss={() => setShowMinOrderError(false)}
+        />
+      )}
+
+      {/* Stock Adjustment Banner */}
+      {stockAdjustmentMessage && (
+        <ErrorBanner
+          title="Cart Adjusted"
+          message={stockAdjustmentMessage}
+          onDismiss={() => setStockAdjustmentMessage(null)}
         />
       )}
     </>

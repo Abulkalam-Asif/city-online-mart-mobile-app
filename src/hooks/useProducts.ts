@@ -1,4 +1,5 @@
 import { useQuery, useInfiniteQuery } from "@tanstack/react-query";
+import { useMemo } from "react";
 import { productService } from "../services";
 import { queryClient, queryKeys } from "../lib/react-query";
 import { Product, ProductSortType } from "../types";
@@ -111,5 +112,28 @@ export function useProductById(productId: string) {
       }
       return undefined;
     },
+  });
+}
+
+/**
+ * Hook to fetch fresh stock data for all items in a cart and
+ * compare quantities against available limits and max limits.
+ */
+export function useRefreshCartItemsStock(
+  cartItems: { productId: string; quantity: number }[],
+  maxCartQuantity: number
+) {
+  const productIds = useMemo(() => cartItems.map((item) => item.productId), [cartItems]);
+
+  return useQuery({
+    queryKey: [...queryKeys.products.lists(), "cart-refresh", productIds],
+    queryFn: async () => {
+      if (cartItems.length === 0) return { adjustments: [], freshProducts: [] };
+      return productService.calculateCartStockAdjustments(cartItems, maxCartQuantity);
+    },
+    // Only fetch when there are items in the cart
+    enabled: productIds.length > 0 && maxCartQuantity > 0,
+    // Do not cache this — we want it to run every time to ensure freshness
+    staleTime: 0,
   });
 }

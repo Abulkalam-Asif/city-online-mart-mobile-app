@@ -1,5 +1,5 @@
-import { Alert, Pressable, StyleSheet, Text, View } from "react-native";
-import React, { useCallback, useMemo } from "react";
+import { Pressable, StyleSheet, Text, View } from "react-native";
+import React, { useCallback, useMemo, useState } from "react";
 import { Image } from "expo-image";
 import { theme } from "@/src/constants/theme";
 import { FontAwesome6 } from "@expo/vector-icons";
@@ -8,6 +8,8 @@ import { Product } from "@/src/types";
 import { useSinglePress } from "@/src/hooks/useSinglePress";
 import { useAddToCart, useUpdateCartItem, useCart } from "@/src/hooks/useCart";
 import { productUtils } from "@/src/utils/productUtils";
+import { useOrderSettings } from "@/src/hooks/useSettings";
+import ErrorBanner from "@/src/components/common/ErrorBanner";
 
 type ProductCardProps = {
   product: Product;
@@ -20,6 +22,11 @@ const ProductCard = ({
   cardWidth = 150,
 }: ProductCardProps) => {
   const canPress = useSinglePress();
+  const [error, setError] = useState<{ title: string; message: string } | null>(null);
+
+  // Settings
+  const { data: orderSettings } = useOrderSettings();
+  const maxCartQuantity = orderSettings?.maxCartQuantityPerProduct || 50;
 
   // Read quantity directly from CartContext (always fresh, no stale prop issue)
   const { cart } = useCart();
@@ -59,6 +66,12 @@ const ProductCard = ({
   // Get primary image (first image in array)
   const primaryImage = product.multimedia?.images?.[0] || require("@/src/assets/default-image.png");
 
+  // Calculate actual available stock
+  const availableStock = useMemo(() => {
+    const usableStock = product.batchStock?.usableStock || 0;
+    const committedStock = product.batchStock?.committedStock || 0;
+    return Math.max(0, usableStock - committedStock);
+  }, [product.batchStock]);
 
   // Event handlers
   const handleDecrement = useCallback(() => {
@@ -77,14 +90,40 @@ const ProductCard = ({
   }, [quantityInCart, product.id, updateCartItemMutation]);
 
   const handleIncrement = useCallback(() => {
+    const newQuantity = quantityInCart + 1;
+    
+    if (newQuantity > availableStock) {
+      setError({
+        title: "Max Available Reached",
+        message: `You've added all available stock (${availableStock}) for this item.`
+      });
+      return;
+    }
+    
+    if (newQuantity > maxCartQuantity) {
+      setError({
+        title: "Limit Reached",
+        message: `You can only order a maximum of ${maxCartQuantity} per order.`
+      });
+      return;
+    }
+
     updateCartItemMutation.mutate({
       productId: product.id,
-      quantity: quantityInCart + 1,
+      quantity: newQuantity,
     });
-  }, [quantityInCart, product.id, updateCartItemMutation]);
+  }, [quantityInCart, product.id, updateCartItemMutation, availableStock, maxCartQuantity]);
 
   const handleAddOrViewCart = useCallback(() => {
     if (quantityInCart === 0) {
+      if (availableStock < 1) {
+        setError({
+          title: "Out of Stock",
+          message: "This item is currently out of stock."
+        });
+        return;
+      }
+
       // Add to cart for first time
       addToCartMutation.mutate({
         productId: product.id,
@@ -100,7 +139,7 @@ const ProductCard = ({
       // Navigate to cart
       router.push("/cart");
     }
-  }, [quantityInCart, product.id, addToCartMutation, bestDiscount, highestDiscount, primaryImage]);
+  }, [quantityInCart, product.id, addToCartMutation, bestDiscount, highestDiscount, primaryImage, availableStock]);
 
   return (
     <View
@@ -174,6 +213,14 @@ const ProductCard = ({
           </Text>
         </Pressable>
       </View>
+
+      {error && (
+        <ErrorBanner
+          title={error.title}
+          message={error.message}
+          onDismiss={() => setError(null)}
+        />
+      )}
     </View >
   );
 };

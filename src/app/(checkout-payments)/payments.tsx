@@ -1,161 +1,116 @@
-import OrderSuccessModal from "@/src/components/checkout-payment/payments/OrderSuccessModal";
-import PaymentOption from "@/src/components/checkout-payment/payments/PaymentOption";
+import React, { useCallback, useEffect, useMemo, useState } from "react";
+import { BackHandler, Image, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 import GeneralTopBar from "@/src/components/general/GeneralTopBar";
 import { theme } from "@/src/constants/theme";
 import { useModal } from "@/src/contexts/ModalContext";
-import { useCart, useClearCart } from "@/src/hooks/useCart";
-import { usePlaceOrder } from "@/src/hooks/useOrders";
-import { useAuth } from "@/src/contexts/AuthContext";
+import { useClearCart } from "@/src/hooks/useCart";
+import { useSubmitPaymentProof } from "@/src/hooks/useOrders";
 import { useGetAllPaymentMethods } from "@/src/hooks/usePaymentMethods";
-import React, { useCallback, useEffect, useMemo, useState } from "react";
-import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
-import { useLocalSearchParams } from "expo-router";
+import { useLocalSearchParams, router } from "expo-router";
 import Loading from "@/src/components/common/Loading";
 import ErrorBanner from "@/src/components/common/ErrorBanner";
-
-const getDisplayName = (type: string) => {
-  switch (type) {
-    case "cash_on_delivery":
-      return "Cash on Delivery";
-    case "jazzcash":
-      return "JazzCash";
-    case "easypaisa":
-      return "Easypaisa";
-    case "bank_transfer":
-      return "Bank Account";
-    default:
-      return type;
-  }
-};
-
-const getImage = (type: string) => {
-  switch (type) {
-    case "cash_on_delivery":
-      return require("@/src/assets/icons/payments/cod.png");
-    case "jazzcash":
-      return require("@/src/assets/icons/payments/jazzcash.png");
-    case "easypaisa":
-      return require("@/src/assets/icons/payments/easypaisa.png");
-    case "bank_transfer":
-      return require("@/src/assets/icons/payments/bank.png");
-    default:
-      return require("@/src/assets/icons/payments/cod.png");
-  }
-};
+import OrderSuccessModal from "@/src/components/checkout-payment/payments/OrderSuccessModal";
+import UploadScreenshot from "@/src/components/checkout-payment/payments/UploadScreenshot";
+import BillingDetailsSection from "@/src/components/checkout-payment/checkout/BillingDetailsSection";
+import { PaymentMethod } from "@/src/types/payment_method.types";
+import { Ionicons } from "@expo/vector-icons";
+import { getPaymentMethodDisplayName, getPaymentMethodImage } from "@/src/utils/paymentMethodUtils";
 
 export default function PaymentsScreen() {
-  // Get delivery address from navigation params
-  const { deliveryAddress } = useLocalSearchParams<{
+  // Receive orderId, paymentMethodId, paymentMethodType, and deliveryAddress from checkout screen
+  const { orderId, paymentMethodId, deliveryAddress } = useLocalSearchParams<{
+    orderId?: string;
+    paymentMethodId?: string;
     deliveryAddress?: string;
   }>();
 
-  const [selectedMethod, setSelectedMethod] = useState<string>("");
   const [isChecked, setChecked] = useState(false);
   const [screenshot, setScreenshot] = useState<string | null>(null);
   const [cartCleared, setCartCleared] = useState(false);
   const [error, setError] = useState("");
 
-  // Modal context
+  // Hooks
   const { showModal } = useModal();
-
-  // Fetch active payment methods
-  const { data: paymentMethods, isLoading: loadingPaymentMethods } =
-    useGetAllPaymentMethods();
-
-  // Fetch cart data
-  const { cart, loading: loadingCart } = useCart();
-  const { user } = useAuth();
-
-  // Clear cart mutation
+  const { data: paymentMethods, isLoading: loadingPaymentMethods } = useGetAllPaymentMethods();
+  const submitProofMutation = useSubmitPaymentProof();
   const clearCartMutation = useClearCart();
 
-  // Place order mutation
-  const placeOrderMutation = usePlaceOrder();
+  // Find the selected payment method
+  const selectedPaymentMethod = useMemo(() => {
+    if (!paymentMethods || !paymentMethodId) return null;
+    return paymentMethods.find((m: PaymentMethod) => m.id === paymentMethodId) || null;
+  }, [paymentMethods, paymentMethodId]);
 
-  // Handle successful order placement
+  // Is submit disabled?
+  const isSubmitDisabled = useMemo(() => {
+    return !isChecked || !screenshot || submitProofMutation.isPending;
+  }, [isChecked, screenshot, submitProofMutation.isPending]);
+
+  // Handle successful proof submission
   useEffect(() => {
-    const handleOrderSuccess = async () => {
-      if (placeOrderMutation.isSuccess && !cartCleared) {
-        // Clear the cart after successful order (only once)
-        clearCartMutation.mutate();
-        setCartCleared(true);
+    if (submitProofMutation.isSuccess && !cartCleared) {
+      clearCartMutation.mutate();
+      setCartCleared(true);
+      showModal("order-success", <OrderSuccessModal />);
+    }
+  }, [submitProofMutation.isSuccess, cartCleared]);
 
-        // Show success modal
-        showModal("order-success", <OrderSuccessModal />);
-      }
-    };
-
-    handleOrderSuccess();
-  }, [
-    placeOrderMutation.isSuccess,
-    placeOrderMutation.data,
-    cartCleared,
-    screenshot,
-    showModal,
-    clearCartMutation,
-  ]);
-
-  // Handle order placement error
+  // Handle proof submission error
   useEffect(() => {
-    if (placeOrderMutation.isError) {
-      setError("There was an error placing your order. Please try again.");
+    if (submitProofMutation.isError) {
+      setError(submitProofMutation.error?.message || "Failed to submit payment proof.");
     }
-  }, [placeOrderMutation.isError]);
+  }, [submitProofMutation.isError]);
 
-  const isProceedDisabled = useMemo(() => {
-    return (
-      !selectedMethod ||
-      !cart ||
-      cart.items.length === 0 ||
-      (selectedMethod !== "Cash on Delivery" && (!isChecked || !screenshot)) ||
-      placeOrderMutation.isPending
-    )
-  }, [selectedMethod, cart, isChecked, screenshot, placeOrderMutation.isPending])
 
-  const handlePlaceOrder = useCallback(async () => {
-    if (
-      !selectedMethod ||
-      !paymentMethods ||
-      !cart ||
-      cart.items.length === 0
-    ) {
-      return;
-    }
+  const handleSubmitProof = useCallback(() => {
+    if (!orderId || !screenshot) return;
 
-    const selectedPaymentMethod = paymentMethods.find(
-      (method) => getDisplayName(method.type) === selectedMethod
-    );
+    submitProofMutation.mutate({
+      orderId,
+      imageUri: screenshot,
+    });
+  }, [orderId, screenshot, submitProofMutation]);
 
-    if (!selectedPaymentMethod) {
-      return;
-    }
+  const handleGoBack = useCallback(() => {
+    // Navigate back to checkout, passing back existing data so inputs are preserved
+    router.replace({
+      pathname: "/checkout",
+      params: {
+        existingOrderId: orderId || "",
+        deliveryAddress: deliveryAddress || "",
+        // Pass both the type (to restore top dropdown) and id (to restore bank sub-selection)
+        paymentMethodType: selectedPaymentMethod?.type || "",
+        paymentMethodId: paymentMethodId || "",
+      },
+    });
+  }, [orderId, deliveryAddress, paymentMethodId, selectedPaymentMethod]);
 
-    try {
-      // Now we follow the admin pattern exactly:
-      // 1. Pass the local URI directly to createOrder.
-      // 2. OrderService will generate the ID and handle the upload internally.
-      placeOrderMutation.mutate({
-        customerId: user?.uid || "",
-        customerName: user?.displayName || "",
-        customerPhone: user?.phoneNumber || "",
-        source: "mobile",
-        items: cart.items.map((item) => ({
-          productId: item.productId,
-          quantity: item.quantity,
-        })),
-        paymentMethod: selectedPaymentMethod,
-        deliveryAddress: deliveryAddress || "Address not provided",
-        proofOfPaymentUri: screenshot || undefined,
-      });
-    } catch (error) {
-      setError("Failed to process order. Please try again.");
-    }
-  }, [selectedMethod, paymentMethods, cart, user, deliveryAddress, screenshot, placeOrderMutation]);
+  // Intercept hardware back button — go to checkout, not cart
+  useEffect(() => {
+    const subscription = BackHandler.addEventListener("hardwareBackPress", () => {
+      handleGoBack();
+      return true; // prevent default back behavior
+    });
+    return () => subscription.remove();
+  }, [handleGoBack]);
 
-  if (loadingPaymentMethods || loadingCart) {
+  // Guard: must have orderId
+  if (!orderId) {
     return (
       <View style={styles.mainContainer}>
-        <GeneralTopBar text="Payments" />
+        <GeneralTopBar text="Payment" />
+        <View style={styles.centeringContainer}>
+          <Text style={styles.errorText}>No order found. Please go back to checkout.</Text>
+        </View>
+      </View>
+    );
+  }
+
+  if (loadingPaymentMethods) {
+    return (
+      <View style={styles.mainContainer}>
+        <GeneralTopBar text="Payment" />
         <View style={styles.centeringContainer}>
           <Loading text="Loading..." />
         </View>
@@ -166,47 +121,66 @@ export default function PaymentsScreen() {
   return (
     <>
       <View style={styles.mainContainer}>
-        <GeneralTopBar text="Payments" />
+        <GeneralTopBar text="Payment" onBackPress={handleGoBack} />
 
         <ScrollView
           style={styles.container}
           contentContainerStyle={styles.contentContainer}>
-          <Text style={styles.payWithText}>Pay with</Text>
-          {
-            paymentMethods?.map((method) => {
-              const requiresScreenshot = method.type !== "cash_on_delivery";
 
-              return (
-                <PaymentOption
-                  key={method.id}
-                  name={getDisplayName(method.type)}
-                  image={getImage(method.type)}
-                  onSelect={(methodName: string) => setSelectedMethod(methodName)}
-                  selectedMethod={selectedMethod}
-                  screenshotRequired={requiresScreenshot}
-                  isChecked={isChecked}
-                  setChecked={setChecked}
-                  screenshot={screenshot}
-                  setScreenshot={setScreenshot}>
-                  {method.accountDetails && (
-                    <>
-                      {method.accountDetails.bankName && (
-                        <Text style={styles.accountText}>
-                          {method.accountDetails.bankName}
-                        </Text>
-                      )}
-                      <Text style={styles.accountText}>
-                        Account Number: {method.accountDetails.accountNumber}
+          {/* Order ID */}
+          <View style={styles.orderIdSection}>
+            <Ionicons name="receipt-outline" size={18} color={theme.colors.primary} />
+            <Text style={styles.orderIdText}>Order ID: {orderId}</Text>
+          </View>
+
+          {/* Payment Method & Account Details */}
+          {selectedPaymentMethod && (
+            <View style={styles.paymentMethodSection}>
+              <Text style={styles.sectionTitle}>Payment Details</Text>
+              <View style={styles.paymentMethodCard}>
+                <View style={styles.paymentMethodHeader}>
+                  <Image
+                    source={getPaymentMethodImage(selectedPaymentMethod.type)}
+                    style={styles.paymentIcon}
+                  />
+                  <Text style={styles.paymentMethodName}>
+                    {getPaymentMethodDisplayName(selectedPaymentMethod.type, selectedPaymentMethod.accountDetails?.bankName)}
+                  </Text>
+                </View>
+
+                {selectedPaymentMethod.accountDetails && (
+                  <View style={styles.accountDetailsContainer}>
+                    <View style={styles.accountDetailRow}>
+                      <Text style={styles.accountDetailLabel}>Account Number</Text>
+                      <Text style={styles.accountDetailValue}>
+                        {selectedPaymentMethod.accountDetails.accountNumber}
                       </Text>
-                      <Text style={styles.accountText}>
-                        Account Title: {method.accountDetails.accountTitle}
+                    </View>
+                    <View style={styles.accountDetailRow}>
+                      <Text style={styles.accountDetailLabel}>Account Title</Text>
+                      <Text style={styles.accountDetailValue}>
+                        {selectedPaymentMethod.accountDetails.accountTitle}
                       </Text>
-                    </>
-                  )}
-                </PaymentOption>
-              );
-            })
-          }
+                    </View>
+                  </View>
+                )}
+              </View>
+            </View>
+          )}
+
+          {/* Billing Details */}
+          <BillingDetailsSection />
+
+          {/* Screenshot Upload */}
+          <View style={styles.uploadSection}>
+            <Text style={styles.sectionTitle}>Upload Payment Proof</Text>
+            <UploadScreenshot
+              isChecked={isChecked}
+              setChecked={setChecked}
+              screenshot={screenshot}
+              setScreenshot={setScreenshot}
+            />
+          </View>
         </ScrollView>
 
         <View style={styles.proceedButtonContainer}>
@@ -214,16 +188,18 @@ export default function PaymentsScreen() {
             style={({ pressed }) => [
               styles.proceedButton,
               pressed && styles.proceedButtonPressed,
-              isProceedDisabled && styles.proceedButtonDisabled,
+              isSubmitDisabled && styles.proceedButtonDisabled,
             ]}
-            onPress={handlePlaceOrder}
-            disabled={isProceedDisabled}>
+            onPress={handleSubmitProof}
+            disabled={isSubmitDisabled}>
             <Text style={styles.proceedButtonText}>
-              {placeOrderMutation.isPending ? "Placing Order..." : "Place Order"}
+              {submitProofMutation.isPending ? "Submitting..." : "Submit Payment Proof"}
             </Text>
           </Pressable>
         </View>
       </View>
+
+
       {/* Error Banner */}
       {error && (
         <ErrorBanner
@@ -247,24 +223,87 @@ const styles = StyleSheet.create({
   contentContainer: {
     paddingHorizontal: 20,
     paddingVertical: 20,
-    gap: 12,
   },
-  payWithText: {
-    fontSize: 14,
-    fontFamily: theme.fonts.semibold,
+  centeringContainer: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
   },
-  loadingText: {
+  errorText: {
     fontSize: 14,
     fontFamily: theme.fonts.medium,
     color: theme.colors.text_secondary,
     textAlign: "center",
-    paddingVertical: 20,
+    paddingHorizontal: 20,
   },
-  accountText: {
+  orderIdSection: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+    backgroundColor: theme.colors.primary_light,
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    borderRadius: 8,
+    marginBottom: 20,
+  },
+  orderIdText: {
     fontSize: 14,
-    fontFamily: theme.fonts.medium,
+    fontFamily: theme.fonts.semibold,
+    color: theme.colors.primary,
   },
-
+  paymentMethodSection: {
+    marginBottom: 4,
+  },
+  sectionTitle: {
+    fontSize: 14,
+    fontFamily: theme.fonts.semibold,
+    color: theme.colors.text,
+    marginBottom: 10,
+  },
+  paymentMethodCard: {
+    backgroundColor: theme.colors.background_3,
+    borderRadius: 8,
+    padding: 16,
+  },
+  paymentMethodHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 12,
+  },
+  paymentIcon: {
+    width: 24,
+    height: 24,
+  },
+  paymentMethodName: {
+    fontSize: 14,
+    fontFamily: theme.fonts.semibold,
+    color: theme.colors.text,
+  },
+  accountDetailsContainer: {
+    marginTop: 12,
+    paddingTop: 12,
+    borderTopWidth: 1,
+    borderTopColor: theme.colors.background,
+    gap: 8,
+  },
+  accountDetailRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+  },
+  accountDetailLabel: {
+    fontSize: 12,
+    fontFamily: theme.fonts.regular,
+    color: theme.colors.text_secondary,
+  },
+  accountDetailValue: {
+    fontSize: 12,
+    fontFamily: theme.fonts.medium,
+    color: theme.colors.text,
+  },
+  uploadSection: {
+    marginTop: 20,
+  },
   proceedButtonContainer: {
     paddingHorizontal: 20,
     paddingVertical: 10,
@@ -288,11 +327,5 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontFamily: theme.fonts.semibold,
     color: "#fff",
-  },
-
-  centeringContainer: {
-    flex: 1,
-    justifyContent: "center",
-    alignItems: "center",
   },
 });

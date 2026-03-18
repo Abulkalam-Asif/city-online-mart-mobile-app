@@ -258,7 +258,7 @@ export class OrderService {
    * Creates a new order.
    *
    * Security: All pricing is recalculated server-side. Client-side totals are ignored.
-   * Validation: Minimum order amount is enforced.
+   * Validation: Stock availability and minimum order amount enforced.
    *
    * @param orderData - Order data from the client (items as {productId, quantity} pairs)
    */
@@ -271,7 +271,6 @@ export class OrderService {
       items: { productId: string; quantity: number }[];
       paymentMethod: Order["paymentMethod"];
       deliveryAddress: string;
-      proofOfPaymentUri?: string; // Accept local URI instead of final URL
     }
   ): Promise<string> {
     try {
@@ -280,12 +279,31 @@ export class OrderService {
       const settingsSnap = await getDoc(settingsRef);
       const orderSettings: OrderSettings = settingsSnap.exists()
         ? (settingsSnap.data() as OrderSettings)
-        : { deliveryFee: 0, cancellationTimeLimitMinutes: 30, minimumOrderAmount: 0 };
+        : { deliveryFee: 0, cancellationTimeLimitMinutes: 30, minimumOrderAmount: 0, maxCartQuantityPerProduct: 50 };
 
       // 2. Recalculate pricing server-side (N product reads + 1 discount query)
       const pricing = await this.calculateOrderPricing(orderData.items);
 
-      // 3. Validate minimum order amount
+      // 3. Stock Validation — check availableStock for each product
+      for (const item of orderData.items) {
+        const productRef = doc(this.db, OrderService.PRODUCTS_COLLECTION, item.productId);
+        const productSnap = await getDoc(productRef);
+
+        if (!productSnap.exists()) {
+          throw new Error(`Product ${item.productId} not found or is no longer available.`);
+        }
+
+        const product = productSnap.data() as Product;
+        const availableStock = (product.batchStock?.usableStock || 0) - (product.batchStock?.committedStock || 0);
+
+        if (availableStock < item.quantity) {
+          throw new Error(
+            `Insufficient stock for "${product.info.name}". Available: ${Math.max(0, availableStock)}, Requested: ${item.quantity}`
+          );
+        }
+      }
+
+      // 4. Validate minimum order amount
       const finalOrderAmount = pricing.subtotal - (pricing.appliedOrderDiscount?.amount || 0);
       if (finalOrderAmount < orderSettings.minimumOrderAmount) {
         throw new Error(
@@ -293,14 +311,8 @@ export class OrderService {
         );
       }
 
-      // 4. Generate unique 7-char alphanumeric ID
+      // 5. Generate unique 7-char alphanumeric ID
       const orderId = await this.createUniqueOrderId();
-
-      // 5. Handle Payment Proof Upload if provided (NOW INTERNAL)
-      let proofOfPaymentUrl = undefined;
-      if (orderData.proofOfPaymentUri) {
-        proofOfPaymentUrl = await this.uploadPaymentProof(orderId, orderData.proofOfPaymentUri);
-      }
 
       // 6. Build the complete order object
       const newOrder: Order = {
@@ -316,11 +328,7 @@ export class OrderService {
         deliveryFee: orderSettings.deliveryFee,
         total: finalOrderAmount + orderSettings.deliveryFee,
         paymentMethod: orderData.paymentMethod,
-        paymentStatus:
-          orderData.paymentMethod.type === "cash_on_delivery"
-            ? "pending"
-            : "awaiting_confirmation",
-        proofOfPaymentUrl, // Use the uploaded URL
+        paymentStatus: "pending",
         deliveryAddress: orderData.deliveryAddress,
         status: "pending",
         logs: [
@@ -330,10 +338,9 @@ export class OrderService {
         updatedAt: Timestamp.now(),
       };
 
-      // 6. Write to Firestore atomically
+      // 7. Write to Firestore atomically
       await runTransaction(this.db, async (transaction) => {
         const orderRef = doc(this.db, OrderService.ORDERS_COLLECTION, orderId);
-        // Verify ID uniqueness inside the transaction (race condition guard)
         const existing = await transaction.get(orderRef);
         if (existing.exists()) {
           throw new Error(`Order ID ${orderId} already exists. Please try again.`);
@@ -341,7 +348,7 @@ export class OrderService {
         transaction.set(orderRef, sanitizeForFirestore(newOrder));
       });
 
-      // 7. Notify admin (non-blocking)
+      // 8. Notify admin (non-blocking)
       await this.triggerNotification(orderId, "new_order", "all_admins", "admin");
 
       return orderId;
@@ -402,7 +409,7 @@ export class OrderService {
       const settingsSnap = await getDoc(settingsRef);
       const settings: OrderSettings = settingsSnap.exists()
         ? (settingsSnap.data() as OrderSettings)
-        : { deliveryFee: 0, cancellationTimeLimitMinutes: 30, minimumOrderAmount: 0 };
+        : { deliveryFee: 0, cancellationTimeLimitMinutes: 30, minimumOrderAmount: 0, maxCartQuantityPerProduct: 50 };
 
       await runTransaction(this.db, async (transaction) => {
         const orderRef = doc(this.db, OrderService.ORDERS_COLLECTION, orderId);
@@ -443,6 +450,93 @@ export class OrderService {
       });
     } catch (error) {
       logger.error("Error cancelling order", error);
+      throw error;
+    }
+  }
+
+  /**
+   * Submit payment proof for an existing order (separate from order creation).
+   * Uploads the proof image and updates paymentStatus to awaiting_confirmation.
+   */
+  async submitPaymentProof(orderId: string, imageUri: string): Promise<void> {
+    try {
+      // 1. Upload the proof image
+      const proofOfPaymentUrl = await this.uploadPaymentProof(orderId, imageUri);
+
+      // 2. Update order with proof URL and payment status
+      await runTransaction(this.db, async (transaction) => {
+        const orderRef = doc(this.db, OrderService.ORDERS_COLLECTION, orderId);
+        const orderDoc = await transaction.get(orderRef);
+
+        if (!orderDoc.exists()) {
+          throw new Error(`Order ${orderId} not found.`);
+        }
+
+        const order = orderDoc.data() as Order;
+
+        if (order.paymentMethod.type === "cash_on_delivery") {
+          throw new Error("Payment proof is not required for COD orders.");
+        }
+
+        const newLog = this.createLog("Payment Proof Submitted", "awaiting_confirmation", "user");
+        transaction.update(orderRef, {
+          proofOfPaymentUrl,
+          paymentStatus: "awaiting_confirmation",
+          updatedAt: Timestamp.now(),
+          logs: [...(order.logs || []), newLog],
+        });
+      });
+    } catch (error) {
+      logger.error("Error submitting payment proof", error);
+      throw error;
+    }
+  }
+
+  /**
+   * Update order details (delivery address, payment method) for a pending order.
+   * Used when user navigates back from payment screen to checkout and makes changes.
+   */
+  async updateOrderDetails(
+    orderId: string,
+    updates: {
+      deliveryAddress?: string;
+      paymentMethod?: Order["paymentMethod"];
+    }
+  ): Promise<void> {
+    try {
+      await runTransaction(this.db, async (transaction) => {
+        const orderRef = doc(this.db, OrderService.ORDERS_COLLECTION, orderId);
+        const orderDoc = await transaction.get(orderRef);
+
+        if (!orderDoc.exists()) {
+          throw new Error(`Order ${orderId} not found.`);
+        }
+
+        const order = orderDoc.data() as Order;
+
+        if (order.status !== "pending") {
+          throw new Error("Only pending orders can be updated.");
+        }
+
+        const updateFields: Record<string, any> = {
+          updatedAt: Timestamp.now(),
+        };
+
+        if (updates.deliveryAddress !== undefined) {
+          updateFields.deliveryAddress = updates.deliveryAddress;
+        }
+
+        if (updates.paymentMethod !== undefined) {
+          updateFields.paymentMethod = updates.paymentMethod;
+        }
+
+        const newLog = this.createLog("Order Details Updated", "pending", "user");
+        updateFields.logs = [...(order.logs || []), newLog];
+
+        transaction.update(orderRef, updateFields);
+      });
+    } catch (error) {
+      logger.error("Error updating order details", error);
       throw error;
     }
   }

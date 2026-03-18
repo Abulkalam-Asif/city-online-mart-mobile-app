@@ -5,13 +5,17 @@ import IconButton from "@/src/components/general/IconButton";
 import { router } from "expo-router";
 import { theme } from "@/src/constants/theme";
 
-const GeneralTopBar = ({ text }: { text: string }) => {
+const GeneralTopBar = ({ text, onBackPress }: { text: string; onBackPress?: () => void }) => {
   return (
     <View style={styles.container}>
       <IconButton
         icon={<FontAwesome6 name="chevron-left" size={24} color={"#000"} />}
         onPress={() => {
-          router.back();
+          if (onBackPress) {
+            onBackPress();
+          } else {
+            router.back();
+          }
         }}
       />
       <Text style={styles.text}>{text}</Text>
