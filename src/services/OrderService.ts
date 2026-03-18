@@ -460,24 +460,29 @@ export class OrderService {
    */
   async submitPaymentProof(orderId: string, imageUri: string): Promise<void> {
     try {
-      // 0. Validate order before uploading proof
+      // 0. Pre-validate order before uploading proof (avoid costly upload for invalid orders)
       const orderRef = doc(this.db, OrderService.ORDERS_COLLECTION, orderId);
       const orderDocForValidation = await getDoc(orderRef);
       if (!orderDocForValidation.exists()) {
         throw new Error(`Order ${orderId} not found.`);
       }
-      
+
       const orderData = orderDocForValidation.data() as Order;
       if (orderData.paymentMethod.type === "cash_on_delivery") {
         throw new Error("Payment proof is not required for COD orders.");
+      }
+      if (orderData.status === "cancelled") {
+        throw new Error("Payment proof cannot be submitted for a cancelled order.");
+      }
+      if (orderData.paymentStatus !== "pending") {
+        throw new Error("Payment proof has already been submitted for this order.");
       }
 
       // 1. Upload the proof image
       const proofOfPaymentUrl = await this.uploadPaymentProof(orderId, imageUri);
 
-      // 2. Update order with proof URL and payment status
+      // 2. Update order with proof URL and payment status (re-validate inside transaction)
       await runTransaction(this.db, async (transaction) => {
-        const orderRef = doc(this.db, OrderService.ORDERS_COLLECTION, orderId);
         const orderDoc = await transaction.get(orderRef);
 
         if (!orderDoc.exists()) {
@@ -488,6 +493,12 @@ export class OrderService {
 
         if (order.paymentMethod.type === "cash_on_delivery") {
           throw new Error("Payment proof is not required for COD orders.");
+        }
+        if (order.status === "cancelled") {
+          throw new Error("Payment proof cannot be submitted for a cancelled order.");
+        }
+        if (order.paymentStatus !== "pending") {
+          throw new Error("Payment proof has already been submitted for this order.");
         }
 
         const newLog = this.createLog("Payment Proof Submitted", "awaiting_confirmation", "user");
