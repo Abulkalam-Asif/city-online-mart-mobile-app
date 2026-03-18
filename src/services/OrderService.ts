@@ -460,6 +460,18 @@ export class OrderService {
    */
   async submitPaymentProof(orderId: string, imageUri: string): Promise<void> {
     try {
+      // 0. Validate order before uploading proof
+      const orderRef = doc(this.db, OrderService.ORDERS_COLLECTION, orderId);
+      const orderDocForValidation = await getDoc(orderRef);
+      if (!orderDocForValidation.exists()) {
+        throw new Error(`Order ${orderId} not found.`);
+      }
+      
+      const orderData = orderDocForValidation.data() as Order;
+      if (orderData.paymentMethod.type === "cash_on_delivery") {
+        throw new Error("Payment proof is not required for COD orders.");
+      }
+
       // 1. Upload the proof image
       const proofOfPaymentUrl = await this.uploadPaymentProof(orderId, imageUri);
 
