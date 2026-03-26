@@ -11,6 +11,7 @@ import { queryKeys } from "../lib/react-query";
 import { onAuthStateChanged } from "@react-native-firebase/auth";
 import { logger } from "../utils/logger";
 import { FirebaseAuthTypes } from "@react-native-firebase/auth";
+import { registerPushTokenForUser } from "../utils/pushNotifications";
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
@@ -46,6 +47,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
 
     return unsubscribe;
   }, []);
+
+  useEffect(() => {
+    if (!user?.uid) return;
+
+    registerPushTokenForUser(user.uid);
+  }, [user?.uid]);
 
   const signIn = async (phoneNumber: string): Promise<VerificationResult> => {
     // Logic will be implemented in Phase 2 in the login screen
