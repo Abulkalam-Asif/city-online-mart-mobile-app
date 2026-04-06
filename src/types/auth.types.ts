@@ -17,6 +17,7 @@ export interface User {
   createdAt: Timestamp;
   lastLoginAt?: Timestamp;
   isActive: boolean; // For soft delete
+  notificationsEnabled?: boolean;
 }
 
 /**

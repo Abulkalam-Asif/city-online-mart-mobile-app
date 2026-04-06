@@ -6,11 +6,13 @@ import {
   serverTimestamp,
   setDoc,
 } from "@react-native-firebase/firestore";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import { db } from "../../firebaseConfig";
 import { logger } from "./logger";
 
 const DEVICE_TOKENS_SUBCOLLECTION = "deviceTokens";
 const USERS_COLLECTION = "USERS";
+const PUSH_TOKEN_STORAGE_KEY = "@push_token";
 
 /**
  * Ensure Android notification channel exists so foreground notifications can display.
@@ -50,17 +52,65 @@ export const registerPushTokenForUser = async (
 
     // Check current permission status.
     const existingPermissions = await Notifications.getPermissionsAsync();
+    let permissionSnapshot = existingPermissions;
     let finalStatus = existingPermissions.status;
+    let canAskAgain = existingPermissions.canAskAgain;
 
     // Request permission if not already granted.
     if (finalStatus !== "granted") {
       const requestResult = await Notifications.requestPermissionsAsync();
+      permissionSnapshot = requestResult;
       finalStatus = requestResult.status;
+      canAskAgain = requestResult.canAskAgain;
     }
 
-    // If permission is denied, stop here.
+    const androidImportance =
+      Platform.OS === "android"
+        ? permissionSnapshot.android?.importance ?? null
+        : null;
+    const osNotificationsEnabled =
+      Platform.OS === "android"
+        ? androidImportance !== null
+          ? androidImportance !== Notifications.AndroidImportance.NONE
+          : permissionSnapshot.granted
+        : permissionSnapshot.granted;
+
+    // If permission is denied, update stored token metadata (if available) and stop here.
     if (finalStatus !== "granted") {
-      logger.info(`Push: Permission not granted for user ${userId}`);
+      logger.info(
+        `Push: Permission not granted for user ${userId} (status=${finalStatus}, canAskAgain=${String(
+          canAskAgain,
+        )})`,
+      );
+
+      const cachedToken = await AsyncStorage.getItem(PUSH_TOKEN_STORAGE_KEY);
+      if (cachedToken) {
+        const tokenRef = doc(
+          db,
+          USERS_COLLECTION,
+          userId,
+          DEVICE_TOKENS_SUBCOLLECTION,
+          cachedToken,
+        );
+
+        await setDoc(
+          tokenRef,
+          {
+            token: cachedToken,
+            platform: Platform.OS,
+            osPermissionStatus: finalStatus,
+            osPermissionGranted: false,
+            canAskAgain: typeof canAskAgain === "boolean" ? canAskAgain : null,
+            permissionsLastCheckedAt: serverTimestamp(),
+            osNotificationsEnabled,
+            androidImportance,
+            updatedAt: serverTimestamp(),
+            lastSeenAt: serverTimestamp(),
+          },
+          { merge: true },
+        );
+      }
+
       return null;
     }
 
@@ -86,12 +136,19 @@ export const registerPushTokenForUser = async (
       {
         token,
         platform: Platform.OS,
+        osPermissionStatus: finalStatus,
+        osPermissionGranted: finalStatus === "granted",
+        canAskAgain: typeof canAskAgain === "boolean" ? canAskAgain : null,
+        permissionsLastCheckedAt: serverTimestamp(),
+        osNotificationsEnabled,
+        androidImportance,
         createdAt: serverTimestamp(),
         updatedAt: serverTimestamp(),
         lastSeenAt: serverTimestamp(),
       },
       { merge: true },
     );
+    await AsyncStorage.setItem(PUSH_TOKEN_STORAGE_KEY, token);
     logger.info(`Push: Token stored for user ${userId}`);
 
     return token;
