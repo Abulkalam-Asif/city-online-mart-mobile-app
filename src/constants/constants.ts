@@ -7,6 +7,7 @@ export const CONSTANTS = {
     homepageProductsPerSpecialCategory: 6,
     productsPerPage: 6,
     similarProductsPageSize: 4,
+    ordersPerPage: 10,
   },
 
   checkout: {

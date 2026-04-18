@@ -5,7 +5,6 @@ import { FontAwesome6, MaterialCommunityIcons } from "@expo/vector-icons";
 import { router } from "expo-router";
 import { OrderStatus } from "@/src/types";
 
-
 type OrderItemProps = {
   date: string;
   itemCount: number;
@@ -21,7 +20,6 @@ const OrderItem = ({
   status,
   orderId,
 }: OrderItemProps) => {
-
   const getStatusColor = () => {
     switch (status) {
       case "pending":
@@ -29,13 +27,13 @@ const OrderItem = ({
           bg: theme.colors.pending_light,
           text: theme.colors.pending,
           icon: theme.colors.pending,
-        }
+        };
       case "confirmed":
         return {
           bg: theme.colors.confirmed_light,
           text: theme.colors.confirmed,
           icon: theme.colors.confirmed,
-        }
+        };
       case "shipped":
         return {
           bg: theme.colors.shipped_light,
@@ -53,12 +51,6 @@ const OrderItem = ({
           bg: theme.colors.cancelled_light,
           text: theme.colors.cancelled,
           icon: theme.colors.cancelled,
-        };
-      case "refunded":
-        return {
-          bg: theme.colors.refunded_light,
-          text: theme.colors.refunded,
-          icon: theme.colors.refunded,
         };
       default:
         return {
@@ -81,8 +73,6 @@ const OrderItem = ({
         return "Delivered";
       case "cancelled":
         return "Cancelled";
-      case "refunded":
-        return "Refunded";
       default:
         return status;
     }
@@ -99,8 +89,6 @@ const OrderItem = ({
         return "cart-check"; // Cart with checkmark - successfully delivered
       case "cancelled":
         return "cart-remove"; // Cart with X - order cancelled
-      case "refunded":
-        return "redo"; // Cart with down arrow - money returned
       default:
         return "cart";
     }
@@ -132,6 +120,7 @@ const OrderItem = ({
 
       <View style={styles.contentContainer}>
         <Text style={styles.dateText}>{date}</Text>
+        <Text style={styles.orderIdText}>#{orderId}</Text>
         <View style={styles.detailsRow}>
           <Text style={styles.itemCountText}>{itemCount} items</Text>
           <Text style={styles.priceText}>Rs.{price}</Text>
@@ -187,6 +176,11 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontFamily: theme.fonts.semibold,
     color: theme.colors.text,
+  },
+  orderIdText: {
+    fontSize: 11,
+    fontFamily: theme.fonts.semibold,
+    color: theme.colors.text_secondary,
   },
   detailsRow: {
     flexDirection: "row",

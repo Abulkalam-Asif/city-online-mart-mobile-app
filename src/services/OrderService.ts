@@ -6,6 +6,8 @@ import {
   query,
   where,
   orderBy,
+  limit,
+  startAfter,
   runTransaction,
   addDoc,
   Timestamp,
@@ -23,6 +25,7 @@ import { OrderSettings } from "../types/settings.types";
 import { sanitizeForFirestore } from "../utils/firestoreUtils";
 import { logger } from "../utils/logger";
 import type { DiscountService } from "./DiscountService";
+import { PaginatedResult } from "../types/common.types";
 
 export class OrderService {
   private static readonly ORDERS_COLLECTION = "ORDERS";
@@ -392,6 +395,55 @@ export class OrderService {
       );
     } catch (error) {
       logger.error("Error fetching customer orders", error);
+      throw error;
+    }
+  }
+
+  /**
+   * Fetch paginated orders for a specific customer, ordered by most recent first.
+   */
+  async getPaginatedCustomerOrders(
+    customerId: string,
+    pageSize: number,
+    startAfterDoc?: string
+  ): Promise<PaginatedResult<Order>> {
+    try {
+      const ordersRef = collection(this.db, OrderService.ORDERS_COLLECTION);
+      const queryConstraints: any[] = [
+        where("customerId", "==", customerId),
+        orderBy("createdAt", "desc"),
+      ];
+
+      if (startAfterDoc) {
+        const lastDoc = await getDoc(
+          doc(this.db, OrderService.ORDERS_COLLECTION, startAfterDoc)
+        );
+        if (lastDoc.exists()) {
+          queryConstraints.push(startAfter(lastDoc));
+        }
+      }
+
+      queryConstraints.push(limit(pageSize + 1));
+
+      const q = query(ordersRef, ...queryConstraints);
+      const snapshot = await getDocs(q);
+
+      const hasMore = snapshot.docs.length > pageSize;
+      const docs = hasMore ? snapshot.docs.slice(0, pageSize) : snapshot.docs;
+
+      const orders = docs.map(
+        (d: FirebaseFirestoreTypes.DocumentData) => ({ id: d.id, ...d.data() } as Order)
+      );
+
+      const lastDocId = docs.length > 0 ? docs[docs.length - 1].id : undefined;
+
+      return {
+        items: orders,
+        hasMore,
+        lastDocId,
+      };
+    } catch (error) {
+      logger.error("Error fetching paginated customer orders", error);
       throw error;
     }
   }
