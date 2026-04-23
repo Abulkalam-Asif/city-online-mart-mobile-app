@@ -27,7 +27,7 @@ foreach ($device in $devices) {
     
     if ($LASTEXITCODE -eq 0) {
         Write-Host "Opening app on $device..." -ForegroundColor Green
-        adb -s $device shell am start -n com.abulkalamasif.ecommercemobileapp/.MainActivity
+        adb -s $device shell am start -n com.cityonlinemart.com/.MainActivity
     } else {
         Write-Host "Failed to install on $device" -ForegroundColor Red
     }

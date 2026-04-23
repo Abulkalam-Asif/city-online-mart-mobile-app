@@ -18,6 +18,8 @@ interface ConfirmationModalProps {
   cancelText?: string;
   /** "confirm" = green/neutral (default), "warning" = amber/caution */
   variant?: "confirm" | "warning";
+  iconName?: keyof typeof Ionicons.glyphMap;
+  iconColor?: string;
 }
 
 const ConfirmationModal = ({
@@ -29,10 +31,12 @@ const ConfirmationModal = ({
   confirmText = "Confirm",
   cancelText = "Cancel",
   variant = "confirm",
+  iconName,
+  iconColor,
 }: ConfirmationModalProps) => {
   const isWarning = variant === "warning";
-  const iconName = isWarning ? "warning" : "help-circle";
-  const iconColor = isWarning ? "#F59E0B" : theme.colors.primary;
+  const resolvedIconName = iconName || (isWarning ? "warning" : "help-circle");
+  const resolvedIconColor = iconColor || (isWarning ? "#F59E0B" : theme.colors.primary);
   const confirmBgColor = isWarning ? "#F59E0B" : theme.colors.primary;
 
   return (
@@ -41,7 +45,7 @@ const ConfirmationModal = ({
         <View style={styles.modalCard}>
           {/* Icon */}
           <View style={styles.iconContainer}>
-            <Ionicons name={iconName} size={48} color={iconColor} />
+            <Ionicons name={resolvedIconName} size={48} color={resolvedIconColor} />
           </View>
 
           {/* Title */}

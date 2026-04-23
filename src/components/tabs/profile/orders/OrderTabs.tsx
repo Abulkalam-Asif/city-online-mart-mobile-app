@@ -18,7 +18,6 @@ const OrderTabs = ({ activeTab, onTabChange }: OrderTabsProps) => {
     { key: "shipped", label: "Shipped", color: theme.colors.shipped },
     { key: "delivered", label: "Delivered", color: theme.colors.delivered },
     { key: "cancelled", label: "Cancelled", color: theme.colors.cancelled },
-    { key: "refunded", label: "Refunded", color: theme.colors.refunded },
   ];
 
   return (

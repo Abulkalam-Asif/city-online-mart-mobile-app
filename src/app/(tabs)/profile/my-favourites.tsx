@@ -1,17 +1,15 @@
 import { FlatList, StyleSheet, Text, View } from "react-native";
 import React from "react";
 import GeneralTopBar from "@/src/components/general/GeneralTopBar";
-import { tempCartItems } from "@/temp/home/products/tempCartItems";
 import { theme } from "@/src/constants/theme";
 import FavouriteItem from "@/src/components/tabs/profile/my-favourites/FavouriteItem";
 
 const MyFavouritesScreen = () => {
-  const favourites = tempCartItems;
 
   return (
     <View style={styles.container}>
       <GeneralTopBar text="My Favourites" />
-      <View style={styles.infoContainer}>
+      {/* <View style={styles.infoContainer}>
         <Text style={styles.itemsCountText}>{favourites.length} items</Text>
       </View>
       <FlatList
@@ -21,7 +19,7 @@ const MyFavouritesScreen = () => {
         renderItem={({ item }) => <FavouriteItem item={item} />}
         keyExtractor={(item) => item.Id.toString()}
         showsVerticalScrollIndicator={false}
-      />
+      /> */}
     </View>
   );
 };

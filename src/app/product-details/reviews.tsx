@@ -1,7 +1,6 @@
 import React from "react";
 import { FlatList, StyleSheet, View } from "react-native";
 import GeneralTopBar from "@/src/components/general/GeneralTopBar";
-import { tempReviews } from "@/temp/home/product-details/tempReviews";
 import ReviewCard from "@/src/components/product-details/reviews/ReviewCard";
 
 export default function ReviewsScreen() {
@@ -10,14 +9,14 @@ export default function ReviewsScreen() {
   return (
     <View style={styles.mainContainer}>
       <GeneralTopBar text="Reviews" />
-      <FlatList
+      {/* <FlatList
         style={styles.container}
         contentContainerStyle={styles.containerContent}
-        data={tempReviews}
+        data={[]}
         renderItem={({ item }) => <ReviewCard review={item} />}
         keyExtractor={(item) => item.Id.toString()}
         showsVerticalScrollIndicator={false}
-      />
+      /> */}
     </View>
   );
 }

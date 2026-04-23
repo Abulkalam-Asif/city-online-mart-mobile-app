@@ -1,18 +1,18 @@
 {
   "expo": {
-    "name": "ecommerce-mobile-app",
-    "slug": "ecommerce-mobile-app",
+    "name": "city-online-mart",
+    "slug": "city-online-mart",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
-    "scheme": "ecommercemobileapp",
+    "scheme": "cityonlinemart",
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
     "ios": {
       "supportsTablet": true
     },
     "android": {
-      "package": "com.abulkalamasif.ecommercemobileapp",
+      "package": "com.cityonlinemart.com",
       "googleServicesFile": "./google-services.json",
       "versionCode": 1,
       "adaptiveIcon": {
@@ -50,6 +50,7 @@
         }
       ],
       "expo-font",
+      "expo-notifications",
       "expo-secure-store",
       "expo-web-browser",
       "@react-native-firebase/app",

@@ -10,7 +10,7 @@ import { ModalProvider } from "../contexts/ModalContext";
 import { AuthProvider } from "../contexts/AuthContext";
 import { CartProvider } from "../contexts/CartContext";
 import { ModalPortal } from "../components/common/ModalPortal";
-import NotificationManager from "../components/notifications/NotificationManager";
+import PushNotificationHandler from "../components/notifications/PushNotificationHandler";
 
 import * as SplashScreen from "expo-splash-screen";
 
@@ -46,7 +46,7 @@ export default function RootLayout() {
                   <Stack.Screen name="(tabs)" />
                 </Stack>
                 <ModalPortal />
-                <NotificationManager />
+                <PushNotificationHandler />
               </SafeAreaView>
             </ModalProvider>
           </SafeAreaProvider>

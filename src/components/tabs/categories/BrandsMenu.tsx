@@ -1,7 +1,7 @@
 import React from "react";
 import { Pressable, StyleSheet, Text, View } from "react-native";
 import { theme } from "@/src/constants/theme";
-import { tempBrands } from "@/temp/categories/brands/tempBrands";
+// import { tempBrands } from "@/temp/categories/brands/tempBrands";
 import { Image } from "expo-image";
 
 type BrandsMenuProps = {
@@ -29,7 +29,7 @@ const BrandsMenu = ({ onApply, selectedBrands }: BrandsMenuProps) => {
   return (
     <View style={styles.container}>
       <View style={styles.brandsGrid}>
-        {tempBrands.map((brand) => (
+        {/* {tempBrands.map((brand) => (
           <Pressable
             key={brand.Id}
             style={[
@@ -39,7 +39,7 @@ const BrandsMenu = ({ onApply, selectedBrands }: BrandsMenuProps) => {
             onPress={() => handleBrandToggle(brand.Id)}>
             <Image source={brand.Image} style={styles.brandCircle} />
           </Pressable>
-        ))}
+        ))} */}
       </View>
 
       <Pressable

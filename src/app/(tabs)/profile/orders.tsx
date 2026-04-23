@@ -1,31 +1,37 @@
-import { ScrollView, StyleSheet, Text, View } from "react-native";
-import React, { useState } from "react";
+import {
+  FlatList,
+  StyleSheet,
+  Text,
+  View,
+  RefreshControl,
+  ActivityIndicator,
+} from "react-native";
+import React, { useMemo, useState } from "react";
 import GeneralTopBar from "@/src/components/general/GeneralTopBar";
 import OrderTabs from "@/src/components/tabs/profile/orders/OrderTabs";
 import OrderItem from "@/src/components/tabs/profile/orders/OrderItem";
-// import { useGetCustomerOrders } from "@/src/hooks/useOrders";
 import { theme } from "@/src/constants/theme";
 import { OrderStatus } from "@/src/types";
 import Loading from "@/src/components/common/Loading";
+import { useAuthUser } from "@/src/hooks/useAuthUser";
+import { useGetInfiniteCustomerOrders } from "@/src/hooks/useOrders";
+import { CONSTANTS } from "@/src/constants/constants";
+import { convertTimestamp } from "@/src/utils/firestoreUtils";
+import ErrorBanner from "@/src/components/common/ErrorBanner";
+import { auth } from "@/firebaseConfig";
 
 type OrderTab = "all" | OrderStatus;
 
-// Mock customer ID - in real app, get from auth context
-const mockCustomerId = "customer123";
-
 const OrdersScreen = () => {
   const [activeTab, setActiveTab] = useState<OrderTab>("all");
+  const { isLoading: authLoading } = useAuthUser();
+  const firebaseUid = auth.currentUser?.uid;
+  const isAuthReady = !!firebaseUid;
 
-  // Fetch real orders from database
-  const {
-    data: orders,
-    isLoading,
-    error,
-  } = {
-    data: [],
-    isLoading: false,
-    error: null,
-  };
+  const ordersQuery = useGetInfiniteCustomerOrders(
+    firebaseUid || "",
+    CONSTANTS.limits.ordersPerPage,
+  );
 
   // Format date from Date object to readable string
   const formatDate = (date: Date): string => {
@@ -36,16 +42,31 @@ const OrdersScreen = () => {
     });
   };
 
+  const orders = useMemo(
+    () => ordersQuery.data?.pages.flatMap((page) => page.items) ?? [],
+    [ordersQuery.data],
+  );
+
   // Filter orders based on active tab
-  const filteredOrders =
-    orders?.filter((order) => {
-      if (activeTab === "all") return true;
-      // return order.status === activeTab;
-      return true;
-    }) || [];
+  const filteredOrders = useMemo(() => {
+    if (activeTab === "all") return orders;
+    return orders.filter((order) => order.status === activeTab);
+  }, [orders, activeTab]);
+
+  // Pull to refresh state
+  const [isRefreshing, setIsRefreshing] = useState(false);
+
+  const handleRefresh = async () => {
+    setIsRefreshing(true);
+    try {
+      await ordersQuery.refetch();
+    } finally {
+      setIsRefreshing(false);
+    }
+  };
 
   // Handle loading state
-  if (isLoading) {
+  if (authLoading || !isAuthReady || ordersQuery.isLoading) {
     return (
       <View style={styles.container}>
         <GeneralTopBar text="Orders" />
@@ -57,25 +78,46 @@ const OrdersScreen = () => {
   }
 
   // Handle error state
-  if (error) {
+  if (ordersQuery.error) {
     return (
-      <View style={styles.container}>
-        <GeneralTopBar text="Orders" />
-        <View style={styles.errorContainer}>
-          <Text style={styles.errorText}>Failed to load orders</Text>
-        </View>
-      </View>
+      <ErrorBanner
+        title="Unable to Load"
+        message="Failed to load orders. Please try again."
+        onRetry={() => ordersQuery.refetch()}
+      />
     );
   }
+
+  const renderOrderItem = ({ item }: { item: typeof filteredOrders[number] }) => (
+    <OrderItem
+      orderId={item.id}
+      date={formatDate(convertTimestamp(item.createdAt))}
+      itemCount={item.items.reduce(
+        (total, orderItem) => total + orderItem.quantity,
+        0,
+      )}
+      price={item.total}
+      status={item.status}
+    />
+  );
+
+  const listFooter = ordersQuery.isFetchingNextPage ? (
+    <View style={styles.footer}>
+      <ActivityIndicator size="small" color={theme.colors.primary} />
+    </View>
+  ) : null;
 
   return (
     <View style={styles.container}>
       <GeneralTopBar text="Orders" />
       <OrderTabs activeTab={activeTab} onTabChange={setActiveTab} />
-      <ScrollView
+      <FlatList
         style={styles.scrollView}
-        contentContainerStyle={styles.containerContent}>
-        {filteredOrders.length === 0 ? (
+        contentContainerStyle={styles.containerContent}
+        data={filteredOrders}
+        renderItem={renderOrderItem}
+        keyExtractor={(item) => item.id}
+        ListEmptyComponent={
           <View style={styles.emptyContainer}>
             <Text style={styles.emptyText}>
               {activeTab === "all"
@@ -83,23 +125,27 @@ const OrdersScreen = () => {
                 : `No ${activeTab} orders`}
             </Text>
           </View>
-        ) : (
-          filteredOrders.map((order) => (
-            // <OrderItem
-            //   key={order.id}
-            //   orderId={order.id}
-            //   date={formatDate(order.createdAt)}
-            //   itemCount={order.items.reduce(
-            //     (total, item) => total + item.quantity,
-            //     0
-            //   )}
-            //   price={order.total}
-            //   status={order.status}
-            // />
-            <></>
-          ))
-        )}
-      </ScrollView>
+        }
+        ListFooterComponent={listFooter}
+        onEndReached={() => {
+          if (ordersQuery.hasNextPage && !ordersQuery.isFetchingNextPage) {
+            ordersQuery.fetchNextPage();
+          }
+        }}
+        onEndReachedThreshold={0.5}
+        refreshControl={
+          <RefreshControl
+            refreshing={isRefreshing}
+            onRefresh={handleRefresh}
+            colors={[
+              theme.colors.primary,
+              theme.colors.secondary,
+              theme.colors.error,
+            ]}
+            tintColor={theme.colors.primary}
+          />
+        }
+      />
     </View>
   );
 };
@@ -147,5 +193,9 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontFamily: theme.fonts.medium,
     color: theme.colors.text_secondary,
+  },
+  footer: {
+    paddingVertical: 20,
+    alignItems: "center",
   },
 });

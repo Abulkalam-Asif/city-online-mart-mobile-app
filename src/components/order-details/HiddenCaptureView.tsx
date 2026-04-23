@@ -14,6 +14,11 @@ type HiddenCaptureViewProps = {
   discount: number;
   getStatusColor: () => string;
   getStatusText: () => string;
+  deliveryAddress: string;
+  paymentMethodLabel: string;
+  paymentStatusLabel: string;
+  paymentStatusColor?: string;
+  placedOnText: string;
 };
 
 const HiddenCaptureView = ({
@@ -26,6 +31,11 @@ const HiddenCaptureView = ({
   discount,
   getStatusColor,
   getStatusText,
+  deliveryAddress,
+  paymentMethodLabel,
+  paymentStatusLabel,
+  paymentStatusColor,
+  placedOnText,
 }: HiddenCaptureViewProps) => {
   return (
     <>
@@ -38,22 +48,20 @@ const HiddenCaptureView = ({
               <Text style={styles.captureOrderId}>Order #{orderId}</Text>
             </View>
 
-            {/* Order Status */}
+            {/* Order Details */}
             <View style={styles.captureSection}>
-              <Text style={styles.captureSectionTitle}>Order Status</Text>
+              <Text style={styles.captureSectionTitle}>Order details</Text>
               <View style={styles.captureStatusCard}>
                 <Text style={styles.captureStatusText}>
-                  Status:{" "}
+                  Order is{" "}
                   <Text
-                    style={[
-                      styles.captureStatusBold,
-                      { color: getStatusColor() },
-                    ]}>
+                    style={[styles.captureStatusBold, { color: getStatusColor() }]}
+                  >
                     {getStatusText()}
                   </Text>
                 </Text>
                 <Text style={styles.captureDeliveryTime}>
-                  Delivery: Friday 26th September 10:00 am
+                  Placed on {placedOnText || "N/A"}
                 </Text>
               </View>
             </View>
@@ -68,24 +76,34 @@ const HiddenCaptureView = ({
                   color={theme.colors.primary}
                 />
                 <Text style={styles.captureAddressText}>
-                  House 360, PU Main Rd, Quaid-i-Azam Campus, Lahore, Pakistan
+                  {deliveryAddress || "N/A"}
                 </Text>
               </View>
             </View>
 
             {/* Payment Details */}
             <View style={styles.captureSection}>
-              <Text style={styles.captureSectionTitle}>Payment Details</Text>
+              <Text style={styles.captureSectionTitle}>Payment details</Text>
               <View style={styles.captureCard}>
-                <View style={styles.captureRow}>
-                  <Text style={styles.captureLabel}>Payment Method:</Text>
-                  <Text style={styles.captureValue}>Cash on Delivery</Text>
-                </View>
                 <View style={styles.captureRow}>
                   <Text style={styles.captureLabel}>Total Amount:</Text>
                   <Text
                     style={[styles.captureValue, styles.captureTotalAmount]}>
                     Rs. {totalAmount}
+                  </Text>
+                </View>
+                <View style={styles.captureRow}>
+                  <Text style={styles.captureLabel}>Payment Method:</Text>
+                  <Text style={styles.captureValue}>{paymentMethodLabel}</Text>
+                </View>
+                <View style={styles.captureRow}>
+                  <Text style={styles.captureLabel}>Payment Status:</Text>
+                  <Text
+                    style={[
+                      styles.captureValue,
+                      paymentStatusColor ? { color: paymentStatusColor } : null,
+                    ]}>
+                    {paymentStatusLabel}
                   </Text>
                 </View>
               </View>
@@ -101,7 +119,7 @@ const HiddenCaptureView = ({
                     {discount > 0 && (
                       <View style={styles.captureSavingsTag}>
                         <Text style={styles.captureSavingsText}>
-                          -Rs.{discount}
+                          Saved Rs.{discount}
                         </Text>
                       </View>
                     )}
@@ -117,13 +135,15 @@ const HiddenCaptureView = ({
                 <View style={styles.captureRow}>
                   <View style={styles.captureLeftRow}>
                     <Text style={styles.captureLabel}>Delivery Fee</Text>
-                    <View style={styles.captureFreeTag}>
-                      <Text style={styles.captureFreeText}>FREE</Text>
-                    </View>
+                    {deliveryFee === 0 && (
+                      <View style={styles.captureFreeTag}>
+                        <Text style={styles.captureFreeText}>FREE</Text>
+                      </View>
+                    )}
                   </View>
-                  <Text style={styles.captureStrikethrough}>
-                    Rs. {deliveryFee}
-                  </Text>
+                  {deliveryFee > 0 ? (
+                    <Text style={styles.captureValue}>Rs. {deliveryFee}</Text>
+                  ) : null}
                 </View>
 
                 <View style={styles.captureSeparator} />
@@ -177,8 +197,8 @@ const styles = StyleSheet.create({
     marginBottom: 4,
   },
   captureOrderId: {
-    fontSize: 14,
-    fontFamily: theme.fonts.medium,
+    fontSize: 18,
+    fontFamily: theme.fonts.semibold,
     color: theme.colors.text_secondary,
   },
   captureSection: {
@@ -196,7 +216,7 @@ const styles = StyleSheet.create({
     borderRadius: 8,
   },
   captureStatusText: {
-    fontSize: 14,
+    fontSize: 13,
     fontFamily: theme.fonts.regular,
     color: theme.colors.text,
     marginBottom: 8,
