@@ -24,6 +24,7 @@ import { OrderStatus } from "@/src/types";
 import { convertTimestamp } from "@/src/utils/firestoreUtils";
 import ErrorBanner from "@/src/components/common/ErrorBanner";
 import ConfirmationModal from "@/src/components/common/ConfirmationModal";
+import PaymentProofModal from "./PaymentProofModal";
 import {
   getPaymentMethodDisplayName,
   getPaymentMethodImage,
@@ -41,6 +42,7 @@ const OrderDetailsContent = ({ orderId }: OrderDetailsContentProps) => {
   const viewShotRef = useRef<ViewShot>(null);
   const [errorMessage, setErrorMessage] = useState("");
   const [showDownloadSuccess, setShowDownloadSuccess] = useState(false);
+  const [isProofModalVisible, setIsProofModalVisible] = useState(false);
 
   const {
     data: orderData,
@@ -426,9 +428,32 @@ const OrderDetailsContent = ({ orderId }: OrderDetailsContentProps) => {
         />
       ) : null}
 
-      {/* Bottom Action Buttons (disabled in Phase 1) */}
+      <PaymentProofModal
+        visible={isProofModalVisible}
+        orderId={orderId}
+        onClose={() => setIsProofModalVisible(false)}
+        onSuccess={() => {
+          setIsProofModalVisible(false);
+        }}
+      />
+
+      {/* Bottom Action Buttons */}
       <View style={styles.bottomButtonContainer}>
         {orderData.status === "pending" &&
+          orderData.paymentMethod.type !== "cash_on_delivery" &&
+          orderData.paymentStatus === "pending" && (
+            <Pressable
+              style={({ pressed }) => [
+                styles.reviewButton,
+                pressed && styles.buttonPressed,
+              ]}
+              onPress={() => setIsProofModalVisible(true)}>
+              <Text style={styles.reviewButtonText}>Upload Payment Proof</Text>
+            </Pressable>
+          )}
+
+        {/* TODO: Phase 6 - Implement COD Edit/Cancel Actions
+        orderData.status === "pending" &&
           orderData.paymentMethod.type === "cash_on_delivery" && (
             <>
               <Pressable
@@ -450,7 +475,8 @@ const OrderDetailsContent = ({ orderId }: OrderDetailsContentProps) => {
                 <Text style={styles.editButtonText}>Edit Order</Text>
               </Pressable>
             </>
-          )}
+          )
+        */}
         {orderData.status === "delivered" && (
           <Pressable
             disabled
