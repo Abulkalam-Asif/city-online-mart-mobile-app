@@ -5,7 +5,11 @@ import { useCart } from "@/src/hooks/useCart";
 import { queryClient, queryKeys } from "@/src/lib/react-query";
 import { OrderSettings } from "@/src/types";
 
-const BillingDetailsSection = () => {
+interface BillingDetailsSectionProps {
+  isOnlinePayment?: boolean;
+}
+
+const BillingDetailsSection: React.FC<BillingDetailsSectionProps> = ({ isOnlinePayment = false }) => {
   const { cart } = useCart();
 
   const orderSettings = queryClient.getQueryData<OrderSettings>(
@@ -18,7 +22,14 @@ const BillingDetailsSection = () => {
   const orderSubTotal = itemsSubtotal - orderDiscount;
   const orderDiscountPercentage = cart?.appliedOrderDiscount?.percentage || 0;
   const deliveryFee = orderSettings?.deliveryFee || 0;
-  const finalBill = orderSubTotal + deliveryFee;
+  const onlineDiscountPercentage = orderSettings?.onlinePaymentDiscountPercentage || 0;
+
+  let onlineDiscountAmount = 0;
+  if (isOnlinePayment && onlineDiscountPercentage > 0) {
+    onlineDiscountAmount = Math.round((orderSubTotal * onlineDiscountPercentage) / 100);
+  }
+
+  const finalBill = orderSubTotal - onlineDiscountAmount + deliveryFee;
 
   return (
     <>
@@ -48,9 +59,21 @@ const BillingDetailsSection = () => {
           <Text style={styles.amount}>Rs. {orderSubTotal}</Text>
         </View>
 
+        {onlineDiscountAmount > 0 && (
+          <View style={styles.billingRow}>
+            <View style={styles.leftSection}>
+              <Text style={styles.labelText}>Online Payment Discount</Text>
+              <View style={styles.tag}>
+                <Text style={styles.discountText}>{onlineDiscountPercentage}% off</Text>
+              </View>
+            </View>
+            <Text style={styles.discountAmount}>-Rs. {onlineDiscountAmount}</Text>
+          </View>
+        )}
+
         <View style={styles.billingRow}>
           <View style={styles.leftSection}>
-            <Text style={styles.labelText}>Delivery Charges</Text>
+            <Text style={styles.labelText}>Delivery Fee</Text>
             {deliveryFee === 0 &&
               <View style={styles.tag}>
                 <Text style={styles.freeDeliveryText}>Free Delivery</Text>
@@ -65,7 +88,7 @@ const BillingDetailsSection = () => {
         <View style={styles.separator} />
 
         <View style={styles.totalRow}>
-          <Text style={styles.totalLabelText}>Final Bill</Text>
+          <Text style={styles.totalLabelText}>Total Amount</Text>
           <Text style={styles.finalBill}>Rs. {finalBill}</Text>
         </View>
       </View>

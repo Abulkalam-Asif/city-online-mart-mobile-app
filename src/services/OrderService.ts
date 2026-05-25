@@ -282,7 +282,7 @@ export class OrderService {
       const settingsSnap = await getDoc(settingsRef);
       const orderSettings: OrderSettings = settingsSnap.exists()
         ? (settingsSnap.data() as OrderSettings)
-        : { deliveryFee: 0, cancellationTimeLimitMinutes: 30, minimumOrderAmount: 0, maxCartQuantityPerProduct: 50 };
+        : { deliveryFee: 0, cancellationTimeLimitMinutes: 30, minimumOrderAmount: 0, maxCartQuantityPerProduct: 50, onlinePaymentDiscountPercentage: 0 };
 
       // 2. Recalculate pricing server-side (N product reads + 1 discount query)
       const pricing = await this.calculateOrderPricing(orderData.items);
@@ -314,10 +314,28 @@ export class OrderService {
         );
       }
 
-      // 5. Generate unique 7-char alphanumeric ID
+      // 5. Calculate Online Payment Discount
+      let appliedOnlinePaymentDiscount = undefined;
+      let finalTotal = finalOrderAmount + orderSettings.deliveryFee;
+      let totalDiscount = pricing.discount;
+
+      if (
+        orderData.paymentMethod.type !== "cash_on_delivery" &&
+        orderSettings.onlinePaymentDiscountPercentage > 0
+      ) {
+        const discountAmount = Math.round((finalOrderAmount * orderSettings.onlinePaymentDiscountPercentage) / 100);
+        appliedOnlinePaymentDiscount = {
+          percentage: orderSettings.onlinePaymentDiscountPercentage,
+          amount: discountAmount,
+        };
+        finalTotal -= discountAmount;
+        totalDiscount += discountAmount;
+      }
+
+      // 6. Generate unique 7-char alphanumeric ID
       const orderId = await this.createUniqueOrderId();
 
-      // 6. Build the complete order object
+      // 7. Build the complete order object
       const newOrder: Order = {
         id: orderId,
         customerId: orderData.customerId,
@@ -326,10 +344,11 @@ export class OrderService {
         source: orderData.source,
         items: pricing.items,
         subtotal: pricing.subtotal,
-        discount: pricing.discount,
+        discount: totalDiscount,
         appliedOrderDiscount: pricing.appliedOrderDiscount,
+        appliedOnlinePaymentDiscount,
         deliveryFee: orderSettings.deliveryFee,
-        total: finalOrderAmount + orderSettings.deliveryFee,
+        total: finalTotal,
         paymentMethod: orderData.paymentMethod,
         paymentStatus: "pending",
         deliveryAddress: orderData.deliveryAddress,
@@ -461,7 +480,7 @@ export class OrderService {
       const settingsSnap = await getDoc(settingsRef);
       const settings: OrderSettings = settingsSnap.exists()
         ? (settingsSnap.data() as OrderSettings)
-        : { deliveryFee: 0, cancellationTimeLimitMinutes: 30, minimumOrderAmount: 0, maxCartQuantityPerProduct: 50 };
+        : { deliveryFee: 0, cancellationTimeLimitMinutes: 30, minimumOrderAmount: 0, maxCartQuantityPerProduct: 50, onlinePaymentDiscountPercentage: 0 };
 
       await runTransaction(this.db, async (transaction) => {
         const orderRef = doc(this.db, OrderService.ORDERS_COLLECTION, orderId);
@@ -579,6 +598,13 @@ export class OrderService {
     }
   ): Promise<void> {
     try {
+      // Fetch settings to know the online discount percentage
+      const settingsRef = doc(this.db, OrderService.SETTINGS_COLLECTION, "order");
+      const settingsSnap = await getDoc(settingsRef);
+      const settings: OrderSettings = settingsSnap.exists()
+        ? (settingsSnap.data() as OrderSettings)
+        : { deliveryFee: 0, cancellationTimeLimitMinutes: 30, minimumOrderAmount: 0, maxCartQuantityPerProduct: 50, onlinePaymentDiscountPercentage: 0 };
+
       await runTransaction(this.db, async (transaction) => {
         const orderRef = doc(this.db, OrderService.ORDERS_COLLECTION, orderId);
         const orderDoc = await transaction.get(orderRef);
@@ -603,6 +629,33 @@ export class OrderService {
 
         if (updates.paymentMethod !== undefined) {
           updateFields.paymentMethod = updates.paymentMethod;
+          
+          // Revert online payment discount if switching from online to COD
+          if (
+            updates.paymentMethod.type === "cash_on_delivery" &&
+            order.paymentMethod.type !== "cash_on_delivery" &&
+            order.appliedOnlinePaymentDiscount
+          ) {
+            updateFields.appliedOnlinePaymentDiscount = null;
+            updateFields.total = order.total + order.appliedOnlinePaymentDiscount.amount;
+            updateFields.discount = order.discount - order.appliedOnlinePaymentDiscount.amount;
+          }
+          // Apply online payment discount if switching from COD to online
+          else if (
+            updates.paymentMethod.type !== "cash_on_delivery" &&
+            order.paymentMethod.type === "cash_on_delivery" &&
+            !order.appliedOnlinePaymentDiscount &&
+            settings.onlinePaymentDiscountPercentage > 0
+          ) {
+            const finalOrderAmount = order.subtotal - (order.appliedOrderDiscount?.amount || 0);
+            const discountAmount = Math.round((finalOrderAmount * settings.onlinePaymentDiscountPercentage) / 100);
+            updateFields.appliedOnlinePaymentDiscount = {
+              percentage: settings.onlinePaymentDiscountPercentage,
+              amount: discountAmount,
+            };
+            updateFields.total = order.total - discountAmount;
+            updateFields.discount = order.discount + discountAmount;
+          }
         }
 
         const newLog = this.createLog("Order Details Updated", "pending", "user");

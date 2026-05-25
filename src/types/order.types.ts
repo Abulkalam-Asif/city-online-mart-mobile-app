@@ -42,6 +42,10 @@ export interface Order {
     percentage: number;
     amount: number;
   };
+  appliedOnlinePaymentDiscount?: {
+    percentage: number;
+    amount: number;
+  };
   deliveryFee: number;
   total: number;
 

@@ -20,6 +20,13 @@ const PopupBanner = () => {
     }
     hasShownPopupThisSession = true;
     setIsVisible(true);
+
+    if (popupBanner.timerSeconds && popupBanner.timerSeconds > 0) {
+      const timer = setTimeout(() => {
+        setIsVisible(false);
+      }, popupBanner.timerSeconds * 1000);
+      return () => clearTimeout(timer);
+    }
   }, [popupBanner]);
 
   // Don't show if loading, no data, or not visible
