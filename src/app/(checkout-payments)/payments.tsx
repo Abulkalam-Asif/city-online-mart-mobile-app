@@ -169,7 +169,7 @@ export default function PaymentsScreen() {
           )}
 
           {/* Billing Details */}
-          <BillingDetailsSection />
+          <BillingDetailsSection isOnlinePayment={!!selectedPaymentMethod && selectedPaymentMethod.type !== "cash_on_delivery"} />
 
           {/* Screenshot Upload */}
           <View style={styles.uploadSection}>

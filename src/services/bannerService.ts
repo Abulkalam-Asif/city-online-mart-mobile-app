@@ -12,6 +12,7 @@ const firestoreToBanner = (id: string, data: any): BannerMinimal => ({
   linkType: data.linkType || "product",
   link: data.link || "",
   displayOrder: data.displayOrder ?? 0,
+  timerSeconds: data.timerSeconds || null,
 });
 
 const bannerService = {

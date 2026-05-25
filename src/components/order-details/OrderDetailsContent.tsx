@@ -59,9 +59,9 @@ const OrderDetailsContent = ({ orderId }: OrderDetailsContentProps) => {
 
   const paymentMethodLabel = orderData?.paymentMethod
     ? getPaymentMethodDisplayName(
-        orderData.paymentMethod.type,
-        orderData.paymentMethod.accountDetails?.bankName,
-      )
+      orderData.paymentMethod.type,
+      orderData.paymentMethod.accountDetails?.bankName,
+    )
     : "Unknown";
 
   const getStatusColor = () => {
@@ -140,8 +140,6 @@ const OrderDetailsContent = ({ orderId }: OrderDetailsContentProps) => {
 
   // Calculate billing details from real order data
   const subtotal = orderData?.subtotal || 0;
-  const discount = orderData?.discount || 0;
-  const serviceFee = 0;
   const deliveryFee = orderData?.deliveryFee || 0;
   const totalAmount = orderData?.total || 0;
 
@@ -350,22 +348,42 @@ const OrderDetailsContent = ({ orderId }: OrderDetailsContentProps) => {
             <View style={styles.billingCard}>
               <View style={styles.billingRow}>
                 <View style={styles.leftSection}>
-                  <Text style={styles.billingLabelText}>Subtotal</Text>
-                  {discount > 0 && (
-                    <View style={styles.savingsTag}>
-                      <Text style={styles.savingsText}>
-                        Saved Rs.{discount}
-                      </Text>
-                    </View>
-                  )}
+                  <Text style={styles.billingLabelText}>Items Subtotal</Text>
                 </View>
                 <Text style={styles.billingAmountText}>Rs. {subtotal}</Text>
               </View>
 
-              <View style={styles.billingRow}>
-                <Text style={styles.billingLabelText}>Service Fee</Text>
-                <Text style={styles.billingAmountText}>Rs. {serviceFee}</Text>
-              </View>
+              {orderData?.appliedOrderDiscount && (
+                <>
+                  <View style={styles.billingRow}>
+                    <View style={styles.leftSection}>
+                      <Text style={styles.billingLabelText}>Order Discount</Text>
+                      <View style={styles.savingsTag}>
+                        <Text style={styles.savingsText}>{orderData.appliedOrderDiscount.percentage}% off</Text>
+                      </View>
+                    </View>
+                    <Text style={styles.billingAmountText}>-Rs. {orderData.appliedOrderDiscount.amount}</Text>
+                  </View>
+                  <View style={styles.billingRow}>
+                    <View style={styles.leftSection}>
+                      <Text style={[styles.billingLabelText, { fontFamily: theme.fonts.semibold, color: theme.colors.text }]}>Order Subtotal</Text>
+                    </View>
+                    <Text style={[styles.billingAmountText, { fontFamily: theme.fonts.bold }]}>Rs. {subtotal - orderData.appliedOrderDiscount.amount}</Text>
+                  </View>
+                </>
+              )}
+
+              {orderData?.appliedOnlinePaymentDiscount && (
+                <View style={styles.billingRow}>
+                  <View style={styles.leftSection}>
+                    <Text style={styles.billingLabelText}>Online Payment Discount</Text>
+                    <View style={styles.savingsTag}>
+                      <Text style={styles.savingsText}>{orderData.appliedOnlinePaymentDiscount.percentage}% off</Text>
+                    </View>
+                  </View>
+                  <Text style={styles.billingAmountText}>-Rs. {orderData.appliedOnlinePaymentDiscount.amount}</Text>
+                </View>
+              )}
 
               <View style={styles.billingRow}>
                 <View style={styles.leftSection}>
@@ -396,10 +414,10 @@ const OrderDetailsContent = ({ orderId }: OrderDetailsContentProps) => {
         viewShotRef={viewShotRef}
         orderId={orderId}
         subtotal={subtotal}
-        serviceFee={serviceFee}
         deliveryFee={deliveryFee}
         totalAmount={totalAmount}
-        discount={discount}
+        appliedOrderDiscount={orderData.appliedOrderDiscount}
+        appliedOnlinePaymentDiscount={orderData.appliedOnlinePaymentDiscount}
         getStatusColor={getStatusColor}
         getStatusText={getStatusText}
         deliveryAddress={orderData.deliveryAddress}

@@ -8,10 +8,10 @@ type HiddenCaptureViewProps = {
   viewShotRef: React.RefObject<ViewShot | null>;
   orderId: string;
   subtotal: number;
-  serviceFee: number;
   deliveryFee: number;
   totalAmount: number;
-  discount: number;
+  appliedOrderDiscount?: { percentage: number; amount: number };
+  appliedOnlinePaymentDiscount?: { percentage: number; amount: number };
   getStatusColor: () => string;
   getStatusText: () => string;
   deliveryAddress: string;
@@ -25,10 +25,10 @@ const HiddenCaptureView = ({
   viewShotRef,
   orderId,
   subtotal,
-  serviceFee,
   deliveryFee,
   totalAmount,
-  discount,
+  appliedOrderDiscount,
+  appliedOnlinePaymentDiscount,
   getStatusColor,
   getStatusText,
   deliveryAddress,
@@ -115,22 +115,42 @@ const HiddenCaptureView = ({
               <View style={styles.captureCard}>
                 <View style={styles.captureRow}>
                   <View style={styles.captureLeftRow}>
-                    <Text style={styles.captureLabel}>Subtotal</Text>
-                    {discount > 0 && (
-                      <View style={styles.captureSavingsTag}>
-                        <Text style={styles.captureSavingsText}>
-                          Saved Rs.{discount}
-                        </Text>
-                      </View>
-                    )}
+                    <Text style={styles.captureLabel}>Items Subtotal</Text>
                   </View>
                   <Text style={styles.captureValue}>Rs. {subtotal}</Text>
                 </View>
 
-                <View style={styles.captureRow}>
-                  <Text style={styles.captureLabel}>Service Fee</Text>
-                  <Text style={styles.captureValue}>Rs. {serviceFee}</Text>
-                </View>
+                {appliedOrderDiscount && (
+                  <>
+                    <View style={styles.captureRow}>
+                      <View style={styles.captureLeftRow}>
+                        <Text style={styles.captureLabel}>Order Discount</Text>
+                        <View style={styles.captureSavingsTag}>
+                          <Text style={styles.captureSavingsText}>{appliedOrderDiscount.percentage}% off</Text>
+                        </View>
+                      </View>
+                      <Text style={styles.captureValue}>-Rs. {appliedOrderDiscount.amount}</Text>
+                    </View>
+                    <View style={styles.captureRow}>
+                      <View style={styles.captureLeftRow}>
+                        <Text style={[styles.captureLabel, { fontFamily: theme.fonts.semibold, color: theme.colors.text }]}>Order Subtotal</Text>
+                      </View>
+                      <Text style={[styles.captureValue, { fontFamily: theme.fonts.bold }]}>Rs. {subtotal - appliedOrderDiscount.amount}</Text>
+                    </View>
+                  </>
+                )}
+
+                {appliedOnlinePaymentDiscount && (
+                  <View style={styles.captureRow}>
+                    <View style={styles.captureLeftRow}>
+                      <Text style={styles.captureLabel}>Online Payment Discount</Text>
+                      <View style={styles.captureSavingsTag}>
+                        <Text style={styles.captureSavingsText}>{appliedOnlinePaymentDiscount.percentage}% off</Text>
+                      </View>
+                    </View>
+                    <Text style={styles.captureValue}>-Rs. {appliedOnlinePaymentDiscount.amount}</Text>
+                  </View>
+                )}
 
                 <View style={styles.captureRow}>
                   <View style={styles.captureLeftRow}>

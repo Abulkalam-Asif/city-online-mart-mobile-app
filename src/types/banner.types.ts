@@ -7,6 +7,7 @@ export interface Banner {
   link: string; // Could be categoryId or productId based on linkType
   isActive: boolean;
   displayOrder: number;
+  timerSeconds?: number | null;
 }
 
-export type BannerMinimal = Pick<Banner, "id" | "imageUrl" | "linkType" | "link" | "displayOrder">;
+export type BannerMinimal = Pick<Banner, "id" | "imageUrl" | "linkType" | "link" | "displayOrder" | "timerSeconds">;

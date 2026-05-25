@@ -20,6 +20,8 @@ import { PaymentMethod, PaymentMethodType } from "@/src/types/payment_method.typ
 import Loading from "@/src/components/common/Loading";
 import { Image } from "expo-image";
 import { getPaymentMethodDisplayName, getPaymentMethodImage } from "@/src/utils/paymentMethodUtils";
+import { queryClient, queryKeys } from "@/src/lib/react-query";
+import { OrderSettings } from "@/src/types";
 
 // The 4 fixed top-level types shown in dropdown
 const PAYMENT_METHOD_TYPES: { type: PaymentMethodType; label: string }[] = [
@@ -73,6 +75,11 @@ export default function CheckoutScreen() {
   const placeOrderMutation = usePlaceOrder();
   const updateOrderMutation = useUpdateOrderDetails();
   const clearCartMutation = useClearCart();
+
+  const orderSettings = queryClient.getQueryData<OrderSettings>(
+    queryKeys.settings.byDomain("order")
+  );
+  const onlineDiscountPercentage = orderSettings?.onlinePaymentDiscountPercentage || 0;
 
   // Address validation
   const MIN_ADDRESS_LENGTH = CONSTANTS.checkout.addressMinLength;
@@ -310,6 +317,20 @@ export default function CheckoutScreen() {
 
           {/* Payment Method Type Dropdown */}
           <View style={styles.paymentSection}>
+            {onlineDiscountPercentage > 0 && (
+              <View style={[styles.promoBanner, !!selectedMethodType && selectedMethodType !== "cash_on_delivery" && styles.promoBannerSuccess]}>
+                <Ionicons 
+                  name={!!selectedMethodType && selectedMethodType !== "cash_on_delivery" ? "gift" : "pricetag"} 
+                  size={16} 
+                  color="#fff" 
+                />
+                <Text style={styles.promoText}>
+                  {!!selectedMethodType && selectedMethodType !== "cash_on_delivery"
+                    ? `Congratulations! You are getting an extra ${onlineDiscountPercentage}% discount!`
+                    : `Get an extra ${onlineDiscountPercentage}% off by paying with JazzCash, Easypaisa, or Bank Transfer!`}
+                </Text>
+              </View>
+            )}
             <Text style={styles.inputLabel}>Payment Method</Text>
             <Pressable
               style={styles.dropdownButton}
@@ -363,7 +384,7 @@ export default function CheckoutScreen() {
 
           {/* TODO: Expected delivery time calculation is pending */}
           <ExpectedDeliveryTimeSection />
-          <BillingDetailsSection />
+          <BillingDetailsSection isOnlinePayment={!!selectedMethodType && !isCOD} />
         </ScrollView>
 
         <View style={styles.proceedButtonContainer}>
@@ -563,6 +584,24 @@ const styles = StyleSheet.create({
     marginVertical: 16,
     paddingHorizontal: 16,
     gap: 8,
+  },
+  promoBanner: {
+    backgroundColor: theme.colors.confirmed,
+    padding: 12,
+    borderRadius: 8,
+    flexDirection: "row",
+    alignItems: "center",
+    marginBottom: 12,
+    gap: 8,
+  },
+  promoBannerSuccess: {
+    backgroundColor: theme.colors.secondary,
+  },
+  promoText: {
+    color: "#fff",
+    fontFamily: theme.fonts.medium,
+    fontSize: 12,
+    flex: 1,
   },
   inputLabel: {
     fontSize: 12,
