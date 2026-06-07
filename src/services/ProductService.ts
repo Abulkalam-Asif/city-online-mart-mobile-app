@@ -343,4 +343,76 @@ export class ProductService {
       freshProducts,
     };
   }
+
+  /**
+   * Search products efficiently using multiple parallel queries
+   * @param searchTerm The search string
+   * @param options Search options
+   */
+  async searchProducts(
+    searchTerm: string,
+    options?: { limit?: number }
+  ): Promise<Product[]> {
+    try {
+      if (!searchTerm || searchTerm.trim().length === 0) {
+        return [];
+      }
+
+      const searchTermLower = searchTerm.toLowerCase().trim();
+      const resultLimit = options?.limit || 20;
+
+      // Define our 3 parallel queries
+      const nameQuery = query(
+        collection(this.db, ProductService.PRODUCTS_COLLECTION),
+        where("info.nameLowerCase", ">=", searchTermLower),
+        where("info.nameLowerCase", "<=", searchTermLower + "\uf8ff"),
+        where("info.isActive", "==", true),
+        limit(resultLimit)
+      );
+
+      const searchArrQuery = query(
+        collection(this.db, ProductService.PRODUCTS_COLLECTION),
+        where("info.searchArr", "array-contains", searchTermLower),
+        where("info.isActive", "==", true),
+        limit(resultLimit)
+      );
+
+      const tagsQuery = query(
+        collection(this.db, ProductService.PRODUCTS_COLLECTION),
+        where("info.productTags", "array-contains", searchTermLower),
+        where("info.isActive", "==", true),
+        limit(resultLimit)
+      );
+
+      // Execute all 3 queries concurrently
+      const [nameSnapshot, searchArrSnapshot, tagsSnapshot] = await Promise.all([
+        getDocs(nameQuery),
+        getDocs(searchArrQuery),
+        getDocs(tagsQuery),
+      ]);
+
+      const foundProductIds = new Set<string>();
+      const results: Product[] = [];
+
+      // Helper to process snapshots
+      const processSnapshot = (snapshot: FirebaseFirestoreTypes.QuerySnapshot) => {
+        snapshot.docs.forEach((doc) => {
+          if (!foundProductIds.has(doc.id)) {
+            foundProductIds.add(doc.id);
+            results.push(ProductService.firestoreToProduct(doc.id, doc.data()));
+          }
+        });
+      };
+
+      // Process in order of relevance: Name prefix -> Exact word -> Tag
+      processSnapshot(nameSnapshot);
+      processSnapshot(searchArrSnapshot);
+      processSnapshot(tagsSnapshot);
+
+      return results.slice(0, resultLimit);
+    } catch (error) {
+      logger.error("searching products", error);
+      throw error;
+    }
+  }
 };
