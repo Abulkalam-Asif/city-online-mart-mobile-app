@@ -91,7 +91,7 @@ const ProductCard = ({
 
   const handleIncrement = useCallback(() => {
     const newQuantity = quantityInCart + 1;
-    
+
     if (newQuantity > availableStock) {
       setError({
         title: "Max Available Reached",
@@ -99,7 +99,7 @@ const ProductCard = ({
       });
       return;
     }
-    
+
     if (newQuantity > maxCartQuantity) {
       setError({
         title: "Limit Reached",
@@ -259,13 +259,13 @@ const styles = StyleSheet.create({
     position: "absolute",
     top: 8,
     right: 8,
-    backgroundColor: theme.colors.background,
-    borderRadius: 20,
+    backgroundColor: "#E53935",
+    borderRadius: 4,
     paddingHorizontal: 10,
     lineHeight: 20,
-    color: theme.colors.primary,
+    color: "#FFFFFF",
     fontSize: 10,
-    fontFamily: theme.fonts.medium,
+    fontFamily: theme.fonts.bold,
   },
   imageContainer: {
     justifyContent: "center",
