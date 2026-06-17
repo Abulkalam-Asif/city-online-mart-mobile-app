@@ -185,6 +185,7 @@ export class AuthService {
         phoneNumber: userData?.phoneNumber || null,
         displayName: userData?.displayName || null,
         role: role,
+        address: userData?.address || undefined,
       };
 
       await this.setStoredUser(authUser);

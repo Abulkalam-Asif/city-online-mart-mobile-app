@@ -18,6 +18,9 @@ export interface User {
   lastLoginAt?: Timestamp;
   isActive: boolean; // For soft delete
   notificationsEnabled?: boolean;
+  address?: string; // Latest delivery address
+  totalOrders?: number;
+  totalSpent?: number;
 }
 
 /**
@@ -28,6 +31,7 @@ export interface AuthUser {
   phoneNumber: string | null;
   displayName: string | null;
   role: UserRole | null;
+  address?: string;
 }
 
 /**
