@@ -186,6 +186,7 @@ export class AuthService {
         displayName: userData?.displayName || null,
         role: role,
         address: userData?.address || undefined,
+        favouriteProductIds: userData?.favouriteProductIds || [],
       };
 
       await this.setStoredUser(authUser);

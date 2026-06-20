@@ -1,11 +1,17 @@
 import { Share, StyleSheet, View } from "react-native";
-import React, { useState } from "react";
+import React from "react";
 import { Entypo, Feather, FontAwesome6 } from "@expo/vector-icons";
 import IconButton from "../general/IconButton";
 import { router } from "expo-router";
+import { useFavourites } from "@/src/hooks/useFavourites";
 
-const ProductDetailsTopBar = () => {
-  const [isFavorite, setIsFavorite] = useState(false);
+type Props = {
+  productId: string;
+};
+
+const ProductDetailsTopBar = ({ productId }: Props) => {
+  const { isFavourite, toggleFavourite } = useFavourites();
+  const isFav = isFavourite(productId);
 
   return (
     <View style={styles.container}>
@@ -19,12 +25,12 @@ const ProductDetailsTopBar = () => {
         <IconButton
           icon={
             <Entypo
-              name={isFavorite ? "heart" : "heart-outlined"}
+              name={isFav ? "heart" : "heart-outlined"}
               size={24}
-              color={isFavorite ? "red" : "black"}
+              color={isFav ? "red" : "black"}
             />
           }
-          onPress={() => setIsFavorite(!isFavorite)}
+          onPress={() => toggleFavourite.mutate(productId)}
         />
         <IconButton
           icon={<Feather name="share-2" size={22} />}

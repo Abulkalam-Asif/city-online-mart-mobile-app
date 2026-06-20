@@ -76,7 +76,7 @@ const ProductDetailsContent = ({
       contentContainerStyle={styles.containerContent}>
       <ProductDetailsTopBg />
 
-      <ProductDetailsTopBar />
+      <ProductDetailsTopBar productId={product.id} />
       <ImagesCarousel images={product.multimedia.images} />
 
       <View style={styles.productNameSection}>

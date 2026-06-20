@@ -21,6 +21,7 @@ export interface User {
   address?: string; // Latest delivery address
   totalOrders?: number;
   totalSpent?: number;
+  favouriteProductIds?: string[];
 }
 
 /**
@@ -32,6 +33,7 @@ export interface AuthUser {
   displayName: string | null;
   role: UserRole | null;
   address?: string;
+  favouriteProductIds?: string[];
 }
 
 /**
