@@ -1,4 +1,4 @@
-import { StyleSheet, View, ScrollView, Text, Pressable } from "react-native";
+import { StyleSheet, View, ScrollView, Text, useWindowDimensions, TouchableOpacity, Pressable } from "react-native";
 import React from "react";
 import { theme } from "@/src/constants/theme";
 import ProductCard from "./ProductCard";
@@ -28,6 +28,8 @@ const ProductsSection = ({
   } = useGetProductsBySpecialCategory(category.id, { limit: CONSTANTS.limits.homepageProductsPerSpecialCategory });
 
   const { cart } = useCart();
+  const { width: screenWidth } = useWindowDimensions();
+  const productCardWidth = Math.max(150, Math.min(220, screenWidth * 0.4));
 
   const handleViewAll = () => {
     router.push({
@@ -38,7 +40,12 @@ const ProductsSection = ({
 
   return (
     <View style={styles.container}>
-      <Text style={styles.titleText}>{category.name}</Text>
+      <View style={styles.headerRow}>
+        <Text style={styles.titleText}>{category.name}</Text>
+        <TouchableOpacity onPress={handleViewAll} activeOpacity={0.8}>
+          <Text style={styles.viewAllText}>View All</Text>
+        </TouchableOpacity>
+      </View>
       <ScrollView
         horizontal
         showsHorizontalScrollIndicator={false}
@@ -65,6 +72,7 @@ const ProductsSection = ({
               return (
                 <ProductCard key={product.id} product={product}
                   quantityInCart={cartItem?.quantity || 0}
+                  cardWidth={productCardWidth}
                 />
               )
             })}
@@ -72,12 +80,12 @@ const ProductsSection = ({
               <Pressable
                 onPress={handleViewAll}
                 style={({ pressed }) => [
-                  styles.viewAllButton,
+                  styles.viewAllButton2,
                   pressed && styles.viewAllButtonPressed,
                 ]}>
                 <FontAwesome6 name="arrow-right" size={20} color={theme.colors.primary} />
               </Pressable>
-              <Text style={styles.viewAllText}>View All</Text>
+              <Text style={styles.viewAllText2}>View All</Text>
             </View>
           </>)
         )}
@@ -92,11 +100,26 @@ const styles = StyleSheet.create({
   container: {
     paddingVertical: 10,
   },
+  headerRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    paddingHorizontal: 20,
+    marginBottom: 4,
+  },
   titleText: {
     fontFamily: theme.fonts.semibold,
     fontSize: 16,
-    marginBottom: 4,
-    paddingHorizontal: 20,
+    flex: 1,
+  },
+  viewAllButton: {
+    paddingVertical: 4,
+    paddingLeft: 12,
+  },
+  viewAllText: {
+    fontFamily: theme.fonts.medium,
+    fontSize: 12,
+    color: theme.colors.secondary,
   },
   scrollContent: {
     flexDirection: "row",
@@ -112,7 +135,7 @@ const styles = StyleSheet.create({
     gap: 8,
     paddingHorizontal: 20,
   },
-  viewAllButton: {
+  viewAllButton2: {
     width: 56,
     height: 56,
     justifyContent: "center",
@@ -126,7 +149,7 @@ const styles = StyleSheet.create({
     backgroundColor: theme.colors.background,
     transform: [{ scale: 0.95 }],
   },
-  viewAllText: {
+  viewAllText2: {
     fontFamily: theme.fonts.medium,
     fontSize: 12,
     color: theme.colors.text_secondary,

@@ -3,6 +3,7 @@ import {
   StyleSheet,
   Text,
   View,
+  useWindowDimensions
 } from "react-native";
 import React, { useCallback } from "react";
 import { theme } from "@/src/constants/theme";
@@ -24,6 +25,9 @@ const SimilarProductsSection = ({
   const subCategoryProductsQuery = useGetInfiniteProductsBySubCategory(subCategoryId, "default", CONSTANTS.limits.similarProductsPageSize, !!subCategoryId);
 
   const products = subCategoryProductsQuery.data?.pages.flatMap((page) => page.items).filter((product) => product.id !== productId) || [];
+
+  const { width: screenWidth } = useWindowDimensions();
+  const productCardWidth = Math.max(150, Math.min(220, screenWidth * 0.4));
 
   if (subCategoryProductsQuery.isLoading) {
     return (
@@ -54,7 +58,7 @@ const SimilarProductsSection = ({
         horizontal
         data={products}
         keyExtractor={keyExtractor}
-        renderItem={({ item }) => <ProductCard product={item} />}
+        renderItem={({ item }) => <ProductCard product={item} cardWidth={productCardWidth} />}
         showsHorizontalScrollIndicator={false}
         contentContainerStyle={styles.scrollContent}
         onEndReached={() => {
