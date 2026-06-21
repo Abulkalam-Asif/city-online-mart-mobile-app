@@ -91,7 +91,7 @@ const ProductCard = ({
 
   const handleIncrement = useCallback(() => {
     const newQuantity = quantityInCart + 1;
-    
+
     if (newQuantity > availableStock) {
       setError({
         title: "Max Available Reached",
@@ -99,7 +99,7 @@ const ProductCard = ({
       });
       return;
     }
-    
+
     if (newQuantity > maxCartQuantity) {
       setError({
         title: "Limit Reached",
@@ -167,7 +167,7 @@ const ProductCard = ({
             {highestDiscount}% off
           </Text>
         ) : null}
-        <View style={styles.imageContainer}>
+        <View style={[styles.imageContainer, availableStock <= 0 && { opacity: 0.5 }]}>
           <Image source={primaryImage} style={styles.image} />
         </View>
         <Text style={styles.nameText} numberOfLines={2} ellipsizeMode="tail">
@@ -202,16 +202,29 @@ const ProductCard = ({
             </Pressable>
           </View>
         )}
-        <Pressable
-          style={({ pressed }) => [
-            styles.addToCartButton,
-            pressed && styles.addToCartButtonPressed,
-          ]}
-          onPress={handleAddOrViewCart}>
-          <Text style={styles.addToCartText}>
-            {quantityInCart === 0 ? "Add to Cart" : `View cart`}
-          </Text>
-        </Pressable>
+        
+        {availableStock <= 0 && quantityInCart === 0 ? (
+          <Pressable
+            style={({ pressed }) => [
+              styles.addToCartButton,
+              styles.outOfStockButton,
+              pressed && styles.addToCartButtonPressed,
+            ]}
+            onPress={handleAddOrViewCart}>
+            <Text style={[styles.addToCartText, styles.outOfStockButtonText]}>Out of Stock</Text>
+          </Pressable>
+        ) : (
+          <Pressable
+            style={({ pressed }) => [
+              styles.addToCartButton,
+              pressed && styles.addToCartButtonPressed,
+            ]}
+            onPress={handleAddOrViewCart}>
+            <Text style={styles.addToCartText}>
+              {quantityInCart === 0 ? "Add to Cart" : `View cart`}
+            </Text>
+          </Pressable>
+        )}
       </View>
 
       {error && (
@@ -259,13 +272,13 @@ const styles = StyleSheet.create({
     position: "absolute",
     top: 8,
     right: 8,
-    backgroundColor: theme.colors.background,
-    borderRadius: 20,
+    backgroundColor: "#E53935",
+    borderRadius: 4,
     paddingHorizontal: 10,
     lineHeight: 20,
-    color: theme.colors.primary,
+    color: "#FFFFFF",
     fontSize: 10,
-    fontFamily: theme.fonts.medium,
+    fontFamily: theme.fonts.bold,
   },
   imageContainer: {
     justifyContent: "center",
@@ -285,6 +298,7 @@ const styles = StyleSheet.create({
     fontFamily: theme.fonts.bold,
     color: theme.colors.text,
     flex: 1,
+    minHeight: 30,
   },
   priceContainer: {
     flexDirection: "row",
@@ -336,6 +350,11 @@ const styles = StyleSheet.create({
     paddingVertical: 4,
     borderRadius: 20,
   },
+  outOfStockButton: {
+    backgroundColor: theme.colors.background,
+    borderColor: "#9CA3AF",
+    borderWidth: 1,
+  },
   addToCartButtonPressed: {
     opacity: 0.8,
   },
@@ -344,5 +363,8 @@ const styles = StyleSheet.create({
     textAlign: "center",
     fontFamily: theme.fonts.medium,
     fontSize: 10,
+  },
+  outOfStockButtonText: {
+    color: "#9CA3AF",
   },
 });

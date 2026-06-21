@@ -32,6 +32,7 @@ export class OrderService {
   private static readonly PRODUCTS_COLLECTION = "PRODUCTS";
   private static readonly SETTINGS_COLLECTION = "SETTINGS";
   private static readonly NOTIFICATIONS_COLLECTION = "NOTIFICATIONS";
+  private static readonly CUSTOMERS_COLLECTION = "USERS";
 
   private _discountService!: DiscountService;
 
@@ -368,6 +369,10 @@ export class OrderService {
           throw new Error(`Order ID ${orderId} already exists. Please try again.`);
         }
         transaction.set(orderRef, sanitizeForFirestore(newOrder));
+
+        // Update user's latest address
+        const userRef = doc(this.db, OrderService.CUSTOMERS_COLLECTION, orderData.customerId);
+        transaction.update(userRef, { address: orderData.deliveryAddress });
       });
 
       // 8. Notify admin (non-blocking)
@@ -629,7 +634,7 @@ export class OrderService {
 
         if (updates.paymentMethod !== undefined) {
           updateFields.paymentMethod = updates.paymentMethod;
-          
+
           // Revert online payment discount if switching from online to COD
           if (
             updates.paymentMethod.type === "cash_on_delivery" &&
@@ -662,6 +667,11 @@ export class OrderService {
         updateFields.logs = [...(order.logs || []), newLog];
 
         transaction.update(orderRef, updateFields);
+
+        if (updates.deliveryAddress) {
+          const userRef = doc(this.db, OrderService.CUSTOMERS_COLLECTION, order.customerId);
+          transaction.update(userRef, { address: updates.deliveryAddress });
+        }
       });
     } catch (error) {
       logger.error("Error updating order details", error);

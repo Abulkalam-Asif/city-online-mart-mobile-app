@@ -82,13 +82,20 @@ export default function CartScreen() {
 
   // Cart mutations
   const updateCartItemMutation = useUpdateCartItem();
+  const { mutate: updateCartItem } = updateCartItemMutation;
   const removeFromCartMutation = useRemoveFromCart();
+  const { mutate: removeFromCart } = removeFromCartMutation;
   const clearCartMutation = useClearCart();
+
+  const processedStockDataRef = React.useRef<any>(null);
 
   // Monitor stock adjustments and apply them
   useEffect(() => {
     // Prevent this from running globally in the background
     if (!isFocused || !stockData || stockData.adjustments.length === 0) return;
+    if (processedStockDataRef.current === stockData) return;
+    
+    processedStockDataRef.current = stockData;
 
     let messageLines: string[] = [];
     let hasChanges = false;
@@ -97,7 +104,7 @@ export default function CartScreen() {
       if (adj.maxAllowed === 0) {
         // Item is out of stock entirely or deactivated
         messageLines.push(`• ${adj.name} is no longer available and has been removed from your cart.`);
-        removeFromCartMutation.mutate(adj.productId);
+        removeFromCart(adj.productId);
         hasChanges = true;
       } else if (adj.oldQuantity !== adj.maxAllowed) {
         // Quantity needs to be reduced
@@ -106,7 +113,7 @@ export default function CartScreen() {
           : `Only ${adj.maxAllowed} left in stock`;
 
         messageLines.push(`• ${adj.name}: ${reasonStr}. Your cart has been updated.`);
-        updateCartItemMutation.mutate({
+        updateCartItem({
           productId: adj.productId,
           quantity: adj.maxAllowed,
         });
@@ -117,7 +124,7 @@ export default function CartScreen() {
     if (hasChanges && messageLines.length > 0) {
       setStockAdjustmentMessage(`Some items in your cart were adjusted because of limited stock:\n\n${messageLines.join("\n")}`);
     }
-  }, [stockData, removeFromCartMutation, updateCartItemMutation, isFocused]);
+  }, [stockData, removeFromCart, updateCartItem, isFocused]);
 
   const handleQuantityChange = useCallback((productId: string, newQuantity: number) => {
     // Find the actual productId from the transformed item

@@ -44,7 +44,8 @@ export default function CheckoutScreen() {
     paymentMethodId?: string;
   }>();
 
-  const [address, setAddress] = useState(deliveryAddressParam || "");
+  const { user } = useAuth();
+  const [address, setAddress] = useState(deliveryAddressParam || user?.address || "");
   const [showAddressError, setShowAddressError] = useState(false);
 
   // Two-tier selection: type first, then specific account for bank_transfer
@@ -70,7 +71,6 @@ export default function CheckoutScreen() {
   // Hooks
   const { data: paymentMethods, isLoading: loadingPaymentMethods } = useGetAllPaymentMethods();
   const { cart, loading: loadingCart } = useCart();
-  const { user } = useAuth();
   const { showModal } = useModal();
   const placeOrderMutation = usePlaceOrder();
   const updateOrderMutation = useUpdateOrderDetails();
@@ -319,15 +319,15 @@ export default function CheckoutScreen() {
           <View style={styles.paymentSection}>
             {onlineDiscountPercentage > 0 && (
               <View style={[styles.promoBanner, !!selectedMethodType && selectedMethodType !== "cash_on_delivery" && styles.promoBannerSuccess]}>
-                <Ionicons 
-                  name={!!selectedMethodType && selectedMethodType !== "cash_on_delivery" ? "gift" : "pricetag"} 
-                  size={16} 
-                  color="#fff" 
+                <Ionicons
+                  name={!!selectedMethodType && selectedMethodType !== "cash_on_delivery" ? "gift" : "pricetag"}
+                  size={16}
+                  color="#fff"
                 />
                 <Text style={styles.promoText}>
                   {!!selectedMethodType && selectedMethodType !== "cash_on_delivery"
                     ? `Congratulations! You are getting an extra ${onlineDiscountPercentage}% discount!`
-                    : `Get an extra ${onlineDiscountPercentage}% off by paying with JazzCash, Easypaisa, or Bank Transfer!`}
+                    : `Get an extra ${onlineDiscountPercentage}% off by paying in advance with JazzCash, Easypaisa, or Bank Transfer!`}
                 </Text>
               </View>
             )}

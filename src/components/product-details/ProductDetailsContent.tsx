@@ -76,7 +76,7 @@ const ProductDetailsContent = ({
       contentContainerStyle={styles.containerContent}>
       <ProductDetailsTopBg />
 
-      <ProductDetailsTopBar />
+      <ProductDetailsTopBar productId={product.id} />
       <ImagesCarousel images={product.multimedia.images} />
 
       <View style={styles.productNameSection}>
@@ -266,14 +266,13 @@ const styles = StyleSheet.create({
     fontFamily: theme.fonts.regular,
   },
   discountTag: {
-    backgroundColor: theme.colors.tag,
-    fontSize: 8,
-    lineHeight: 16,
-    fontFamily: theme.fonts.semibold,
-    paddingHorizontal: 6,
-    paddingVertical: 2,
-    borderRadius: 10,
-    color: "black",
+    backgroundColor: "#E53935",
+    fontSize: 10,
+    fontFamily: theme.fonts.bold,
+    paddingHorizontal: 10,
+    lineHeight: 20,
+    borderRadius: 4,
+    color: "#fff",
   },
   stockText: {
     fontSize: 14,

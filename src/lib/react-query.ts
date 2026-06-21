@@ -91,6 +91,7 @@ export const queryKeys = {
     // Lists (paginated or infinite scroll)
     lists: () => [...queryKeys.products.all, "list"] as const,
     detail: (productId: string) => [...queryKeys.products.all, "detail", productId] as const,
+    search: (searchTerm: string) => [...queryKeys.products.lists(), "search", searchTerm] as const,
 
     // By special category
     bySpecialCategory: (
