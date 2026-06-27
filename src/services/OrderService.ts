@@ -219,6 +219,7 @@ export class OrderService {
           }
           : undefined,
         subtotal: itemSubtotal,
+        imageUrl: product.multimedia?.images?.[0] || "",
       });
 
       runningSubtotal += itemSubtotal;

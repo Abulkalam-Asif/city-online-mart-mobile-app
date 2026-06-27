@@ -29,7 +29,7 @@ const ProductsSection = ({
 
   const { cart } = useCart();
   const { width: screenWidth } = useWindowDimensions();
-  const productCardWidth = Math.max(150, Math.min(220, screenWidth * 0.4));
+  const productCardWidth = Math.max(150, Math.min(200, screenWidth * 0.4));
 
   const handleViewAll = () => {
     router.push({

@@ -7,7 +7,7 @@ import {
   ActivityIndicator,
   RefreshControl,
 } from "react-native";
-import React, { useCallback, useRef, useState } from "react";
+import React, { useCallback, useRef, useState, useMemo } from "react";
 import { theme } from "@/src/constants/theme";
 import GeneralTopBar from "@/src/components/general/GeneralTopBar";
 import { Image } from "expo-image";
@@ -25,6 +25,7 @@ import { convertTimestamp } from "@/src/utils/firestoreUtils";
 import ErrorBanner from "@/src/components/common/ErrorBanner";
 import ConfirmationModal from "@/src/components/common/ConfirmationModal";
 import PaymentProofModal from "./PaymentProofModal";
+import OrderItemsList, { DisplayItem } from "@/src/components/common/OrderItemsList";
 import {
   getPaymentMethodDisplayName,
   getPaymentMethodImage,
@@ -52,6 +53,24 @@ const OrderDetailsContent = ({ orderId }: OrderDetailsContentProps) => {
     isRefetching,
     isStale,
   } = useGetOrderById(orderId);
+
+  // Map order items to DisplayItem format
+  const displayItems = useMemo<DisplayItem[]>(() => {
+    if (!orderData?.items) return [];
+    return orderData.items.map(item => {
+      const isDiscounted = !!item.appliedDiscount && item.appliedDiscount.percentage > 0;
+      return {
+        id: item.productId,
+        name: item.productName,
+        quantity: item.quantity,
+        unitPrice: isDiscounted ? item.unitPrice - (item.appliedDiscount!.amountPerUnit) : item.unitPrice,
+        totalPrice: item.subtotal,
+        imageUrl: item.imageUrl,
+        originalPrice: isDiscounted ? item.unitPrice : undefined,
+        discountPercentage: isDiscounted ? item.appliedDiscount!.percentage : undefined,
+      };
+    });
+  }, [orderData?.items]);
 
   const paymentImageSource = orderData?.paymentMethod?.type
     ? getPaymentMethodImage(orderData.paymentMethod.type)
@@ -315,6 +334,9 @@ const OrderDetailsContent = ({ orderId }: OrderDetailsContentProps) => {
           </View>
         </View>
 
+        {/* Order Items */}
+        <OrderItemsList items={displayItems} />
+
         {/* Billing Details Section */}
         <View style={styles.section}>
           <View style={styles.billingHeader}>
@@ -424,6 +446,7 @@ const OrderDetailsContent = ({ orderId }: OrderDetailsContentProps) => {
         paymentMethodLabel={paymentMethodLabel}
         paymentStatusLabel={getPaymentStatusLabel()}
         placedOnText={placedOnText}
+        displayItems={displayItems}
       />
 
       <ConfirmationModal
@@ -526,7 +549,7 @@ const styles = StyleSheet.create({
     paddingVertical: 20,
   },
   section: {
-    marginBottom: 20,
+    marginTop: 20,
   },
   sectionTitleText: {
     fontSize: 14,

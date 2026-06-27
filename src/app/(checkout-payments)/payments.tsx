@@ -3,7 +3,7 @@ import { BackHandler, Image, Pressable, ScrollView, StyleSheet, Text, View } fro
 import GeneralTopBar from "@/src/components/general/GeneralTopBar";
 import { theme } from "@/src/constants/theme";
 import { useModal } from "@/src/contexts/ModalContext";
-import { useClearCart } from "@/src/hooks/useCart";
+import { useCart, useClearCart } from "@/src/hooks/useCart";
 import { useSubmitPaymentProof } from "@/src/hooks/useOrders";
 import { useGetAllPaymentMethods } from "@/src/hooks/usePaymentMethods";
 import { useLocalSearchParams, router } from "expo-router";
@@ -12,6 +12,7 @@ import ErrorBanner from "@/src/components/common/ErrorBanner";
 import OrderSuccessModal from "@/src/components/checkout-payment/payments/OrderSuccessModal";
 import UploadScreenshot from "@/src/components/checkout-payment/payments/UploadScreenshot";
 import BillingDetailsSection from "@/src/components/checkout-payment/checkout/BillingDetailsSection";
+import OrderItemsList, { DisplayItem } from "@/src/components/common/OrderItemsList";
 import { PaymentMethod } from "@/src/types/payment_method.types";
 import { Ionicons } from "@expo/vector-icons";
 import { getPaymentMethodDisplayName, getPaymentMethodImage } from "@/src/utils/paymentMethodUtils";
@@ -34,12 +35,32 @@ export default function PaymentsScreen() {
   const { data: paymentMethods, isLoading: loadingPaymentMethods } = useGetAllPaymentMethods();
   const submitProofMutation = useSubmitPaymentProof();
   const clearCartMutation = useClearCart();
+  const { cart } = useCart();
 
   // Find the selected payment method
   const selectedPaymentMethod = useMemo(() => {
     if (!paymentMethods || !paymentMethodId) return null;
     return paymentMethods.find((m: PaymentMethod) => m.id === paymentMethodId) || null;
   }, [paymentMethods, paymentMethodId]);
+
+  // Map cart items for display
+  const displayItems = useMemo<DisplayItem[]>(() => {
+    if (!cart?.items) return [];
+    return cart.items.map(item => {
+      const isDiscounted = item.discountPercentage > 0;
+      const finalPrice = isDiscounted ? item.discountedUnitPrice : item.unitPrice;
+      return {
+        id: item.productId,
+        name: item.productName,
+        quantity: item.quantity,
+        unitPrice: finalPrice,
+        totalPrice: finalPrice * item.quantity,
+        imageUrl: item.imageUrl,
+        originalPrice: isDiscounted ? item.unitPrice : undefined,
+        discountPercentage: isDiscounted ? item.discountPercentage : undefined,
+      };
+    });
+  }, [cart?.items]);
 
   // Is submit disabled?
   const isSubmitDisabled = useMemo(() => {
@@ -167,6 +188,9 @@ export default function PaymentsScreen() {
               </View>
             </View>
           )}
+
+          {/* Order Items */}
+          <OrderItemsList items={displayItems} />
 
           {/* Billing Details */}
           <BillingDetailsSection isOnlinePayment={!!selectedPaymentMethod && selectedPaymentMethod.type !== "cash_on_delivery"} />

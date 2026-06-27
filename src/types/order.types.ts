@@ -90,6 +90,7 @@ export interface OrderItem {
     source: string;
   };
   subtotal: number;
+  imageUrl?: string; // Snapshot of the product's main image at order time
   batchAssignments?: {
     docId: string; // Firestore document ID (used for DB operations)
     batchId: string; // Human-readable batch ID (for display)
