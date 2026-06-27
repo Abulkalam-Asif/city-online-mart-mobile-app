@@ -22,6 +22,7 @@ import { Image } from "expo-image";
 import { getPaymentMethodDisplayName, getPaymentMethodImage } from "@/src/utils/paymentMethodUtils";
 import { queryClient, queryKeys } from "@/src/lib/react-query";
 import { OrderSettings } from "@/src/types";
+import OrderItemsList, { DisplayItem } from "@/src/components/common/OrderItemsList";
 
 // The 4 fixed top-level types shown in dropdown
 const PAYMENT_METHOD_TYPES: { type: PaymentMethodType; label: string }[] = [
@@ -150,6 +151,24 @@ export default function CheckoutScreen() {
       updateOrderMutation.isPending
     );
   }, [isPaymentSelected, isAddressValid, cart, placeOrderMutation.isPending, updateOrderMutation.isPending]);
+
+  const displayItems = useMemo<DisplayItem[]>(() => {
+    if (!cart?.items) return [];
+    return cart.items.map(item => {
+      const isDiscounted = item.discountPercentage > 0;
+      const finalPrice = isDiscounted ? item.discountedUnitPrice : item.unitPrice;
+      return {
+        id: item.productId,
+        name: item.productName,
+        quantity: item.quantity,
+        unitPrice: finalPrice,
+        totalPrice: finalPrice * item.quantity,
+        imageUrl: item.imageUrl,
+        originalPrice: isDiscounted ? item.unitPrice : undefined,
+        discountPercentage: isDiscounted ? item.discountPercentage : undefined,
+      };
+    });
+  }, [cart?.items]);
 
   // Handle successful COD order placement (new order)
   useEffect(() => {
@@ -384,6 +403,7 @@ export default function CheckoutScreen() {
 
           {/* TODO: Expected delivery time calculation is pending */}
           <ExpectedDeliveryTimeSection />
+          <OrderItemsList items={displayItems} />
           <BillingDetailsSection isOnlinePayment={!!selectedMethodType && !isCOD} />
         </ScrollView>
 
