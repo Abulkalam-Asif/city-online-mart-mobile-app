@@ -434,19 +434,18 @@ const OrderDetailsContent = ({ orderId }: OrderDetailsContentProps) => {
       {/* Hidden View for Capture */}
       <HiddenCaptureView
         viewShotRef={viewShotRef}
-        orderId={orderId}
-        subtotal={subtotal}
-        deliveryFee={deliveryFee}
-        totalAmount={totalAmount}
+        orderId={orderData.id}
+        subtotal={orderData.subtotal}
+        deliveryFee={orderData.deliveryFee}
+        totalAmount={orderData.total}
         appliedOrderDiscount={orderData.appliedOrderDiscount}
         appliedOnlinePaymentDiscount={orderData.appliedOnlinePaymentDiscount}
-        getStatusColor={getStatusColor}
         getStatusText={getStatusText}
         deliveryAddress={orderData.deliveryAddress}
         paymentMethodLabel={paymentMethodLabel}
         paymentStatusLabel={getPaymentStatusLabel()}
-        placedOnText={placedOnText}
         displayItems={displayItems}
+        customerPhone={orderData.customerPhone}
       />
 
       <ConfirmationModal

@@ -1,8 +1,7 @@
-import { StyleSheet, Text, View } from "react-native";
+import { StyleSheet, Text, View, Platform } from "react-native";
 import React from "react";
-import { theme } from "@/src/constants/theme";
 import ViewShot from "react-native-view-shot";
-import { MaterialCommunityIcons } from "@expo/vector-icons";
+import { DisplayItem } from "@/src/components/common/OrderItemsList";
 
 type HiddenCaptureViewProps = {
   viewShotRef: React.RefObject<ViewShot | null>;
@@ -12,14 +11,17 @@ type HiddenCaptureViewProps = {
   totalAmount: number;
   appliedOrderDiscount?: { percentage: number; amount: number };
   appliedOnlinePaymentDiscount?: { percentage: number; amount: number };
-  getStatusColor: () => string;
   getStatusText: () => string;
   deliveryAddress: string;
   paymentMethodLabel: string;
   paymentStatusLabel: string;
-  paymentStatusColor?: string;
-  placedOnText: string;
+  displayItems: DisplayItem[];
+  customerPhone?: string;
 };
+
+const DottedLine = () => (
+  <View style={styles.dottedLine} />
+);
 
 const HiddenCaptureView = ({
   viewShotRef,
@@ -29,160 +31,126 @@ const HiddenCaptureView = ({
   totalAmount,
   appliedOrderDiscount,
   appliedOnlinePaymentDiscount,
-  getStatusColor,
   getStatusText,
   deliveryAddress,
   paymentMethodLabel,
   paymentStatusLabel,
-  paymentStatusColor,
-  placedOnText,
+  displayItems,
+  customerPhone,
 }: HiddenCaptureViewProps) => {
   return (
     <>
       <View style={styles.hiddenCaptureContainer}>
-        <ViewShot ref={viewShotRef} options={{ format: "jpg", quality: 0.9 }}>
+        <ViewShot ref={viewShotRef} options={{ format: "jpg", quality: 1 }}>
           <View style={styles.captureView}>
-            {/* Header */}
-            <View style={styles.captureHeader}>
-              <Text style={styles.captureHeaderTitle}>Order Summary</Text>
-              <Text style={styles.captureOrderId}>Order #{orderId}</Text>
+
+            {/* Store Header */}
+            <View style={styles.headerContainer}>
+              <Text style={styles.storeName}>City Online Mart</Text>
             </View>
 
-            {/* Order Details */}
-            <View style={styles.captureSection}>
-              <Text style={styles.captureSectionTitle}>Order details</Text>
-              <View style={styles.captureStatusCard}>
-                <Text style={styles.captureStatusText}>
-                  Order is{" "}
-                  <Text
-                    style={[styles.captureStatusBold, { color: getStatusColor() }]}
-                  >
-                    {getStatusText()}
-                  </Text>
-                </Text>
-                <Text style={styles.captureDeliveryTime}>
-                  Placed on {placedOnText || "N/A"}
-                </Text>
+            {/* Meta Info */}
+            <View style={styles.metaContainer}>
+              <View style={styles.metaRow}>
+                <Text style={styles.posText}>Order: #{orderId}</Text>
+                <Text style={styles.posText}>Date: {new Date().toLocaleDateString()}</Text>
+              </View>
+              <View style={styles.metaRow}>
+                <Text style={styles.posText}>Cust Phone: {customerPhone || "N/A"}</Text>
+                <Text style={styles.posText}>Time: {new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</Text>
               </View>
             </View>
 
-            {/* Delivery Address */}
-            <View style={styles.captureSection}>
-              <Text style={styles.captureSectionTitle}>Delivery Address</Text>
-              <View style={styles.captureCard}>
-                <MaterialCommunityIcons
-                  name="map-marker"
-                  size={18}
-                  color={theme.colors.primary}
-                />
-                <Text style={styles.captureAddressText}>
-                  {deliveryAddress || "N/A"}
-                </Text>
-              </View>
+            <DottedLine />
+
+            {/* Items Table Header */}
+            <View style={styles.tableHeader}>
+              <Text style={[styles.posTextBold, styles.colQty]}>QTY</Text>
+              <Text style={[styles.posTextBold, styles.colItem]}>ITEM</Text>
+              <Text style={[styles.posTextBold, styles.colUnit, styles.textRight]}>UNIT</Text>
+              <Text style={[styles.posTextBold, styles.colTotal, styles.textRight]}>TOTAL</Text>
+              <Text style={[styles.posTextBold, styles.colDisc, styles.textCenter]}>DISC</Text>
+              <Text style={[styles.posTextBold, styles.colFinal, styles.textRight]}>FINAL</Text>
             </View>
 
-            {/* Payment Details */}
-            <View style={styles.captureSection}>
-              <Text style={styles.captureSectionTitle}>Payment details</Text>
-              <View style={styles.captureCard}>
-                <View style={styles.captureRow}>
-                  <Text style={styles.captureLabel}>Total Amount:</Text>
-                  <Text
-                    style={[styles.captureValue, styles.captureTotalAmount]}>
-                    Rs. {totalAmount}
+            <DottedLine />
+
+            {/* Items List */}
+            <View style={styles.itemsContainer}>
+              {displayItems.map((item, index) => (
+                <View key={index} style={styles.itemRow}>
+                  <Text style={[styles.posText, styles.colQty]}>{item.quantity}</Text>
+                  <Text style={[styles.posText, styles.colItem]}>{item.name}</Text>
+                  <Text style={[styles.posText, styles.colUnit, styles.textRight]}>{item.originalPrice || item.unitPrice}</Text>
+                  <Text style={[styles.posText, styles.colTotal, styles.textRight]}>{(item.originalPrice || item.unitPrice) * item.quantity}</Text>
+                  <Text style={[styles.posText, styles.colDisc, styles.textCenter]}>
+                    {item.discountPercentage ? `${item.discountPercentage}%` : '-'}
                   </Text>
+                  <Text style={[styles.posText, styles.colFinal, styles.textRight]}>{item.totalPrice}</Text>
                 </View>
-                <View style={styles.captureRow}>
-                  <Text style={styles.captureLabel}>Payment Method:</Text>
-                  <Text style={styles.captureValue}>{paymentMethodLabel}</Text>
-                </View>
-                <View style={styles.captureRow}>
-                  <Text style={styles.captureLabel}>Payment Status:</Text>
-                  <Text
-                    style={[
-                      styles.captureValue,
-                      paymentStatusColor ? { color: paymentStatusColor } : null,
-                    ]}>
-                    {paymentStatusLabel}
-                  </Text>
-                </View>
-              </View>
+              ))}
             </View>
 
-            {/* Billing Details */}
-            <View style={styles.captureSection}>
-              <Text style={styles.captureSectionTitle}>Billing Details</Text>
-              <View style={styles.captureCard}>
-                <View style={styles.captureRow}>
-                  <View style={styles.captureLeftRow}>
-                    <Text style={styles.captureLabel}>Items Subtotal</Text>
-                  </View>
-                  <Text style={styles.captureValue}>Rs. {subtotal}</Text>
+            <DottedLine />
+
+            {/* Billing Summary */}
+            <View style={styles.summaryContainer}>
+              <View style={styles.summaryRow}>
+                <Text style={styles.posText}>Subtotal:</Text>
+                <Text style={styles.posText}>{subtotal}</Text>
+              </View>
+              <View style={styles.summaryRow}>
+                <Text style={styles.posText}>Delivery Fee:</Text>
+                <Text style={styles.posText}>{deliveryFee}</Text>
+              </View>
+              {appliedOrderDiscount && (
+                <View style={styles.summaryRow}>
+                  <Text style={styles.posText}>Order Discount ({appliedOrderDiscount.percentage}% OFF):</Text>
+                  <Text style={styles.posText}>-{appliedOrderDiscount.amount}</Text>
                 </View>
-
-                {appliedOrderDiscount && (
-                  <>
-                    <View style={styles.captureRow}>
-                      <View style={styles.captureLeftRow}>
-                        <Text style={styles.captureLabel}>Order Discount</Text>
-                        <View style={styles.captureSavingsTag}>
-                          <Text style={styles.captureSavingsText}>{appliedOrderDiscount.percentage}% off</Text>
-                        </View>
-                      </View>
-                      <Text style={styles.captureValue}>-Rs. {appliedOrderDiscount.amount}</Text>
-                    </View>
-                    <View style={styles.captureRow}>
-                      <View style={styles.captureLeftRow}>
-                        <Text style={[styles.captureLabel, { fontFamily: theme.fonts.semibold, color: theme.colors.text }]}>Order Subtotal</Text>
-                      </View>
-                      <Text style={[styles.captureValue, { fontFamily: theme.fonts.bold }]}>Rs. {subtotal - appliedOrderDiscount.amount}</Text>
-                    </View>
-                  </>
-                )}
-
-                {appliedOnlinePaymentDiscount && (
-                  <View style={styles.captureRow}>
-                    <View style={styles.captureLeftRow}>
-                      <Text style={styles.captureLabel}>Online Payment Discount</Text>
-                      <View style={styles.captureSavingsTag}>
-                        <Text style={styles.captureSavingsText}>{appliedOnlinePaymentDiscount.percentage}% off</Text>
-                      </View>
-                    </View>
-                    <Text style={styles.captureValue}>-Rs. {appliedOnlinePaymentDiscount.amount}</Text>
-                  </View>
-                )}
-
-                <View style={styles.captureRow}>
-                  <View style={styles.captureLeftRow}>
-                    <Text style={styles.captureLabel}>Delivery Fee</Text>
-                    {deliveryFee === 0 && (
-                      <View style={styles.captureFreeTag}>
-                        <Text style={styles.captureFreeText}>FREE</Text>
-                      </View>
-                    )}
-                  </View>
-                  {deliveryFee > 0 ? (
-                    <Text style={styles.captureValue}>Rs. {deliveryFee}</Text>
-                  ) : null}
+              )}
+              {appliedOnlinePaymentDiscount && (
+                <View style={styles.summaryRow}>
+                  <Text style={styles.posText}>Online Discount ({appliedOnlinePaymentDiscount.percentage}% OFF):</Text>
+                  <Text style={styles.posText}>-{appliedOnlinePaymentDiscount.amount}</Text>
                 </View>
+              )}
+            </View>
 
-                <View style={styles.captureSeparator} />
+            <DottedLine />
 
-                <View style={styles.captureRow}>
-                  <Text style={styles.captureTotalLabel}>Total Amount</Text>
-                  <Text style={styles.captureTotalValue}>
-                    Rs. {totalAmount}
-                  </Text>
-                </View>
+            {/* Grand Total */}
+            <View style={styles.grandTotalContainer}>
+              <Text style={styles.grandTotalText}>GRAND TOTAL:</Text>
+              <Text style={styles.grandTotalText}>Rs {totalAmount}</Text>
+            </View>
+
+            {/* Extra Details */}
+            <View style={styles.detailsContainer}>
+              <View style={styles.detailsRow}>
+                <Text style={styles.posText}>Order Status:</Text>
+                <Text style={styles.posText}>{getStatusText()}</Text>
+              </View>
+              <View style={styles.detailsRow}>
+                <Text style={styles.posText}>Payment Method:</Text>
+                <Text style={styles.posText}>{paymentMethodLabel}</Text>
+              </View>
+              <View style={styles.detailsRow}>
+                <Text style={styles.posText}>Payment Status:</Text>
+                <Text style={styles.posText}>{paymentStatusLabel}</Text>
+              </View>
+              <View style={[styles.detailsRow, { alignItems: 'flex-start' }]}>
+                <Text style={styles.posText}>Delivery:</Text>
+                <Text style={[styles.posText, { flex: 1, textAlign: 'right', marginLeft: 16 }]}>{deliveryAddress || "N/A"}</Text>
               </View>
             </View>
 
             {/* Footer */}
-            <View style={styles.captureFooter}>
-              <Text style={styles.captureFooterText}>
-                Generated on {new Date().toLocaleDateString()}
-              </Text>
+            <View style={styles.footerContainer}>
+              <Text style={styles.posText}>Thank you and see you again!</Text>
+              <Text style={styles.posText}>Generated on {new Date().toLocaleDateString()} at {new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</Text>
             </View>
+
           </View>
         </ViewShot>
       </View>
@@ -192,6 +160,8 @@ const HiddenCaptureView = ({
 
 export default HiddenCaptureView;
 
+const fontFamily = Platform.OS === 'ios' ? 'Courier' : 'monospace';
+
 const styles = StyleSheet.create({
   hiddenCaptureContainer: {
     position: "absolute",
@@ -199,147 +169,116 @@ const styles = StyleSheet.create({
     top: 0,
   },
   captureView: {
-    width: 400,
+    width: 450, // Slightly wider for table columns
     backgroundColor: "#fff",
-    padding: 24,
-  },
-  captureHeader: {
-    alignItems: "center",
-    marginBottom: 24,
-    paddingBottom: 16,
-    borderBottomWidth: 2,
-    borderBottomColor: theme.colors.primary,
-  },
-  captureHeaderTitle: {
-    fontSize: 24,
-    fontFamily: theme.fonts.bold,
-    color: theme.colors.primary,
-    marginBottom: 4,
-  },
-  captureOrderId: {
-    fontSize: 18,
-    fontFamily: theme.fonts.semibold,
-    color: theme.colors.text_secondary,
-  },
-  captureSection: {
-    marginBottom: 20,
-  },
-  captureSectionTitle: {
-    fontSize: 16,
-    fontFamily: theme.fonts.semibold,
-    color: theme.colors.text,
-    marginBottom: 8,
-  },
-  captureStatusCard: {
-    backgroundColor: theme.colors.background_3,
     padding: 16,
-    borderRadius: 8,
   },
-  captureStatusText: {
-    fontSize: 13,
-    fontFamily: theme.fonts.regular,
-    color: theme.colors.text,
-    marginBottom: 8,
-  },
-  captureStatusBold: {
-    fontFamily: theme.fonts.bold,
-    fontSize: 16,
-  },
-  captureDeliveryTime: {
-    fontSize: 13,
-    fontFamily: theme.fonts.medium,
-    color: theme.colors.text,
-  },
-  captureCard: {
-    backgroundColor: theme.colors.background_3,
-    padding: 16,
-    borderRadius: 8,
-    gap: 12,
-  },
-  captureAddressText: {
-    fontSize: 13,
-    fontFamily: theme.fonts.regular,
-    color: theme.colors.text,
-    lineHeight: 20,
-    flex: 1,
-  },
-  captureRow: {
-    flexDirection: "row",
-    justifyContent: "space-between",
+  headerContainer: {
     alignItems: "center",
+    marginBottom: 16,
   },
-  captureLeftRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 8,
-  },
-  captureLabel: {
-    fontSize: 13,
-    fontFamily: theme.fonts.regular,
-    color: theme.colors.text_secondary,
-  },
-  captureValue: {
-    fontSize: 13,
-    fontFamily: theme.fonts.semibold,
-    color: theme.colors.text,
-  },
-  captureTotalAmount: {
-    fontSize: 16,
-    color: theme.colors.secondary,
-  },
-  captureSavingsTag: {
-    backgroundColor: theme.colors.tag,
-    paddingHorizontal: 8,
-    paddingVertical: 3,
-    borderRadius: 12,
-  },
-  captureSavingsText: {
-    fontSize: 10,
-    fontFamily: theme.fonts.bold,
+  storeName: {
+    fontSize: 22,
+    fontFamily,
+    fontWeight: "bold",
     color: "#000",
   },
-  captureFreeTag: {
-    backgroundColor: theme.colors.primary,
-    paddingHorizontal: 8,
-    paddingVertical: 3,
-    borderRadius: 12,
+  metaContainer: {
+    marginBottom: 8,
   },
-  captureFreeText: {
-    fontSize: 10,
-    fontFamily: theme.fonts.bold,
-    color: "#fff",
+  metaRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    marginBottom: 4,
   },
-  captureStrikethrough: {
-    fontSize: 13,
-    fontFamily: theme.fonts.regular,
-    color: theme.colors.text_secondary,
-    textDecorationLine: "line-through",
-  },
-  captureSeparator: {
-    height: 2,
-    backgroundColor: theme.colors.background,
+  dottedLine: {
+    borderBottomWidth: 1,
+    borderStyle: 'dashed',
+    borderColor: '#000',
     marginVertical: 8,
   },
-  captureTotalLabel: {
-    fontSize: 15,
-    fontFamily: theme.fonts.bold,
-    color: theme.colors.text,
+  tableHeader: {
+    flexDirection: "row",
+    paddingVertical: 4,
   },
-  captureTotalValue: {
-    fontSize: 18,
-    fontFamily: theme.fonts.bold,
-    color: theme.colors.primary,
+  itemsContainer: {
+    paddingVertical: 4,
   },
-  captureFooter: {
-    marginTop: 24,
-    paddingTop: 16,
-    borderTopWidth: 1,
-    borderTopColor: theme.colors.background,
+  itemRow: {
+    flexDirection: "row",
+    marginBottom: 8,
+  },
+  posText: {
+    fontSize: 13,
+    fontFamily,
+    color: "#000",
+  },
+  posTextBold: {
+    fontSize: 13,
+    fontFamily,
+    fontWeight: "bold",
+    color: "#000",
+  },
+  colQty: {
+    width: 30,
+  },
+  colItem: {
+    flex: 1,
+    paddingRight: 8,
+  },
+  colUnit: {
+    width: 45,
+  },
+  colTotal: {
+    width: 55,
+    paddingRight: 4,
+  },
+  colDisc: {
+    width: 45,
+    paddingRight: 4,
+  },
+  colFinal: {
+    width: 55,
+  },
+  textRight: {
+    textAlign: "right",
+  },
+  textCenter: {
+    textAlign: "center",
+  },
+  summaryContainer: {
+    paddingVertical: 4,
+  },
+  summaryRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    marginBottom: 4,
+    paddingLeft: 40, // Indent summary
+  },
+  grandTotalContainer: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    paddingVertical: 8,
+    paddingLeft: 40,
+  },
+  grandTotalText: {
+    fontSize: 16,
+    fontFamily,
+    fontWeight: "bold",
+    color: "#000",
+  },
+  detailsContainer: {
+    marginTop: 8,
+    paddingVertical: 8,
+  },
+  detailsRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    marginBottom: 4,
+  },
+  footerContainer: {
     alignItems: "center",
-  },
-  captureFooterText: {
-    fontSize: 11,
-    fontFamily: theme.fonts.regular,
-    color: theme.colors.text_secondary,
+    marginTop: 16,
+    gap: 4,
   },
 });
