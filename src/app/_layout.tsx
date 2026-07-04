@@ -1,12 +1,12 @@
 import { Stack } from "expo-router";
 import { StatusBar } from "expo-status-bar";
 import React from "react";
+import { View } from "react-native";
 import { SafeAreaProvider, SafeAreaView } from "react-native-safe-area-context";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { QueryClientProvider } from "@tanstack/react-query";
 import useMyFonts from "../hooks/useMyFonts";
 import { queryClient } from "../lib/react-query";
-import { theme } from "../constants/theme";
 import { ModalProvider } from "../contexts/ModalContext";
 import { AuthProvider } from "../contexts/AuthContext";
 import { CartProvider } from "../contexts/CartContext";
@@ -38,17 +38,19 @@ export default function RootLayout() {
           <CartProvider>
             <SafeAreaProvider>
               <ModalProvider>
-                <SafeAreaView style={{ flex: 1 }}>
-                  <StatusBar style="auto" backgroundColor={theme.colors.primary} />
-                  <Stack
-                    screenOptions={{
-                      headerShown: false,
-                    }}>
-                    <Stack.Screen name="index" />
-                    <Stack.Screen name="(tabs)" />
-                  </Stack>
-                  <ModalPortal />
-                  <PushNotificationHandler />
+                <SafeAreaView style={{ flex: 1, backgroundColor: '#3A591E' }}>
+                  <StatusBar style="light" backgroundColor="#3A591E" />
+                  <View style={{ flex: 1, backgroundColor: '#ffffff' }}>
+                    <Stack
+                      screenOptions={{
+                        headerShown: false,
+                      }}>
+                      <Stack.Screen name="index" />
+                      <Stack.Screen name="(tabs)" />
+                    </Stack>
+                    <ModalPortal />
+                    <PushNotificationHandler />
+                  </View>
                 </SafeAreaView>
               </ModalProvider>
             </SafeAreaProvider>
