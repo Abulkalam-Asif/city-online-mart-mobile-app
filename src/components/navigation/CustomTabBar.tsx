@@ -7,6 +7,7 @@ import MaterialCommunityIcons from "@expo/vector-icons/MaterialCommunityIcons";
 import { theme } from "@/src/constants/theme";
 import { Image } from "expo-image";
 import { useCartItemCount } from "@/src/hooks/useCart";
+import Animated, { FadeOut, ZoomIn } from "react-native-reanimated";
 
 const CustomTabBar: React.FC<BottomTabBarProps> = ({
   state,
@@ -40,8 +41,8 @@ const CustomTabBar: React.FC<BottomTabBarProps> = ({
 
   const getTabIcon = (routeName: string, isFocused: boolean) => {
     const color = isFocused
-      ? theme.colors.primary
-      : theme.colors.text_secondary;
+      ? "#ffffff"
+      : "rgba(255, 255, 255, 0.6)";
     const size = 24;
 
     switch (routeName) {
@@ -79,7 +80,7 @@ const CustomTabBar: React.FC<BottomTabBarProps> = ({
   };
 
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, { bottom: 16 }]}>
       {/* Floating WhatsApp Button */}
       {state.routes.some((route) => route.name === "quick-order") && (
         <Pressable
@@ -91,7 +92,7 @@ const CustomTabBar: React.FC<BottomTabBarProps> = ({
           <View style={styles.quickOrderIconContainer}>
             <MaterialCommunityIcons name="whatsapp" size={34} color="white" />
           </View>
-          <Text style={[styles.tabLabel, { color: theme.colors.primary }]}>
+          <Text style={[styles.tabLabel, { color: "#ffffff" }]}>
             Quick Order
           </Text>
         </Pressable>
@@ -139,7 +140,7 @@ const CustomTabBar: React.FC<BottomTabBarProps> = ({
               onPress={onPress}
               style={({ pressed }) => [
                 styles.tabItem,
-                pressed && styles.tabItemPressed,
+                pressed && { opacity: 0.7 },
               ]}>
               <View>
                 {getTabIcon(route.name, isFocused)}
@@ -154,10 +155,18 @@ const CustomTabBar: React.FC<BottomTabBarProps> = ({
               <Text
                 style={[
                   styles.tabLabel,
-                  { color: isFocused ? theme.colors.primary : "#666" },
+                  { color: isFocused ? "#ffffff" : "rgba(255, 255, 255, 0.6)" },
+                  isFocused && { fontFamily: theme.fonts.semibold, fontWeight: "600" },
                 ]}>
                 {label}
               </Text>
+              {isFocused && (
+                <Animated.View
+                  entering={ZoomIn.duration(250)}
+                  exiting={FadeOut.duration(200)}
+                  style={styles.activeIndicator}
+                />
+              )}
             </Pressable>
           );
         })}
@@ -180,7 +189,7 @@ const styles = StyleSheet.create({
   tabBar: {
     maxWidth: 450,
     flexDirection: "row",
-    backgroundColor: "white",
+    backgroundColor: theme.colors.primary,
     height: 70,
     borderRadius: 36,
     shadowColor: "#000",
@@ -198,8 +207,13 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     borderRadius: 40,
   },
-  tabItemPressed: {
-    backgroundColor: "rgba(0, 0, 0, 0.05)",
+  activeIndicator: {
+    position: "absolute",
+    bottom: 10,
+    width: 16,
+    height: 3,
+    borderRadius: 2,
+    backgroundColor: "#ffffff",
   },
   tabLabel: {
     fontSize: 10,
@@ -213,14 +227,17 @@ const styles = StyleSheet.create({
     left: "50%",
     marginLeft: -14,
     zIndex: 60,
+    alignItems: "center",
   },
   quickOrderIconContainer: {
     width: 60,
     height: 60,
     borderRadius: 30,
-    backgroundColor: theme.colors.primary,
+    backgroundColor: "#25D366", // Standard WhatsApp Color
     alignItems: "center",
     justifyContent: "center",
+    borderWidth: 4,
+    borderColor: "#ffffff",
     shadowColor: "#000",
     shadowOffset: {
       width: 0,
