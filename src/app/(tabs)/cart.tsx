@@ -24,14 +24,17 @@ import { useGetValidOrderDiscounts } from "@/src/hooks/useDiscounts";
 import { getBestOrderDiscount } from "@/src/utils/discountUtils";
 import { useIsFocused } from "@react-navigation/native";
 import { Discount, ICartItem } from "@/src/types";
+import { DeliverySlotSelector, SelectedSlotData } from "@/src/components/tabs/cart/DeliverySlotSelector";
 
 
 export default function CartScreen() {
   const { user } = useAuth();
   const isLoggedIn = !!user;
   const [showMinOrderError, setShowMinOrderError] = useState(false);
+  const [showSlotError, setShowSlotError] = useState(false);
   const [stockAdjustmentMessage, setStockAdjustmentMessage] = useState<string | null>(null);
   const [bestOrderDiscount, setBestOrderDiscount] = useState<Discount | null>(null);
+  const [selectedSlot, setSelectedSlot] = useState<SelectedSlotData | null>(null);
 
   // Fetch settings data and valid order discounts
   const { data: orderSettings, isLoading: loadingOrderSettings } = useOrderSettings();
@@ -94,7 +97,7 @@ export default function CartScreen() {
     // Prevent this from running globally in the background
     if (!isFocused || !stockData || stockData.adjustments.length === 0) return;
     if (processedStockDataRef.current === stockData) return;
-    
+
     processedStockDataRef.current = stockData;
 
     let messageLines: string[] = [];
@@ -103,7 +106,7 @@ export default function CartScreen() {
     stockData.adjustments.forEach((adj) => {
       if (adj.maxAllowed === 0) {
         // Item is out of stock entirely or deactivated
-        messageLines.push(`• ${adj.name} is no longer available and has been removed from your cart.`);
+        messageLines.push(`â€¢ ${adj.name} is no longer available and has been removed from your cart.`);
         removeFromCart(adj.productId);
         hasChanges = true;
       } else if (adj.oldQuantity !== adj.maxAllowed) {
@@ -112,7 +115,7 @@ export default function CartScreen() {
           ? `You can only order a maximum of ${adj.maxAllowed} per order`
           : `Only ${adj.maxAllowed} left in stock`;
 
-        messageLines.push(`• ${adj.name}: ${reasonStr}. Your cart has been updated.`);
+        messageLines.push(`â€¢ ${adj.name}: ${reasonStr}. Your cart has been updated.`);
         updateCartItem({
           productId: adj.productId,
           quantity: adj.maxAllowed,
@@ -175,9 +178,16 @@ export default function CartScreen() {
     clearCartMutation.mutate();
   }, [clearCartMutation])
 
-  const { minimumOrderAmount, itemsSubtotal, orderDiscountAmount, finalSubtotal, canProceedToCheckout, isCartEmpty } = useMemo(() => {
+  const { minimumOrderAmount, itemsSubtotal, orderDiscountAmount, finalSubtotal, canProceedToCheckout, isCartEmpty, totalProductDiscounts } = useMemo(() => {
     const minimumOrderAmount = orderSettings?.minimumOrderAmount || 0;
     const itemsSubtotal = cart?.itemsSubtotal || 0;
+
+    // Calculate total product discounts
+    const productDiscounts = (cart?.items || []).reduce((acc, item) => {
+      const discount = (item.unitPrice - item.discountedUnitPrice) * item.quantity;
+      return acc + discount;
+    }, 0);
+
     const orderDiscountAmount = bestOrderDiscount
       ? Math.round((itemsSubtotal * bestOrderDiscount.percentage) / 100)
       : 0;
@@ -189,15 +199,27 @@ export default function CartScreen() {
       finalSubtotal,
       canProceedToCheckout: finalSubtotal >= minimumOrderAmount,
       isCartEmpty: cart?.items.length === 0,
+      totalProductDiscounts: productDiscounts,
     };
-  }, [orderSettings, cart?.itemsSubtotal, cart?.items.length, bestOrderDiscount]);
+  }, [orderSettings, cart?.itemsSubtotal, cart?.items, bestOrderDiscount]);
 
 
   const handleProceed = useCallback(() => {
     if (!isLoggedIn) { router.push("/login"); return; }
     if (!canProceedToCheckout) { setShowMinOrderError(true); return; }
-    router.push("/checkout");
-  }, [isLoggedIn, canProceedToCheckout]);
+    if (!selectedSlot) { setShowSlotError(true); return; }
+
+    router.push({
+      pathname: "/checkout",
+      params: {
+        deliverySlotDate: selectedSlot.date,
+        deliverySlotId: selectedSlot.id,
+        deliverySlotName: selectedSlot.name,
+        deliverySlotStartTime: selectedSlot.startTime,
+        deliverySlotEndTime: selectedSlot.endTime,
+      }
+    });
+  }, [isLoggedIn, canProceedToCheckout, selectedSlot]);
 
   if (loadingCart || loadingOrderSettings || loadingValidOrderDiscounts || loadingStock) {
     return (
@@ -219,76 +241,61 @@ export default function CartScreen() {
           <EmptyCart />
         ) : (
           <>
-            <View style={styles.infoContainer}>
-              <Text style={styles.itemsCountText}>{cart?.items.length} items</Text>
-              <View style={styles.buttonRow}>
-                <Pressable
-                  onPress={handleClearCart}
-                  disabled={isCartPending}
-                  style={({ pressed }) => [
-                    pressed && styles.clearCartButtonPressed,
-                  ]}>
-                  <Text style={[styles.clearCartText]}>Clear All</Text>
-                </Pressable>
+            <View style={styles.sectionsWrapper}>
+              <View style={styles.deliverySection}>
+                <DeliverySlotSelector
+                  onSelectSlot={(slot) => {
+                    setSelectedSlot(slot);
+                    if (slot) setShowSlotError(false);
+                  }}
+                  selectedSlot={selectedSlot}
+                />
+              </View>
+
+              <View style={styles.itemsSection}>
+                <View style={styles.itemsCountBadge}>
+                  <Text style={styles.itemsCountBadgeText}>{cart?.items.length} Items</Text>
+                </View>
+                <FlatList
+                  style={styles.container}
+                  contentContainerStyle={styles.containerContent}
+                  data={cart?.items}
+                  renderItem={renderCartItem}
+                  keyExtractor={keyExtractor}
+                  showsVerticalScrollIndicator={false}
+                  extraData={stockData} // Forces re-render of items when fresh stock data arrives
+                />
               </View>
             </View>
-            <FlatList
-              style={styles.container}
-              contentContainerStyle={styles.containerContent}
-              data={cart?.items}
-              renderItem={renderCartItem}
-              keyExtractor={keyExtractor}
-              showsVerticalScrollIndicator={false}
-              extraData={stockData} // Forces re-render of items when fresh stock data arrives
-            />
             <View style={styles.summaryContainer}>
-              <View style={styles.minimumOrderRow}>
-                <Text style={styles.minimumOrderText}>Minimum Order Subtotal: </Text>
-                <Text
-                  style={[styles.minimumOrderText, styles.minimumOrderValueText]}>
-                  {minimumOrderAmount}
-                </Text>
-              </View>
-
-              <View style={styles.amountRow}>
-                <Text style={styles.amountLabel}>Items Subtotal</Text>
-                <Text style={styles.amountValue}>Rs. {cart?.itemsSubtotal || 0}</Text>
-              </View>
-
-              {bestOrderDiscount && (
-                <View style={styles.amountRow}>
-                  <View style={styles.discountLabelContainer}>
-                    <Text style={styles.discountLabel}>
-                      Order Discount
-                    </Text>
-                    <Text style={styles.discountTag}>
-                      {bestOrderDiscount.percentage}% off
-                    </Text>
+              <View style={[styles.amountRow, styles.totalRow]}>
+                <Text style={styles.totalLabel}>Total: <Text style={styles.totalValue}>Rs. {finalSubtotal}</Text></Text>
+                {(totalProductDiscounts + orderDiscountAmount > 0) && (
+                  <View style={styles.bachatBadge}>
+                    <Text style={styles.bachatText}>Discount Rs. {totalProductDiscounts + orderDiscountAmount}</Text>
                   </View>
-                  <Text style={styles.discountValue}>Rs. {orderDiscountAmount}</Text>
+                )}
+              </View>
+
+              {!canProceedToCheckout && (
+                <View style={styles.minimumOrderRow}>
+                  <Text style={styles.minimumOrderText}>Add Rs. {minimumOrderAmount - finalSubtotal} more to meet minimum order</Text>
                 </View>
               )}
-
-              <View style={[styles.amountRow, styles.totalRow]}>
-                <Text style={styles.totalLabel}>Order Subtotal</Text>
-                <Text style={styles.totalValue}>Rs. {finalSubtotal}</Text>
-              </View>
 
               <Pressable
                 style={({ pressed }) => [
                   styles.proceedButton,
                   pressed && styles.proceedButtonPressed,
+                  (!canProceedToCheckout || !selectedSlot) && isLoggedIn && styles.proceedButtonDisabled
                 ]}
-                disabled={isCartPending}
+                disabled={isCartPending || (isLoggedIn && !canProceedToCheckout)}
                 onPress={handleProceed}
               >
                 <Text
                   style={styles.proceedButtonText}>
                   {isLoggedIn
-                    ? canProceedToCheckout
-                      ? "Proceed to Checkout"
-                      : `Add Rs. ${minimumOrderAmount - finalSubtotal
-                      } more to proceed`
+                    ? "Proceed to Checkout"
                     : "Login / Create Account"}
                 </Text>
               </Pressable>
@@ -297,12 +304,21 @@ export default function CartScreen() {
         )}
       </View>
 
-      {/* Error Banner */}
+      {/* Error Banner for minimum order */}
       {showMinOrderError && (
         <ErrorBanner
           title="Minimum Order Required"
           message={`Please add Rs. ${minimumOrderAmount - finalSubtotal} more worth of items to place your order.`}
           onDismiss={() => setShowMinOrderError(false)}
+        />
+      )}
+
+      {/* Error Banner for missing slot */}
+      {showSlotError && (
+        <ErrorBanner
+          title="Delivery Slot Required"
+          message={`Please select a delivery time slot before proceeding to checkout.`}
+          onDismiss={() => setShowSlotError(false)}
         />
       )}
 
@@ -325,6 +341,46 @@ const styles = StyleSheet.create({
   },
   container: {
     flex: 1,
+  },
+  sectionsWrapper: {
+    flex: 1,
+    paddingHorizontal: 8,
+    gap: 16
+  },
+  deliverySection: {
+    borderWidth: 1,
+    borderColor: "#e0e0e0",
+    borderRadius: 12,
+    backgroundColor: "#fff",
+    paddingBottom: 4,
+  },
+  itemsSection: {
+    flex: 1,
+    borderWidth: 1,
+    borderColor: "#e0e0e0",
+    borderRadius: 12,
+    backgroundColor: "#fff",
+    position: "relative",
+    paddingTop: 16,
+    paddingBottom: 8,
+    marginBottom: 8
+  },
+  itemsCountBadge: {
+    position: "absolute",
+    top: -12,
+    left: 20,
+    backgroundColor: "#fff",
+    borderWidth: 1,
+    borderColor: "#e0e0e0",
+    borderRadius: 16,
+    paddingHorizontal: 12,
+    paddingVertical: 4,
+    zIndex: 1,
+  },
+  itemsCountBadgeText: {
+    fontSize: 12,
+    fontFamily: theme.fonts.bold,
+    color: theme.colors.primary,
   },
 
   infoContainer: {
@@ -416,10 +472,9 @@ const styles = StyleSheet.create({
   },
 
   totalRow: {
-    borderTopWidth: 1,
-    borderTopColor: "#f0f0f0",
-    paddingTop: 8,
-    marginTop: 4,
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
   },
   totalLabel: {
     fontSize: 18,
@@ -431,12 +486,26 @@ const styles = StyleSheet.create({
     fontFamily: theme.fonts.bold,
     color: theme.colors.primary,
   },
+  bachatBadge: {
+    backgroundColor: '#ffebeb',
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 4,
+  },
+  bachatText: {
+    fontSize: 11,
+    fontFamily: theme.fonts.semibold,
+    color: '#e53935',
+  },
   proceedButton: {
     backgroundColor: theme.colors.primary,
     paddingVertical: 10,
     borderRadius: 30,
     alignItems: "center",
     justifyContent: "center",
+  },
+  proceedButtonDisabled: {
+    opacity: 0.5,
   },
   proceedButtonText: {
     fontSize: 16,

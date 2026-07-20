@@ -129,14 +129,14 @@ const styles = StyleSheet.create({
   itemCard: {
     flexDirection: "row",
     backgroundColor: "#fff",
-    paddingVertical: 10,
-    paddingHorizontal: 20,
+    paddingVertical: 8,
+    paddingHorizontal: 12,
     marginBottom: 1,
     alignItems: "center",
   },
   imageContainer: {
-    width: 60,
-    height: 60,
+    width: 50,
+    height: 50,
     borderRadius: 8,
     borderWidth: 1,
     borderColor: theme.colors.background,
@@ -145,8 +145,8 @@ const styles = StyleSheet.create({
     marginRight: 8,
   },
   productImage: {
-    width: 50,
-    height: 50,
+    width: 40,
+    height: 40,
   },
   detailsContainer: {
     flex: 1,
@@ -156,25 +156,25 @@ const styles = StyleSheet.create({
     opacity: 0.7
   },
   productNameText: {
-    fontSize: 12,
+    fontSize: 11,
     fontFamily: theme.fonts.semibold,
     color: "#333",
-    lineHeight: 20,
-    marginBottom: 8,
+    lineHeight: 16,
+    marginBottom: 4,
   },
   priceRow: {
     flexDirection: "row",
     alignItems: "center",
     flexWrap: "wrap",
-    columnGap: 10,
+    columnGap: 8,
   },
   discountedUnitPriceText: {
-    fontSize: 13,
+    fontSize: 12,
     fontFamily: theme.fonts.semibold,
     color: theme.colors.secondary,
   },
   unitPriceText: {
-    fontSize: 11,
+    fontSize: 10,
     color: "red",
     textDecorationLine: "line-through",
     fontFamily: theme.fonts.regular,
@@ -197,8 +197,8 @@ const styles = StyleSheet.create({
     borderColor: theme.colors.background,
   },
   quantityButton: {
-    width: 36,
-    height: 36,
+    width: 30,
+    height: 30,
     justifyContent: "center",
     alignItems: "center",
     borderRadius: 6,
@@ -207,11 +207,11 @@ const styles = StyleSheet.create({
     backgroundColor: theme.colors.background,
   },
   quantityText: {
-    fontSize: 16,
+    fontSize: 14,
     fontFamily: theme.fonts.semibold,
     color: "#333",
-    minWidth: 30,
+    minWidth: 24,
     textAlign: "center",
-    paddingHorizontal: 8,
+    paddingHorizontal: 6,
   },
 });

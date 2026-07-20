@@ -1,7 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { settingsService } from "../services";
 import { queryKeys } from "../lib/react-query";
-import { AuthSettings, OrderSettings } from "../types";
+import { AuthSettings, OrderSettings, DeliverySettings } from "../types";
 
 /**
  * Hook to get authentication settings (e.g. requireOTP)
@@ -21,6 +21,17 @@ export function useOrderSettings() {
   return useQuery<OrderSettings | null>({
     queryKey: queryKeys.settings.byDomain("order"),
     queryFn: () => settingsService.getSettings<OrderSettings>("order"),
+    staleTime: 1000 * 60 * 30, // 30 minutes for mobile optimization
+  });
+}
+
+/**
+ * Hook to get delivery slots settings
+ */
+export function useDeliverySettings() {
+  return useQuery<DeliverySettings | null>({
+    queryKey: queryKeys.settings.byDomain("delivery_slots"),
+    queryFn: () => settingsService.getSettings<DeliverySettings>("delivery_slots"),
     staleTime: 1000 * 60 * 30, // 30 minutes for mobile optimization
   });
 }
