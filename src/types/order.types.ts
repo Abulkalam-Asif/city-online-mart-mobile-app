@@ -57,6 +57,13 @@ export interface Order {
   // Delivery
   deliveryAddress: string;
   deliveryNotes?: string;
+  deliverySlot?: {
+    date: string;
+    id: string;
+    name: string;
+    startTime: string;
+    endTime: string;
+  };
 
   // Status
   status: OrderStatus;

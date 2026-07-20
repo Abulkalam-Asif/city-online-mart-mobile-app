@@ -4,6 +4,7 @@ import { CartService } from "./CartService";
 import { DiscountService } from "./DiscountService";
 import { PaymentMethodService } from "./PaymentMethodService";
 import { SettingsService } from "./SettingsService";
+import { DeliverySlotService } from "./DeliverySlotService";
 import { OrderService } from "./OrderService";
 import { ProductService } from "./ProductService";
 
@@ -15,12 +16,13 @@ const discountService = new DiscountService(db);
 const paymentMethodService = new PaymentMethodService(db);
 const orderService = new OrderService(db, storage);
 const productService = new ProductService(db);
+const deliverySlotService = new DeliverySlotService(db);
 
 // Wire circular dependency (matches admin-side pattern)
 orderService.discountService = discountService;
 
 // Export service instances
-export { productService, authService, settingsService, cartService, discountService, paymentMethodService, orderService };
+export { productService, authService, settingsService, cartService, discountService, paymentMethodService, orderService, deliverySlotService };
 
 /**
  * Note: Existing services (cartService, productService, etc.) are currently 

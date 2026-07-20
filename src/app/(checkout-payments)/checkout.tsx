@@ -38,11 +38,21 @@ export default function CheckoutScreen() {
     deliveryAddress: deliveryAddressParam,
     paymentMethodType: paymentMethodTypeParam,
     paymentMethodId: paymentMethodIdParam,
+    deliverySlotDate,
+    deliverySlotId,
+    deliverySlotName,
+    deliverySlotStartTime,
+    deliverySlotEndTime,
   } = useLocalSearchParams<{
     existingOrderId?: string;
     deliveryAddress?: string;
     paymentMethodType?: string;
     paymentMethodId?: string;
+    deliverySlotDate?: string;
+    deliverySlotId?: string;
+    deliverySlotName?: string;
+    deliverySlotStartTime?: string;
+    deliverySlotEndTime?: string;
   }>();
 
   const { user } = useAuth();
@@ -280,6 +290,13 @@ export default function CheckoutScreen() {
         })),
         paymentMethod: selectedPaymentMethod,
         deliveryAddress: address,
+        deliverySlot: deliverySlotDate ? {
+          date: deliverySlotDate,
+          id: deliverySlotId as string,
+          name: deliverySlotName as string,
+          startTime: deliverySlotStartTime as string,
+          endTime: deliverySlotEndTime as string,
+        } : undefined,
       });
     }
   }, [selectedPaymentMethod, cart, user, address, existingOrderId, placeOrderMutation, updateOrderMutation]);

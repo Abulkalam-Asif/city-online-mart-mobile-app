@@ -276,15 +276,22 @@ export class OrderService {
       items: { productId: string; quantity: number }[];
       paymentMethod: Order["paymentMethod"];
       deliveryAddress: string;
+      deliverySlot?: Order["deliverySlot"];
     }
   ): Promise<string> {
     try {
-      // 1. Fetch Order Settings (1 read)
+      // 1. Fetch Order and Delivery Settings (2 reads)
       const settingsRef = doc(this.db, OrderService.SETTINGS_COLLECTION, "order");
-      const settingsSnap = await getDoc(settingsRef);
+      const deliverySettingsRef = doc(this.db, OrderService.SETTINGS_COLLECTION, "delivery_slots");
+      const [settingsSnap, deliverySettingsSnap] = await Promise.all([getDoc(settingsRef), getDoc(deliverySettingsRef)]);
+      
       const orderSettings: OrderSettings = settingsSnap.exists()
         ? (settingsSnap.data() as OrderSettings)
         : { deliveryFee: 0, cancellationTimeLimitMinutes: 30, minimumOrderAmount: 0, maxCartQuantityPerProduct: 50, onlinePaymentDiscountPercentage: 0 };
+
+      const cutoffTimeMinutes = deliverySettingsSnap.exists()
+        ? (deliverySettingsSnap.data()?.cutoffTimeMinutes || 30)
+        : 30;
 
       // 2. Recalculate pricing server-side (N product reads + 1 discount query)
       const pricing = await this.calculateOrderPricing(orderData.items);
@@ -354,6 +361,7 @@ export class OrderService {
         paymentMethod: orderData.paymentMethod,
         paymentStatus: "pending",
         deliveryAddress: orderData.deliveryAddress,
+        deliverySlot: orderData.deliverySlot,
         status: "pending",
         logs: [
           this.createLog("Order Created", "pending", "system"),
@@ -369,6 +377,47 @@ export class OrderService {
         if (existing.exists()) {
           throw new Error(`Order ID ${orderId} already exists. Please try again.`);
         }
+
+        // --- DELIVERY SLOT VALIDATION & UPDATES ---
+        if (orderData.deliverySlot && orderData.deliverySlot.id !== "fast-delivery") {
+          const slotRef = doc(this.db, "DELIVERY_SLOTS", orderData.deliverySlot.date);
+          const slotDoc = await transaction.get(slotRef);
+          
+          if (!slotDoc.exists()) {
+            throw new Error("Selected delivery date is no longer available.");
+          }
+          
+          const slotsData = slotDoc.data();
+          const slots = slotsData?.slots || [];
+          const slotIndex = slots.findIndex((s: any) => s.id === orderData.deliverySlot!.id);
+          
+          if (slotIndex === -1) {
+            throw new Error("Selected delivery slot is no longer available.");
+          }
+          
+          const slot = slots[slotIndex];
+          
+          // Limit validation
+          if (slot.currentOrders >= slot.limit) {
+            throw new Error("Selected delivery slot is fully booked. Please select another time.");
+          }
+
+          // Cutoff time validation (before OPENING time)
+          const now = new Date();
+          const [hours, minutes] = slot.startTime.split(':').map(Number);
+          const slotStartTimeDate = new Date(`${orderData.deliverySlot.date}T00:00:00`);
+          slotStartTimeDate.setHours(hours, minutes, 0, 0);
+
+          const cutoffDate = new Date(slotStartTimeDate.getTime() - cutoffTimeMinutes * 60000);
+          if (now >= cutoffDate) {
+            throw new Error(`The cutoff time for this slot has passed (${cutoffTimeMinutes} mins before opening). Please select another time.`);
+          }
+          
+          // Increment currentOrders
+          slots[slotIndex].currentOrders += 1;
+          transaction.update(slotRef, { slots });
+        }
+
         transaction.set(orderRef, sanitizeForFirestore(newOrder));
 
         // Update user's latest address
@@ -524,6 +573,21 @@ export class OrderService {
           updatedAt: Timestamp.now(),
           logs: [...(order.logs || []), newLog],
         });
+
+        // Decrement delivery slot currentOrders
+        if (order.deliverySlot && order.deliverySlot.id !== "fast-delivery") {
+          const slotRef = doc(this.db, "DELIVERY_SLOTS", order.deliverySlot.date);
+          const slotDoc = await transaction.get(slotRef);
+          if (slotDoc.exists()) {
+            const slotsData = slotDoc.data();
+            const slots = slotsData?.slots || [];
+            const slotIndex = slots.findIndex((s: any) => s.id === order.deliverySlot!.id);
+            if (slotIndex !== -1 && slots[slotIndex].currentOrders > 0) {
+              slots[slotIndex].currentOrders -= 1;
+              transaction.update(slotRef, { slots });
+            }
+          }
+        }
       });
     } catch (error) {
       logger.error("Error cancelling order", error);

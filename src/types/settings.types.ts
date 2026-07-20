@@ -10,4 +10,11 @@ export interface OrderSettings {
   onlinePaymentDiscountPercentage: number;
 }
 
-export type SettingsType = "auth" | "order";
+export interface DeliverySettings {
+  cutoffTimeMinutes: number;
+  expressDeliveryBadgeText: string;
+  expressDeliveryButtonText: string;
+  expressDeliveryTagline: string;
+}
+
+export type SettingsType = "auth" | "order" | "delivery_slots";
