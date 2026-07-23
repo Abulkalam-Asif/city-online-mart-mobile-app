@@ -145,17 +145,16 @@ export class AuthService {
    */
   async getCurrentUserSession(): Promise<AuthUser | null> {
     try {
-      // 1. Storage
-      const storedUser = await this.getStoredUser();
-      if (storedUser) return storedUser;
-
-      // 2. Firebase
+      // 1. Firebase User check takes precedence if active
       const firebaseUser = this.auth.currentUser;
       if (firebaseUser) {
-        return await this.getAuthUser(firebaseUser);
+        const authUser = await this.getAuthUser(firebaseUser);
+        if (authUser) return authUser;
       }
 
-      return null;
+      // 2. Storage fallback
+      const storedUser = await this.getStoredUser();
+      return storedUser;
     } catch (error) {
       logger.error("getCurrentUserSession", error);
       return null;
@@ -191,8 +190,25 @@ export class AuthService {
 
       await this.setStoredUser(authUser);
       return authUser;
-    } catch (error) {
-      logger.error("getAuthUser", error);
+    } catch (error: any) {
+      const errorMessage = String(error?.message || "");
+      const errorCode = String(error?.code || "");
+
+      const isInvalidRefreshToken =
+        errorCode === "auth/invalid-refresh" ||
+        errorCode === "auth/invalid-refresh-token" ||
+        errorCode === "auth/user-token-expired" ||
+        errorCode === "auth/user-not-found" ||
+        errorCode === "auth/invalid-user-token" ||
+        errorMessage.includes("INVALID_REFRESH_TOKEN") ||
+        errorMessage.includes("invalid-refresh");
+
+      if (isInvalidRefreshToken) {
+        logger.warn("getAuthUser", "Invalid or expired refresh token detected. Auto signing out stale session.");
+        await this.signOut().catch(() => {});
+      } else {
+        logger.error("getAuthUser", error);
+      }
       return null;
     }
   }
