@@ -1,6 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useState } from "react";
 import {
-  Alert,
   FlatList,
   Pressable,
   StyleSheet,
@@ -18,7 +17,7 @@ import Loading from "@/src/components/common/Loading";
 import { useRefreshCartItemsStock } from "@/src/hooks/useProducts";
 
 import { useAuth } from "@/src/contexts/AuthContext";
-import { useOrderSettings } from "@/src/hooks/useSettings";
+import { useOrderSettings, useDeliverySettings } from "@/src/hooks/useSettings";
 import ErrorBanner from "@/src/components/common/ErrorBanner";
 import { useGetValidOrderDiscounts } from "@/src/hooks/useDiscounts";
 import { getBestOrderDiscount } from "@/src/utils/discountUtils";
@@ -38,6 +37,7 @@ export default function CartScreen() {
 
   // Fetch settings data and valid order discounts
   const { data: orderSettings, isLoading: loadingOrderSettings } = useOrderSettings();
+  const { data: deliverySettings } = useDeliverySettings();
   const { data: validOrderDiscounts, isLoading: loadingValidOrderDiscounts } = useGetValidOrderDiscounts();
 
   // Fetch cart data
@@ -217,6 +217,8 @@ export default function CartScreen() {
         deliverySlotName: selectedSlot.name,
         deliverySlotStartTime: selectedSlot.startTime,
         deliverySlotEndTime: selectedSlot.endTime,
+        deliverySlotStartTimestamp: selectedSlot.slotStartTimestamp,
+        deliverySlotExpressDurationMinutes: selectedSlot.expressDurationMinutes,
       }
     });
   }, [isLoggedIn, canProceedToCheckout, selectedSlot]);
@@ -269,7 +271,14 @@ export default function CartScreen() {
             </View>
             <View style={styles.summaryContainer}>
               <View style={[styles.amountRow, styles.totalRow]}>
-                <Text style={styles.totalLabel}>Total: <Text style={styles.totalValue}>Rs. {finalSubtotal}</Text></Text>
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                  <Text style={styles.totalLabel}>Total: <Text style={styles.totalValue}>Rs. {finalSubtotal}</Text></Text>
+                  {selectedSlot?.id === "fast-delivery" && (
+                    <View style={styles.expressTag}>
+                      <Text style={styles.expressTagText}>+⚡ Rs. {deliverySettings?.expressDeliveryFee ?? 250}</Text>
+                    </View>
+                  )}
+                </View>
                 {(totalProductDiscounts + orderDiscountAmount > 0) && (
                   <View style={styles.bachatBadge}>
                     <Text style={styles.bachatText}>Discount Rs. {totalProductDiscounts + orderDiscountAmount}</Text>
@@ -521,9 +530,17 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     alignItems: "center",
   },
-  errorText: {
-    fontSize: 16,
-    fontFamily: theme.fonts.medium,
-    color: "red",
+  expressTag: {
+    backgroundColor: theme.colors.express_bg,
+    borderColor: theme.colors.express_border,
+    borderWidth: 1,
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 4,
+  },
+  expressTagText: {
+    fontSize: 11,
+    fontFamily: theme.fonts.bold,
+    color: theme.colors.express_text,
   },
 });

@@ -3,6 +3,20 @@ import React from "react";
 import ViewShot from "react-native-view-shot";
 import { DisplayItem } from "@/src/components/common/OrderItemsList";
 
+import { formatSlotTimeRange } from "@/src/utils/slotUtils";
+import { format, parse } from "date-fns";
+
+const formatSlotDate = (dateStr?: string) => {
+  if (!dateStr || dateStr === "fast") return "";
+  try {
+    const parsed = parse(dateStr, "yyyy-MM-dd", new Date());
+    if (isNaN(parsed.getTime())) return dateStr;
+    return format(parsed, "EEE, d MMM yyyy");
+  } catch {
+    return dateStr;
+  }
+};
+
 type HiddenCaptureViewProps = {
   viewShotRef: React.RefObject<ViewShot | null>;
   orderId: string;
@@ -13,6 +27,14 @@ type HiddenCaptureViewProps = {
   appliedOnlinePaymentDiscount?: { percentage: number; amount: number };
   getStatusText: () => string;
   deliveryAddress: string;
+  deliverySlot?: {
+    date: string;
+    id: string;
+    name: string;
+    startTime: string;
+    endTime: string;
+    expressDurationMinutes?: number;
+  };
   paymentMethodLabel: string;
   paymentStatusLabel: string;
   displayItems: DisplayItem[];
@@ -33,6 +55,7 @@ const HiddenCaptureView = ({
   appliedOnlinePaymentDiscount,
   getStatusText,
   deliveryAddress,
+  deliverySlot,
   paymentMethodLabel,
   paymentStatusLabel,
   displayItems,
@@ -100,7 +123,7 @@ const HiddenCaptureView = ({
                 <Text style={styles.posText}>{subtotal}</Text>
               </View>
               <View style={styles.summaryRow}>
-                <Text style={styles.posText}>Delivery Fee:</Text>
+                <Text style={styles.posText}>{deliverySlot?.id === "fast-delivery" ? "Express Delivery Fee:" : "Delivery Fee:"}</Text>
                 <Text style={styles.posText}>{deliveryFee}</Text>
               </View>
               {appliedOrderDiscount && (
@@ -140,9 +163,19 @@ const HiddenCaptureView = ({
                 <Text style={styles.posText}>{paymentStatusLabel}</Text>
               </View>
               <View style={[styles.detailsRow, { alignItems: 'flex-start' }]}>
-                <Text style={styles.posText}>Delivery:</Text>
+                <Text style={styles.posText}>Delivery Address:</Text>
                 <Text style={[styles.posText, { flex: 1, textAlign: 'right', marginLeft: 16 }]}>{deliveryAddress || "N/A"}</Text>
               </View>
+              {deliverySlot && (
+                <View style={styles.detailsRow}>
+                  <Text style={styles.posText}>Delivery Slot:</Text>
+                  <Text style={styles.posText}>
+                    {deliverySlot.id === "fast-delivery"
+                      ? `⚡ Express (Within ${deliverySlot.expressDurationMinutes || 45}m)`
+                      : `${formatSlotDate(deliverySlot.date)} (${formatSlotTimeRange(deliverySlot.startTime, deliverySlot.endTime)})`}
+                  </Text>
+                </View>
+              )}
             </View>
 
             {/* Footer */}

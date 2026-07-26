@@ -14,5 +14,6 @@ export interface DailyDeliverySlotDoc {
 }
 
 export interface DeliverySlotTemplate {
+  mobileDisplayDays?: number;
   defaultSlots: Omit<DeliverySlot, "currentOrders">[];
 }
