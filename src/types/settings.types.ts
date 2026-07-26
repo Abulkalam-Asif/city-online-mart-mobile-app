@@ -16,6 +16,7 @@ export interface DeliverySettings {
   expressDeliveryEnabled: boolean;
   expressDeliveryDurationMinutes: number;
   expressDeliveryFee: number;
+  expressDeliveryTitle?: string;
   expressDeliveryBadgeText: string;
   expressDeliveryButtonText: string;
   expressDeliveryTagline: string;
