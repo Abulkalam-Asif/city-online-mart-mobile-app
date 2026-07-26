@@ -10,4 +10,9 @@ export const logger = {
       console.log(`[Info] ${message}`);
     }
   },
+  warn: (context: string, error?: unknown) => {
+    if (__DEV__) {
+      console.warn(`[Warn] ${context}:`, error);
+    }
+  },
 };

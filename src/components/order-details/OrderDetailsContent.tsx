@@ -30,6 +30,8 @@ import {
   getPaymentMethodDisplayName,
   getPaymentMethodImage,
 } from "@/src/utils/paymentMethodUtils";
+import { format, parse } from "date-fns";
+import { formatSlotTimeRange } from "@/src/utils/slotUtils";
 import { useFocusEffect } from "@react-navigation/native";
 
 type OrderDetailsContentProps = {
@@ -301,6 +303,32 @@ const OrderDetailsContent = ({ orderId }: OrderDetailsContentProps) => {
           </View>
         </View>
 
+        {/* Delivery Schedule Section */}
+        {orderData.deliverySlot && (
+          <View style={styles.section}>
+            <Text style={styles.sectionTitleText}>Delivery Schedule</Text>
+            <View style={styles.deliverySlotCard}>
+              <MaterialCommunityIcons
+                name="clock-outline"
+                size={20}
+                color={theme.colors.primary}
+              />
+              <View style={styles.deliverySlotInfo}>
+                <Text style={styles.slotNameText}>
+                  {orderData.deliverySlot.id === "fast-delivery"
+                    ? "⚡ Express Delivery"
+                    : orderData.deliverySlot.name}
+                </Text>
+                <Text style={styles.slotTimeText}>
+                  {orderData.deliverySlot.id === "fast-delivery"
+                    ? `Delivered within ${orderData.deliverySlot.expressDurationMinutes || 45} Minutes`
+                    : `${orderData.deliverySlot.date && orderData.deliverySlot.date !== "fast" ? format(parse(orderData.deliverySlot.date, "yyyy-MM-dd", new Date()), "EEEE, d MMMM yyyy") : ""} (${formatSlotTimeRange(orderData.deliverySlot.startTime, orderData.deliverySlot.endTime)})`}
+                </Text>
+              </View>
+            </View>
+          </View>
+        )}
+
         {/* Payment Details Section */}
         <View style={styles.section}>
           <Text style={styles.sectionTitleText}>Payment details</Text>
@@ -409,7 +437,7 @@ const OrderDetailsContent = ({ orderId }: OrderDetailsContentProps) => {
 
               <View style={styles.billingRow}>
                 <View style={styles.leftSection}>
-                  <Text style={styles.billingLabelText}>Delivery Fee</Text>
+                  <Text style={styles.billingLabelText}>{orderData?.deliverySlot?.id === "fast-delivery" ? "Express Delivery Fee" : "Delivery Fee"}</Text>
                 </View>
                 <View style={styles.rightSection}>
                   {deliveryFee > 0 && (
@@ -442,6 +470,7 @@ const OrderDetailsContent = ({ orderId }: OrderDetailsContentProps) => {
         appliedOnlinePaymentDiscount={orderData.appliedOnlinePaymentDiscount}
         getStatusText={getStatusText}
         deliveryAddress={orderData.deliveryAddress}
+        deliverySlot={orderData.deliverySlot}
         paymentMethodLabel={paymentMethodLabel}
         paymentStatusLabel={getPaymentStatusLabel()}
         displayItems={displayItems}
@@ -601,6 +630,30 @@ const styles = StyleSheet.create({
     fontSize: 12,
     fontFamily: theme.fonts.regular,
     color: theme.colors.text,
+  },
+
+  // Delivery Schedule
+  deliverySlotCard: {
+    backgroundColor: theme.colors.background_3,
+    padding: 12,
+    borderRadius: 8,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 10,
+  },
+  deliverySlotInfo: {
+    flex: 1,
+  },
+  slotNameText: {
+    fontSize: 13,
+    fontFamily: theme.fonts.semibold,
+    color: theme.colors.text,
+    marginBottom: 2,
+  },
+  slotTimeText: {
+    fontSize: 12,
+    fontFamily: theme.fonts.medium,
+    color: theme.colors.primary,
   },
 
   // Payment Details

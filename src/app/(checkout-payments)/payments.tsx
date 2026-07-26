@@ -19,11 +19,14 @@ import { getPaymentMethodDisplayName, getPaymentMethodImage } from "@/src/utils/
 
 export default function PaymentsScreen() {
   // Receive orderId, paymentMethodId, paymentMethodType, and deliveryAddress from checkout screen
-  const { orderId, paymentMethodId, deliveryAddress } = useLocalSearchParams<{
+  const { orderId, paymentMethodId, deliveryAddress, deliverySlotId } = useLocalSearchParams<{
     orderId?: string;
     paymentMethodId?: string;
     deliveryAddress?: string;
+    deliverySlotId?: string;
   }>();
+
+  const isExpress = deliverySlotId === "fast-delivery";
 
   const [isChecked, setChecked] = useState(false);
   const [screenshot, setScreenshot] = useState<string | null>(null);
@@ -103,9 +106,10 @@ export default function PaymentsScreen() {
         // Pass both the type (to restore top dropdown) and id (to restore bank sub-selection)
         paymentMethodType: selectedPaymentMethod?.type || "",
         paymentMethodId: paymentMethodId || "",
+        deliverySlotId: deliverySlotId || "",
       },
     });
-  }, [orderId, deliveryAddress, paymentMethodId, selectedPaymentMethod]);
+  }, [orderId, deliveryAddress, paymentMethodId, selectedPaymentMethod, deliverySlotId]);
 
   // Intercept hardware back button — go to checkout, not cart
   useEffect(() => {
@@ -193,7 +197,10 @@ export default function PaymentsScreen() {
           <OrderItemsList items={displayItems} />
 
           {/* Billing Details */}
-          <BillingDetailsSection isOnlinePayment={!!selectedPaymentMethod && selectedPaymentMethod.type !== "cash_on_delivery"} />
+          <BillingDetailsSection
+            isOnlinePayment={!!selectedPaymentMethod && selectedPaymentMethod.type !== "cash_on_delivery"}
+            isExpress={isExpress}
+          />
 
           {/* Screenshot Upload */}
           <View style={styles.uploadSection}>

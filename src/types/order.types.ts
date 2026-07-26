@@ -63,6 +63,8 @@ export interface Order {
     name: string;
     startTime: string;
     endTime: string;
+    slotStartTimestamp?: number;
+    expressDurationMinutes?: number;
   };
 
   // Status

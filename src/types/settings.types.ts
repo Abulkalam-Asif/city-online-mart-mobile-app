@@ -12,6 +12,10 @@ export interface OrderSettings {
 
 export interface DeliverySettings {
   cutoffTimeMinutes: number;
+  mobileDisplayDays?: number;
+  expressDeliveryEnabled: boolean;
+  expressDeliveryDurationMinutes: number;
+  expressDeliveryFee: number;
   expressDeliveryBadgeText: string;
   expressDeliveryButtonText: string;
   expressDeliveryTagline: string;

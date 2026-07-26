@@ -21,7 +21,7 @@ import {
 import { Order, OrderItem, OrderLog, OrderStatus, PaymentStatus } from "../types/order.types";
 import { Product } from "../types/product.types";
 import { Discount } from "../types/discount.types";
-import { OrderSettings } from "../types/settings.types";
+import { OrderSettings, DeliverySettings } from "../types/settings.types";
 import { sanitizeForFirestore } from "../utils/firestoreUtils";
 import { logger } from "../utils/logger";
 import type { DiscountService } from "./DiscountService";
@@ -289,9 +289,11 @@ export class OrderService {
         ? (settingsSnap.data() as OrderSettings)
         : { deliveryFee: 0, cancellationTimeLimitMinutes: 30, minimumOrderAmount: 0, maxCartQuantityPerProduct: 50, onlinePaymentDiscountPercentage: 0 };
 
-      const cutoffTimeMinutes = deliverySettingsSnap.exists()
-        ? (deliverySettingsSnap.data()?.cutoffTimeMinutes || 30)
-        : 30;
+      const deliverySettings = deliverySettingsSnap.exists()
+        ? (deliverySettingsSnap.data() as DeliverySettings)
+        : null;
+
+      const cutoffTimeMinutes = deliverySettings?.cutoffTimeMinutes || 30;
 
       // 2. Recalculate pricing server-side (N product reads + 1 discount query)
       const pricing = await this.calculateOrderPricing(orderData.items);
@@ -323,9 +325,14 @@ export class OrderService {
         );
       }
 
-      // 5. Calculate Online Payment Discount
+      // 5. Calculate Delivery Fee & Online Payment Discount
+      const isExpress = orderData.deliverySlot?.id === "fast-delivery";
+      const applicableDeliveryFee = isExpress
+        ? (deliverySettings?.expressDeliveryFee ?? 250)
+        : orderSettings.deliveryFee;
+
       let appliedOnlinePaymentDiscount = undefined;
-      let finalTotal = finalOrderAmount + orderSettings.deliveryFee;
+      let finalTotal = finalOrderAmount + applicableDeliveryFee;
       let totalDiscount = pricing.discount;
 
       if (
@@ -344,6 +351,11 @@ export class OrderService {
       // 6. Generate unique 7-char alphanumeric ID
       const orderId = await this.createUniqueOrderId();
 
+      const finalDeliverySlot = orderData.deliverySlot ? {
+        ...orderData.deliverySlot,
+        expressDurationMinutes: isExpress ? (orderData.deliverySlot.expressDurationMinutes || deliverySettings?.expressDeliveryDurationMinutes || 45) : undefined,
+      } : undefined;
+
       // 7. Build the complete order object
       const newOrder: Order = {
         id: orderId,
@@ -356,12 +368,12 @@ export class OrderService {
         discount: totalDiscount,
         appliedOrderDiscount: pricing.appliedOrderDiscount,
         appliedOnlinePaymentDiscount,
-        deliveryFee: orderSettings.deliveryFee,
+        deliveryFee: applicableDeliveryFee,
         total: finalTotal,
         paymentMethod: orderData.paymentMethod,
         paymentStatus: "pending",
         deliveryAddress: orderData.deliveryAddress,
-        deliverySlot: orderData.deliverySlot,
+        deliverySlot: finalDeliverySlot,
         status: "pending",
         logs: [
           this.createLog("Order Created", "pending", "system"),

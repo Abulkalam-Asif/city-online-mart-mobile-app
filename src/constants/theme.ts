@@ -31,6 +31,12 @@ export const theme = {
     cancelled_light: "#FEE2E2",
     refunded: "#F97316", // Orange - Money returned
     refunded_light: "#FFEDD5",
+
+    // Express Delivery Colors
+    express: "#D97706",
+    express_text: "#B45309",
+    express_bg: "#FEF3C7",
+    express_border: "#FDE68A",
   },
   light_colors: [
     "#FFE8B4",

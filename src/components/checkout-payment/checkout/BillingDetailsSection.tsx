@@ -5,12 +5,16 @@ import { useCart } from "@/src/hooks/useCart";
 import { queryClient, queryKeys } from "@/src/lib/react-query";
 import { OrderSettings } from "@/src/types";
 
+import { useDeliverySettings } from "@/src/hooks/useSettings";
+
 interface BillingDetailsSectionProps {
   isOnlinePayment?: boolean;
+  isExpress?: boolean;
 }
 
-const BillingDetailsSection: React.FC<BillingDetailsSectionProps> = ({ isOnlinePayment = false }) => {
+const BillingDetailsSection: React.FC<BillingDetailsSectionProps> = ({ isOnlinePayment = false, isExpress = false }) => {
   const { cart } = useCart();
+  const { data: deliverySettings } = useDeliverySettings();
 
   const orderSettings = queryClient.getQueryData<OrderSettings>(
     queryKeys.settings.byDomain("order")
@@ -21,7 +25,11 @@ const BillingDetailsSection: React.FC<BillingDetailsSectionProps> = ({ isOnlineP
   const orderDiscount = cart?.appliedOrderDiscount?.amount || 0;
   const orderSubTotal = itemsSubtotal - orderDiscount;
   const orderDiscountPercentage = cart?.appliedOrderDiscount?.percentage || 0;
-  const deliveryFee = orderSettings?.deliveryFee || 0;
+
+  const deliveryFee = isExpress
+    ? (deliverySettings?.expressDeliveryFee ?? 250)
+    : (orderSettings?.deliveryFee || 0);
+
   const onlineDiscountPercentage = orderSettings?.onlinePaymentDiscountPercentage || 0;
 
   let onlineDiscountAmount = 0;
@@ -73,8 +81,8 @@ const BillingDetailsSection: React.FC<BillingDetailsSectionProps> = ({ isOnlineP
 
         <View style={styles.billingRow}>
           <View style={styles.leftSection}>
-            <Text style={styles.labelText}>Delivery Fee</Text>
-            {deliveryFee === 0 &&
+            <Text style={styles.labelText}>{isExpress ? "Express Delivery Fee" : "Delivery Fee"}</Text>
+            {deliveryFee === 0 && !isExpress &&
               <View style={styles.tag}>
                 <Text style={styles.freeDeliveryText}>Free Delivery</Text>
               </View>

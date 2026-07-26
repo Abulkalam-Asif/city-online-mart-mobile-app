@@ -21,8 +21,10 @@ import Loading from "@/src/components/common/Loading";
 import { Image } from "expo-image";
 import { getPaymentMethodDisplayName, getPaymentMethodImage } from "@/src/utils/paymentMethodUtils";
 import { queryClient, queryKeys } from "@/src/lib/react-query";
-import { OrderSettings } from "@/src/types";
 import OrderItemsList, { DisplayItem } from "@/src/components/common/OrderItemsList";
+import SlotUnavailableModal, { SlotInfo } from "@/src/components/checkout-payment/checkout/SlotUnavailableModal";
+import { deliverySlotService } from "@/src/services";
+import { OrderSettings } from "@/src/types";
 
 // The 4 fixed top-level types shown in dropdown
 const PAYMENT_METHOD_TYPES: { type: PaymentMethodType; label: string }[] = [
@@ -43,6 +45,8 @@ export default function CheckoutScreen() {
     deliverySlotName,
     deliverySlotStartTime,
     deliverySlotEndTime,
+    deliverySlotStartTimestamp,
+    deliverySlotExpressDurationMinutes,
   } = useLocalSearchParams<{
     existingOrderId?: string;
     deliveryAddress?: string;
@@ -53,6 +57,8 @@ export default function CheckoutScreen() {
     deliverySlotName?: string;
     deliverySlotStartTime?: string;
     deliverySlotEndTime?: string;
+    deliverySlotStartTimestamp?: string;
+    deliverySlotExpressDurationMinutes?: string;
   }>();
 
   const { user } = useAuth();
@@ -78,6 +84,25 @@ export default function CheckoutScreen() {
   const [existingOrderId, setExistingOrderId] = useState<string | null>(
     existingOrderIdParam || null
   );
+
+  // Delivery slot state & conflict modal
+  const [currentSlot, setCurrentSlot] = useState<SlotInfo | null>(() => {
+    if (deliverySlotDate) {
+      return {
+        date: deliverySlotDate,
+        id: deliverySlotId as string,
+        name: deliverySlotName as string,
+        startTime: deliverySlotStartTime as string,
+        endTime: deliverySlotEndTime as string,
+        slotStartTimestamp: deliverySlotStartTimestamp ? parseInt(deliverySlotStartTimestamp as string) : undefined,
+        expressDurationMinutes: deliverySlotExpressDurationMinutes ? parseInt(deliverySlotExpressDurationMinutes as string) : undefined,
+      };
+    }
+    return null;
+  });
+  const [slotModalVisible, setSlotModalVisible] = useState(false);
+  const [slotConflictReason, setSlotConflictReason] = useState("");
+  const [proposedSlot, setProposedSlot] = useState<SlotInfo | null>(null);
 
   // Hooks
   const { data: paymentMethods, isLoading: loadingPaymentMethods } = useGetAllPaymentMethods();
@@ -200,10 +225,11 @@ export default function CheckoutScreen() {
           orderId,
           paymentMethodId: selectedPaymentMethod?.id || "",
           deliveryAddress: address,
+          deliverySlotId: currentSlot?.id || "",
         },
       });
     }
-  }, [placeOrderMutation.isSuccess, isCOD, placeOrderMutation.data]);
+  }, [placeOrderMutation.isSuccess, isCOD, placeOrderMutation.data, currentSlot]);
 
   // Handle successful order update
   useEffect(() => {
@@ -224,10 +250,11 @@ export default function CheckoutScreen() {
           orderId: existingOrderId,
           paymentMethodId: selectedPaymentMethod?.id || "",
           deliveryAddress: address,
+          deliverySlotId: currentSlot?.id || "",
         },
       });
     }
-  }, [updateOrderMutation.isSuccess]);
+  }, [updateOrderMutation.isSuccess, currentSlot]);
 
   // Intercept hardware back button when an order has been created
   useEffect(() => {
@@ -241,10 +268,51 @@ export default function CheckoutScreen() {
     return () => subscription.remove();
   }, [existingOrderId]);
 
-  // Handle errors
+  // Handle errors & slot conflicts
   useEffect(() => {
     if (placeOrderMutation.isError) {
-      setError(placeOrderMutation.error?.message || "Failed to place order.");
+      const msg = placeOrderMutation.error?.message || "Failed to place order.";
+      const isSlotError =
+        msg.includes("slot") ||
+        msg.includes("cutoff") ||
+        msg.includes("fully booked") ||
+        msg.includes("no longer available");
+
+      if (isSlotError) {
+        setSlotConflictReason(msg);
+        deliverySlotService
+          .getNextDays(5)
+          .then((days) => {
+            for (const day of days) {
+              for (const slot of day.slots) {
+                if (slot.currentOrders < slot.limit) {
+                  setProposedSlot({
+                    date: day.date,
+                    id: slot.id,
+                    name: slot.name,
+                    startTime: slot.startTime,
+                    endTime: slot.endTime,
+                  });
+                  setSlotModalVisible(true);
+                  return;
+                }
+              }
+            }
+            setProposedSlot({
+              date: "fast",
+              id: "fast-delivery",
+              name: "Express Delivery",
+              startTime: "Now",
+              endTime: "+60m",
+            });
+            setSlotModalVisible(true);
+          })
+          .catch(() => {
+            setError(msg);
+          });
+      } else {
+        setError(msg);
+      }
     }
   }, [placeOrderMutation.isError]);
 
@@ -253,6 +321,29 @@ export default function CheckoutScreen() {
       setError(updateOrderMutation.error?.message || "Failed to update order.");
     }
   }, [updateOrderMutation.isError]);
+
+  const handleAcceptProposedSlot = useCallback(
+    (newSlot: SlotInfo) => {
+      setCurrentSlot(newSlot);
+      setSlotModalVisible(false);
+
+      if (!selectedPaymentMethod || !cart || !user) return;
+      placeOrderMutation.mutate({
+        customerId: user.uid,
+        customerName: user.displayName || "",
+        customerPhone: user.phoneNumber || "",
+        source: "mobile",
+        items: cart.items.map((item) => ({
+          productId: item.productId,
+          quantity: item.quantity,
+        })),
+        paymentMethod: selectedPaymentMethod,
+        deliveryAddress: address,
+        deliverySlot: newSlot,
+      });
+    },
+    [selectedPaymentMethod, cart, user, address, placeOrderMutation]
+  );
 
   // When user changes type, clear the bank sub-selection
   const handleSelectType = useCallback((type: PaymentMethodType) => {
@@ -290,16 +381,18 @@ export default function CheckoutScreen() {
         })),
         paymentMethod: selectedPaymentMethod,
         deliveryAddress: address,
-        deliverySlot: deliverySlotDate ? {
-          date: deliverySlotDate,
-          id: deliverySlotId as string,
-          name: deliverySlotName as string,
-          startTime: deliverySlotStartTime as string,
-          endTime: deliverySlotEndTime as string,
+        deliverySlot: currentSlot ? {
+          date: currentSlot.date,
+          id: currentSlot.id,
+          name: currentSlot.name,
+          startTime: currentSlot.startTime,
+          endTime: currentSlot.endTime,
+          slotStartTimestamp: currentSlot.slotStartTimestamp,
+          expressDurationMinutes: currentSlot.expressDurationMinutes,
         } : undefined,
       });
     }
-  }, [selectedPaymentMethod, cart, user, address, existingOrderId, placeOrderMutation, updateOrderMutation]);
+  }, [selectedPaymentMethod, cart, user, address, existingOrderId, currentSlot, placeOrderMutation, updateOrderMutation]);
 
   const handleProceed = useCallback(() => {
     if (!isAddressValid) {
@@ -418,10 +511,10 @@ export default function CheckoutScreen() {
             )}
           </View>
 
-          {/* TODO: Expected delivery time calculation is pending */}
-          <ExpectedDeliveryTimeSection />
+          {/* Expected Delivery Time Summary */}
+          <ExpectedDeliveryTimeSection slot={currentSlot} />
           <OrderItemsList items={displayItems} />
-          <BillingDetailsSection isOnlinePayment={!!selectedMethodType && !isCOD} />
+          <BillingDetailsSection isOnlinePayment={!!selectedMethodType && !isCOD} isExpress={currentSlot?.id === "fast-delivery"} />
         </ScrollView>
 
         <View style={styles.proceedButtonContainer}>
@@ -587,6 +680,15 @@ export default function CheckoutScreen() {
           onDismiss={() => setError("")}
         />
       )}
+
+      {/* Slot Unavailable Warning Modal */}
+      <SlotUnavailableModal
+        visible={slotModalVisible}
+        reason={slotConflictReason}
+        proposedSlot={proposedSlot}
+        onAcceptProposed={handleAcceptProposedSlot}
+        onCancel={() => setSlotModalVisible(false)}
+      />
     </>
   );
 }
