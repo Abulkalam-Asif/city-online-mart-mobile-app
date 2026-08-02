@@ -167,12 +167,7 @@ export const DeliverySlotSelector: React.FC<DeliverySlotSelectorProps> = ({ onSe
     }
     try {
       const parsedDate = parse(slot.date, "yyyy-MM-dd", new Date());
-      let dayPrefix = format(parsedDate, "EEE");
-      if (isToday(parsedDate)) {
-        dayPrefix = "Today";
-      } else if (isTomorrow(parsedDate)) {
-        dayPrefix = "Tomorrow";
-      }
+      const dayPrefix = format(parsedDate, "EEE");
       return `${dayPrefix}, ${slot.name} (${formatSlotTimeRange(slot.startTime, slot.endTime)})`;
     } catch {
       return `${slot.name} (${formatSlotTimeRange(slot.startTime, slot.endTime)})`;
@@ -192,8 +187,37 @@ export const DeliverySlotSelector: React.FC<DeliverySlotSelectorProps> = ({ onSe
         )}
       </View>
 
-      {/* Date Scroller - Express Delivery ALWAYS at Index 0 */}
-      <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.dateScroll}>
+      {/* Date Scroller (Left) & Fixed Express Delivery Card (Right) */}
+      <View style={styles.scrollerAndExpressRow}>
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          contentContainerStyle={styles.dateScrollContent}
+          style={styles.dateScrollView}
+        >
+          {validDays.map((day) => {
+            const isSelected = selectedDate === day.date;
+            const parsedDate = parse(day.date, "yyyy-MM-dd", new Date());
+
+            const topLabel = format(parsedDate, "EEE").toUpperCase();
+            const bottomLabel = format(parsedDate, "dd MMM");
+
+            return (
+              <Pressable
+                key={day.date}
+                style={[styles.dateCard, isSelected && styles.dateCardActive]}
+                onPress={() => {
+                  setSelectedDate(day.date);
+                  setDropdownVisible(true);
+                }}
+              >
+                <Text style={[styles.dayOfWeekText, isSelected && styles.dateTextActive]}>{topLabel}</Text>
+                <Text style={[styles.dateText, isSelected && styles.dateTextActive]}>{bottomLabel}</Text>
+              </Pressable>
+            );
+          })}
+        </ScrollView>
+
         {deliverySettings?.expressDeliveryEnabled && (
           <Pressable
             style={[styles.dateCard, styles.fastDeliveryCard, selectedDate === 'fast' && styles.dateCardActive]}
@@ -211,41 +235,15 @@ export const DeliverySlotSelector: React.FC<DeliverySlotSelectorProps> = ({ onSe
               });
             }}
           >
-            <Text style={[styles.dayOfWeekText, { color: theme.colors.express }]}>⚡ EXPRESS</Text>
+            <Text style={[styles.dayOfWeekText, { color: theme.colors.express }]}>
+              {deliverySettings?.expressDeliveryTitle || "⚡ DELIVERY"}
+            </Text>
             <Text style={[styles.dateText, selectedDate === 'fast' && styles.dateTextActive]}>
               {deliverySettings?.expressDeliveryButtonText || '45-Minutes'}
             </Text>
           </Pressable>
         )}
-
-        {validDays.map((day) => {
-          const isSelected = selectedDate === day.date;
-          const parsedDate = parse(day.date, "yyyy-MM-dd", new Date());
-
-          let topLabel = format(parsedDate, "EEE").toUpperCase();
-          let bottomLabel = format(parsedDate, "dd MMM");
-
-          if (isToday(parsedDate)) {
-            topLabel = "TODAY";
-          } else if (isTomorrow(parsedDate)) {
-            topLabel = "TOMORROW";
-          }
-
-          return (
-            <Pressable
-              key={day.date}
-              style={[styles.dateCard, isSelected && styles.dateCardActive]}
-              onPress={() => {
-                setSelectedDate(day.date);
-                setDropdownVisible(true);
-              }}
-            >
-              <Text style={[styles.dayOfWeekText, isSelected && styles.dateTextActive]}>{topLabel}</Text>
-              <Text style={[styles.dateText, isSelected && styles.dateTextActive]}>{bottomLabel}</Text>
-            </Pressable>
-          );
-        })}
-      </ScrollView>
+      </View>
 
       {/* Tooltip Backdrop & Content */}
       <Modal visible={dropdownVisible} transparent animationType="fade" onRequestClose={handleCloseDropdown}>
@@ -348,10 +346,19 @@ const styles = StyleSheet.create({
     fontFamily: theme.fonts.semibold,
     color: theme.colors.primary,
   },
-  dateScroll: {
+  scrollerAndExpressRow: {
+    flexDirection: "row",
+    alignItems: "center",
     paddingHorizontal: 12,
     paddingBottom: 8,
     gap: 8,
+  },
+  dateScrollView: {
+    flex: 1,
+  },
+  dateScrollContent: {
+    gap: 8,
+    paddingRight: 4,
   },
   dateCard: {
     paddingVertical: 8,

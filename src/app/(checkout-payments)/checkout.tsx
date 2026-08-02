@@ -22,9 +22,10 @@ import { Image } from "expo-image";
 import { getPaymentMethodDisplayName, getPaymentMethodImage } from "@/src/utils/paymentMethodUtils";
 import { queryClient, queryKeys } from "@/src/lib/react-query";
 import OrderItemsList, { DisplayItem } from "@/src/components/common/OrderItemsList";
-import SlotUnavailableModal, { SlotInfo } from "@/src/components/checkout-payment/checkout/SlotUnavailableModal";
+import { SlotUnavailableModal, SlotInfo } from "@/src/components/checkout-payment/checkout/SlotUnavailableModal";
 import { deliverySlotService } from "@/src/services";
 import { OrderSettings } from "@/src/types";
+import { AnimatedPromoBanner } from "@/src/components/checkout-payment/checkout/AnimatedPromoBanner";
 
 // The 4 fixed top-level types shown in dropdown
 const PAYMENT_METHOD_TYPES: { type: PaymentMethodType; label: string }[] = [
@@ -122,6 +123,34 @@ export default function CheckoutScreen() {
   const isAddressValid = address.trim().length >= MIN_ADDRESS_LENGTH;
   const remainingChars = MIN_ADDRESS_LENGTH - address.trim().length;
 
+  // Dynamically compute active payment method types from Firestore paymentMethods
+  const availablePaymentMethodTypes = useMemo(() => {
+    if (!paymentMethods || paymentMethods.length === 0) return [];
+
+    const activeTypes = new Set(
+      paymentMethods
+        .filter((m: PaymentMethod) => m.isActive)
+        .map((m: PaymentMethod) => m.type)
+    );
+
+    return PAYMENT_METHOD_TYPES.filter((item) => activeTypes.has(item.type));
+  }, [paymentMethods]);
+
+
+
+  // Clean up selectedMethodType if it is no longer available/active
+  useEffect(() => {
+    if (paymentMethods && availablePaymentMethodTypes.length > 0) {
+      if (
+        selectedMethodType &&
+        !availablePaymentMethodTypes.some((t) => t.type === selectedMethodType)
+      ) {
+        setSelectedMethodType("");
+        setSelectedBankMethodId("");
+      }
+    }
+  }, [paymentMethods, availablePaymentMethodTypes, selectedMethodType]);
+
   // Bank transfer accounts (sorted by displayOrder ascending)
   const bankAccounts = useMemo(() => {
     if (!paymentMethods) return [];
@@ -212,7 +241,7 @@ export default function CheckoutScreen() {
       setCartCleared(true);
       showModal("order-success", <OrderSuccessModal />);
     }
-  }, [placeOrderMutation.isSuccess, cartCleared, isCOD]);
+  }, [placeOrderMutation.isSuccess, cartCleared, isCOD, clearCartMutation, showModal]);
 
   // Handle successful new online order — navigate to payments screen
   useEffect(() => {
@@ -229,7 +258,7 @@ export default function CheckoutScreen() {
         },
       });
     }
-  }, [placeOrderMutation.isSuccess, isCOD, placeOrderMutation.data, currentSlot]);
+  }, [placeOrderMutation.isSuccess, isCOD, placeOrderMutation.data, currentSlot, selectedPaymentMethod?.id, address]);
 
   // Handle successful order update
   useEffect(() => {
@@ -254,7 +283,7 @@ export default function CheckoutScreen() {
         },
       });
     }
-  }, [updateOrderMutation.isSuccess, currentSlot]);
+  }, [updateOrderMutation.isSuccess, currentSlot, existingOrderId, isCOD, cartCleared, clearCartMutation, showModal, selectedPaymentMethod?.id, address]);
 
   // Intercept hardware back button when an order has been created
   useEffect(() => {
@@ -314,13 +343,13 @@ export default function CheckoutScreen() {
         setError(msg);
       }
     }
-  }, [placeOrderMutation.isError]);
+  }, [placeOrderMutation.isError, placeOrderMutation.error?.message]);
 
   useEffect(() => {
     if (updateOrderMutation.isError) {
       setError(updateOrderMutation.error?.message || "Failed to update order.");
     }
-  }, [updateOrderMutation.isError]);
+  }, [updateOrderMutation.isError, updateOrderMutation.error?.message]);
 
   const handleAcceptProposedSlot = useCallback(
     (newSlot: SlotInfo) => {
@@ -446,20 +475,10 @@ export default function CheckoutScreen() {
 
           {/* Payment Method Type Dropdown */}
           <View style={styles.paymentSection}>
-            {onlineDiscountPercentage > 0 && (
-              <View style={[styles.promoBanner, !!selectedMethodType && selectedMethodType !== "cash_on_delivery" && styles.promoBannerSuccess]}>
-                <Ionicons
-                  name={!!selectedMethodType && selectedMethodType !== "cash_on_delivery" ? "gift" : "pricetag"}
-                  size={16}
-                  color="#fff"
-                />
-                <Text style={styles.promoText}>
-                  {!!selectedMethodType && selectedMethodType !== "cash_on_delivery"
-                    ? `Congratulations! You are getting an extra ${onlineDiscountPercentage}% discount!`
-                    : `Get an extra ${onlineDiscountPercentage}% off by paying in advance with JazzCash, Easypaisa, or Bank Transfer!`}
-                </Text>
-              </View>
-            )}
+            <AnimatedPromoBanner
+              onlineDiscountPercentage={onlineDiscountPercentage}
+              isSelectedOnline={!!selectedMethodType && selectedMethodType !== "cash_on_delivery"}
+            />
             <Text style={styles.inputLabel}>Payment Method</Text>
             <Pressable
               style={styles.dropdownButton}
@@ -544,38 +563,46 @@ export default function CheckoutScreen() {
         >
           <View style={styles.dropdownModal}>
             <Text style={styles.dropdownModalTitle}>Select Payment Method</Text>
-            <FlatList
-              data={PAYMENT_METHOD_TYPES}
-              keyExtractor={(item) => item.type}
-              renderItem={({ item }) => (
-                <Pressable
-                  style={({ pressed }) => [
-                    styles.dropdownItem,
-                    item.type === selectedMethodType && styles.dropdownItemSelected,
-                    pressed && styles.dropdownItemPressed,
-                  ]}
-                  onPress={() => handleSelectType(item.type)}
-                >
-                  <View style={styles.dropdownItemContent}>
-                    <Image
-                      source={getPaymentMethodImage(item.type)}
-                      style={styles.paymentIcon}
-                    />
-                    <Text
-                      style={[
-                        styles.dropdownItemText,
-                        item.type === selectedMethodType && styles.dropdownItemTextSelected,
-                      ]}
-                    >
-                      {item.label}
-                    </Text>
-                  </View>
-                  {item.type === selectedMethodType && (
-                    <Ionicons name="checkmark" size={20} color={theme.colors.primary} />
-                  )}
-                </Pressable>
-              )}
-            />
+            {loadingPaymentMethods ? (
+              <Loading />
+            ) : availablePaymentMethodTypes.length === 0 ? (
+              <Text style={{ padding: 20, textAlign: "center", color: theme.colors.text_secondary }}>
+                No active payment methods available.
+              </Text>
+            ) : (
+              <FlatList
+                data={availablePaymentMethodTypes}
+                keyExtractor={(item) => item.type}
+                renderItem={({ item }) => (
+                  <Pressable
+                    style={({ pressed }) => [
+                      styles.dropdownItem,
+                      item.type === selectedMethodType && styles.dropdownItemSelected,
+                      pressed && styles.dropdownItemPressed,
+                    ]}
+                    onPress={() => handleSelectType(item.type)}
+                  >
+                    <View style={styles.dropdownItemContent}>
+                      <Image
+                        source={getPaymentMethodImage(item.type)}
+                        style={styles.paymentIcon}
+                      />
+                      <Text
+                        style={[
+                          styles.dropdownItemText,
+                          item.type === selectedMethodType && styles.dropdownItemTextSelected,
+                        ]}
+                      >
+                        {item.label}
+                      </Text>
+                    </View>
+                    {item.type === selectedMethodType && (
+                      <Ionicons name="checkmark" size={20} color={theme.colors.primary} />
+                    )}
+                  </Pressable>
+                )}
+              />
+            )}
           </View>
         </Pressable>
       </Modal>
