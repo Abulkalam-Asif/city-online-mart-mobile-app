@@ -10,7 +10,7 @@ import { useLocalSearchParams, router } from "expo-router";
 import Loading from "@/src/components/common/Loading";
 import ErrorBanner from "@/src/components/common/ErrorBanner";
 import OrderSuccessModal from "@/src/components/checkout-payment/payments/OrderSuccessModal";
-import UploadScreenshot from "@/src/components/checkout-payment/payments/UploadScreenshot";
+import WhatsAppPaymentSection from "@/src/components/checkout-payment/payments/WhatsAppPaymentSection";
 import BillingDetailsSection from "@/src/components/checkout-payment/checkout/BillingDetailsSection";
 import OrderItemsList, { DisplayItem } from "@/src/components/common/OrderItemsList";
 import { PaymentMethod } from "@/src/types/payment_method.types";
@@ -29,14 +29,12 @@ export default function PaymentsScreen() {
   const isExpress = deliverySlotId === "fast-delivery";
 
   const [isChecked, setChecked] = useState(false);
-  const [screenshot, setScreenshot] = useState<string | null>(null);
   const [cartCleared, setCartCleared] = useState(false);
   const [error, setError] = useState("");
 
   // Hooks
   const { showModal } = useModal();
   const { data: paymentMethods, isLoading: loadingPaymentMethods } = useGetAllPaymentMethods();
-  const submitProofMutation = useSubmitPaymentProof();
   const clearCartMutation = useClearCart();
   const { cart } = useCart();
 
@@ -45,6 +43,16 @@ export default function PaymentsScreen() {
     if (!paymentMethods || !paymentMethodId) return null;
     return paymentMethods.find((m: PaymentMethod) => m.id === paymentMethodId) || null;
   }, [paymentMethods, paymentMethodId]);
+
+  // Calculate order total
+  const orderTotal = useMemo(() => {
+    if (!cart?.items) return 0;
+    const subtotal = cart.items.reduce((sum, item) => {
+      const price = item.discountPercentage > 0 ? item.discountedUnitPrice : item.unitPrice;
+      return sum + price * item.quantity;
+    }, 0);
+    return subtotal;
+  }, [cart?.items]);
 
   // Map cart items for display
   const displayItems = useMemo<DisplayItem[]>(() => {
@@ -65,36 +73,14 @@ export default function PaymentsScreen() {
     });
   }, [cart?.items]);
 
-  // Is submit disabled?
-  const isSubmitDisabled = useMemo(() => {
-    return !isChecked || !screenshot || submitProofMutation.isPending;
-  }, [isChecked, screenshot, submitProofMutation.isPending]);
-
-  // Handle successful proof submission
-  useEffect(() => {
-    if (submitProofMutation.isSuccess && !cartCleared) {
+  // Handle payment confirmation (optional step)
+  const handleConfirmPayment = useCallback(() => {
+    if (!cartCleared) {
       clearCartMutation.mutate();
       setCartCleared(true);
-      showModal("order-success", <OrderSuccessModal />);
     }
-  }, [submitProofMutation.isSuccess, cartCleared]);
-
-  // Handle proof submission error
-  useEffect(() => {
-    if (submitProofMutation.isError) {
-      setError(submitProofMutation.error?.message || "Failed to submit payment proof.");
-    }
-  }, [submitProofMutation.isError]);
-
-
-  const handleSubmitProof = useCallback(() => {
-    if (!orderId || !screenshot) return;
-
-    submitProofMutation.mutate({
-      orderId,
-      imageUri: screenshot,
-    });
-  }, [orderId, screenshot, submitProofMutation]);
+    showModal("order-success", <OrderSuccessModal />);
+  }, [cartCleared, clearCartMutation, showModal]);
 
   const handleGoBack = useCallback(() => {
     // Navigate back to checkout, passing back existing data so inputs are preserved
@@ -103,7 +89,6 @@ export default function PaymentsScreen() {
       params: {
         existingOrderId: orderId || "",
         deliveryAddress: deliveryAddress || "",
-        // Pass both the type (to restore top dropdown) and id (to restore bank sub-selection)
         paymentMethodType: selectedPaymentMethod?.type || "",
         paymentMethodId: paymentMethodId || "",
         deliverySlotId: deliverySlotId || "",
@@ -202,14 +187,15 @@ export default function PaymentsScreen() {
             isExpress={isExpress}
           />
 
-          {/* Screenshot Upload */}
+          {/* WhatsApp Payment Section */}
           <View style={styles.uploadSection}>
-            <Text style={styles.sectionTitle}>Upload Payment Proof</Text>
-            <UploadScreenshot
+            <Text style={styles.sectionTitle}>Verify Payment via WhatsApp</Text>
+            <WhatsAppPaymentSection
+              orderId={orderId}
+              totalAmount={orderTotal}
+              paymentMethodName={selectedPaymentMethod ? getPaymentMethodDisplayName(selectedPaymentMethod.type, selectedPaymentMethod.accountDetails?.bankName) : undefined}
               isChecked={isChecked}
               setChecked={setChecked}
-              screenshot={screenshot}
-              setScreenshot={setScreenshot}
             />
           </View>
         </ScrollView>
@@ -219,12 +205,10 @@ export default function PaymentsScreen() {
             style={({ pressed }) => [
               styles.proceedButton,
               pressed && styles.proceedButtonPressed,
-              isSubmitDisabled && styles.proceedButtonDisabled,
             ]}
-            onPress={handleSubmitProof}
-            disabled={isSubmitDisabled}>
+            onPress={handleConfirmPayment}>
             <Text style={styles.proceedButtonText}>
-              {submitProofMutation.isPending ? "Submitting..." : "Submit Payment Proof"}
+              Confirm Payment Sent
             </Text>
           </Pressable>
         </View>
@@ -337,26 +321,32 @@ const styles = StyleSheet.create({
   },
   proceedButtonContainer: {
     paddingHorizontal: 20,
-    paddingVertical: 10,
-    borderTopColor: theme.colors.background,
+    paddingVertical: 14,
+    backgroundColor: "#FFFFFF",
+    borderTopColor: "#F3F4F6",
     borderTopWidth: 1,
   },
   proceedButton: {
     backgroundColor: theme.colors.primary,
-    paddingVertical: 10,
+    paddingVertical: 14,
     borderRadius: 30,
     alignItems: "center",
     justifyContent: "center",
+    shadowColor: theme.colors.primary,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.22,
+    shadowRadius: 6,
+    elevation: 3,
   },
   proceedButtonPressed: {
-    opacity: 0.8,
+    opacity: 0.88,
   },
   proceedButtonDisabled: {
     backgroundColor: theme.colors.background,
   },
   proceedButtonText: {
     fontSize: 16,
-    fontFamily: theme.fonts.semibold,
+    fontFamily: theme.fonts.bold,
     color: "#fff",
   },
 });

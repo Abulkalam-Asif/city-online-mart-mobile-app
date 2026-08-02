@@ -12,5 +12,8 @@ export const CONSTANTS = {
 
   checkout: {
     addressMinLength: 5,
-  }
+  },
+
+  // Store Contact
+  whatsappNumber: "923197303810",
 };
