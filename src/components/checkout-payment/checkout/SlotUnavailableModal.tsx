@@ -12,6 +12,7 @@ export interface SlotInfo {
   startTime: string;
   endTime: string;
   slotStartTimestamp?: number;
+  expressDurationMinutes?: number; // Optional: only for fast delivery
 }
 
 interface SlotUnavailableModalProps {
