@@ -14,6 +14,9 @@ interface ErrorBannerProps {
   message?: string;
   onRetry?: () => void;
   onDismiss?: () => void; // Required if dismissible - parent controls unmount
+  buttonText?: string;
+  iconName?: keyof typeof Ionicons.glyphMap;
+  iconColor?: string;
 }
 
 const ErrorBanner = ({
@@ -21,6 +24,9 @@ const ErrorBanner = ({
   message = "Something went wrong",
   onRetry,
   onDismiss,
+  buttonText,
+  iconName = "alert-circle",
+  iconColor,
 }: ErrorBannerProps) => {
   return (
     <Modal visible={true} transparent animationType="fade">
@@ -36,9 +42,9 @@ const ErrorBanner = ({
           {/* Error Icon */}
           <View style={styles.iconContainer}>
             <Ionicons
-              name="alert-circle"
+              name={iconName}
               size={48}
-              color={theme.colors.error}
+              color={iconColor || theme.colors.error}
             />
           </View>
 
@@ -48,8 +54,8 @@ const ErrorBanner = ({
           {/* Message */}
           <Text style={styles.message}>{message}</Text>
 
-          {/* Retry Button */}
-          {onRetry && (
+          {/* Action Button */}
+          {onRetry ? (
             <RetryButton
               onPress={() => {
                 onRetry();
@@ -57,7 +63,14 @@ const ErrorBanner = ({
               }}
               style={styles.retryButton}
             />
-          )}
+          ) : onDismiss ? (
+            <Pressable
+              style={({ pressed }) => [styles.actionButton, pressed && styles.actionButtonPressed]}
+              onPress={onDismiss}
+            >
+              <Text style={styles.actionButtonText}>{buttonText || "OK"}</Text>
+            </Pressable>
+          ) : null}
         </View>
       </View>
     </Modal>
@@ -114,6 +127,23 @@ const styles = StyleSheet.create({
   },
   retryButton: {
     paddingHorizontal: 32,
+  },
+  actionButton: {
+    backgroundColor: theme.colors.primary,
+    paddingVertical: 10,
+    paddingHorizontal: 32,
+    borderRadius: 8,
+    alignItems: "center",
+    justifyContent: "center",
+    minWidth: 100,
+  },
+  actionButtonPressed: {
+    opacity: 0.8,
+  },
+  actionButtonText: {
+    color: "#fff",
+    fontSize: 14,
+    fontFamily: theme.fonts.semibold,
   },
 });
 

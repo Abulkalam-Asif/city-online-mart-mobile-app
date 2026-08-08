@@ -17,7 +17,7 @@ export function formatTo12Hour(timeStr?: string): string {
   try {
     const parsed = parse(trimmed, "HH:mm", new Date());
     return format(parsed, "h:mm a");
-  } catch (error) {
+  } catch {
     return timeStr;
   }
 }
@@ -30,3 +30,31 @@ export function formatSlotTimeRange(startTime?: string, endTime?: string, expres
   if (startTime === "Now") return `Within ${expressDurationMinutes || 45} Minutes`;
   return `${formatTo12Hour(startTime)} - ${formatTo12Hour(endTime)}`;
 }
+
+/**
+ * Checks if the current local time is between startTime (e.g. "09:00") and endTime (e.g. "21:00").
+ * Defaults to true if times are not specified.
+ */
+export function isWithinOperatingHours(startTimeStr?: string, endTimeStr?: string): boolean {
+  if (!startTimeStr || !endTimeStr) return true;
+  try {
+    const now = new Date();
+    const currentMinutes = now.getHours() * 60 + now.getMinutes();
+
+    const [startH, startM] = startTimeStr.split(":").map(Number);
+    const startMinutes = startH * 60 + (startM || 0);
+
+    const [endH, endM] = endTimeStr.split(":").map(Number);
+    const endMinutes = endH * 60 + (endM || 0);
+
+    if (startMinutes <= endMinutes) {
+      return currentMinutes >= startMinutes && currentMinutes <= endMinutes;
+    } else {
+      // Overnight window (e.g. 22:00 to 06:00)
+      return currentMinutes >= startMinutes || currentMinutes <= endMinutes;
+    }
+  } catch {
+    return true;
+  }
+}
+

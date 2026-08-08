@@ -1,12 +1,12 @@
-import React, { useState, useEffect, useMemo } from "react";
+import React, { useState, useEffect, useMemo, useCallback } from "react";
 import { View, Text, StyleSheet, Pressable, ScrollView, ActivityIndicator, Modal } from "react-native";
-import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { theme } from "../../../constants/theme";
 import { useDeliverySlots } from "../../../hooks/useDeliverySlots";
 import { useDeliverySettings } from "../../../hooks/useSettings";
 import { DeliverySlot } from "../../../types";
-import { format, parse, isAfter, isToday, isTomorrow } from "date-fns";
-import { formatSlotTimeRange } from "../../../utils/slotUtils";
+import { format, parse, isToday } from "date-fns";
+import { formatSlotTimeRange, isWithinOperatingHours, formatTo12Hour } from "../../../utils/slotUtils";
+import ErrorBanner from "../../common/ErrorBanner";
 
 export interface SelectedSlotData {
   date: string;
@@ -28,6 +28,19 @@ export const DeliverySlotSelector: React.FC<DeliverySlotSelectorProps> = ({ onSe
   const { data: deliverySettings } = useDeliverySettings();
   const [selectedDate, setSelectedDate] = useState<string | null>(null);
   const [dropdownVisible, setDropdownVisible] = useState(false);
+  const [showExpressUnavailableBanner, setShowExpressUnavailableBanner] = useState(false);
+
+  const isExpressAvailable = useMemo(() => {
+    if (!deliverySettings?.expressDeliveryEnabled) return false;
+    return isWithinOperatingHours(
+      deliverySettings?.expressDeliveryStartTime || "09:00",
+      deliverySettings?.expressDeliveryEndTime || "21:00"
+    );
+  }, [
+    deliverySettings?.expressDeliveryEnabled,
+    deliverySettings?.expressDeliveryStartTime,
+    deliverySettings?.expressDeliveryEndTime,
+  ]);
 
   const fastDeliverySlot: DeliverySlot = {
     id: "fast-delivery",
@@ -40,7 +53,7 @@ export const DeliverySlotSelector: React.FC<DeliverySlotSelectorProps> = ({ onSe
 
   const cutoffMinutes = deliverySettings?.cutoffTimeMinutes ?? 30;
 
-  const isSlotPastCutoff = (dateStr: string, slot: DeliverySlot) => {
+  const isSlotPastCutoff = useCallback((dateStr: string, slot: DeliverySlot) => {
     const parsedDate = parse(dateStr, "yyyy-MM-dd", new Date());
     if (isToday(parsedDate)) {
       const now = new Date();
@@ -57,7 +70,7 @@ export const DeliverySlotSelector: React.FC<DeliverySlotSelectorProps> = ({ onSe
       }
     }
     return false;
-  };
+  }, [cutoffMinutes]);
 
   const isSlotFullyBooked = (slot: DeliverySlot) => {
     return slot.currentOrders >= slot.limit;
@@ -70,12 +83,12 @@ export const DeliverySlotSelector: React.FC<DeliverySlotSelectorProps> = ({ onSe
       if (!day.slots || day.slots.length === 0) return false;
       return day.slots.some(slot => !isSlotPastCutoff(day.date, slot));
     });
-  }, [days, cutoffMinutes]);
+  }, [days, isSlotPastCutoff]);
 
   const handleCloseDropdown = () => {
     setDropdownVisible(false);
     if (selectedSlot) {
-      if (selectedSlot.id === 'fast-delivery') {
+      if (selectedSlot.id === 'fast-delivery' && isExpressAvailable) {
         setSelectedDate('fast');
       } else {
         setSelectedDate(selectedSlot.date);
@@ -85,6 +98,29 @@ export const DeliverySlotSelector: React.FC<DeliverySlotSelectorProps> = ({ onSe
 
   // Auto-assign first available slot when data loads and no slot is selected
   useEffect(() => {
+    if (selectedSlot?.id === 'fast-delivery' && !isExpressAvailable && validDays && validDays.length > 0) {
+      for (const day of validDays) {
+        const available = day.slots.find(s => !isSlotPastCutoff(day.date, s) && !isSlotFullyBooked(s));
+        if (available) {
+          const parsedDate = parse(day.date, "yyyy-MM-dd", new Date());
+          const [hours, minutes] = available.startTime.split(':').map(Number);
+          const slotStartTimeDate = new Date(parsedDate);
+          slotStartTimeDate.setHours(hours, minutes, 0, 0);
+
+          setSelectedDate(day.date);
+          onSelectSlot({
+            date: day.date,
+            id: available.id,
+            name: available.name,
+            startTime: available.startTime,
+            endTime: available.endTime,
+            slotStartTimestamp: slotStartTimeDate.getTime()
+          });
+          return;
+        }
+      }
+    }
+
     if (validDays && validDays.length > 0 && !selectedSlot) {
       for (const day of validDays) {
         const available = day.slots.find(s => !isSlotPastCutoff(day.date, s) && !isSlotFullyBooked(s));
@@ -108,13 +144,13 @@ export const DeliverySlotSelector: React.FC<DeliverySlotSelectorProps> = ({ onSe
       }
       setSelectedDate(validDays[0].date);
     } else if (selectedSlot) {
-      if (selectedSlot.id === 'fast-delivery') {
+      if (selectedSlot.id === 'fast-delivery' && isExpressAvailable) {
         setSelectedDate('fast');
       } else {
         setSelectedDate(selectedSlot.date);
       }
     }
-  }, [validDays, selectedSlot, cutoffMinutes]);
+  }, [validDays, selectedSlot, isSlotPastCutoff, isExpressAvailable, onSelectSlot]);
 
   const activeDay = useMemo(() => {
     return validDays?.find(d => d.date === selectedDate) || null;
@@ -124,7 +160,7 @@ export const DeliverySlotSelector: React.FC<DeliverySlotSelectorProps> = ({ onSe
   const visibleSlots = useMemo(() => {
     if (!activeDay || !activeDay.slots) return [];
     return activeDay.slots.filter(s => !isSlotPastCutoff(activeDay.date, s));
-  }, [activeDay, cutoffMinutes]);
+  }, [activeDay, isSlotPastCutoff]);
 
   const handleSelectSlot = (date: string, slot: DeliverySlot) => {
     if (isSlotFullyBooked(slot)) return;
@@ -220,8 +256,18 @@ export const DeliverySlotSelector: React.FC<DeliverySlotSelectorProps> = ({ onSe
 
         {deliverySettings?.expressDeliveryEnabled && (
           <Pressable
-            style={[styles.dateCard, styles.fastDeliveryCard, selectedDate === 'fast' && styles.dateCardActive]}
+            style={[
+              styles.dateCard,
+              styles.fastDeliveryCard,
+              selectedDate === 'fast' && styles.dateCardActive,
+              !isExpressAvailable && styles.fastDeliveryCardDisabled
+            ]}
             onPress={() => {
+              if (!isExpressAvailable) {
+                setShowExpressUnavailableBanner(true);
+                return;
+              }
+
               setSelectedDate('fast');
               setDropdownVisible(true);
               onSelectSlot({
@@ -235,11 +281,13 @@ export const DeliverySlotSelector: React.FC<DeliverySlotSelectorProps> = ({ onSe
               });
             }}
           >
-            <Text style={[styles.dayOfWeekText, { color: theme.colors.express }]}>
+            <Text style={[styles.dayOfWeekText, { color: isExpressAvailable ? theme.colors.express : '#888888' }]}>
               {deliverySettings?.expressDeliveryTitle || "⚡ DELIVERY"}
             </Text>
-            <Text style={[styles.dateText, selectedDate === 'fast' && styles.dateTextActive]}>
-              {deliverySettings?.expressDeliveryButtonText || '45-Minutes'}
+            <Text style={[styles.dateText, selectedDate === 'fast' && styles.dateTextActive, !isExpressAvailable && { color: '#888888' }]}>
+              {isExpressAvailable
+                ? (deliverySettings?.expressDeliveryButtonText || '45-Minutes')
+                : 'Offline'}
             </Text>
           </Pressable>
         )}
@@ -304,6 +352,17 @@ export const DeliverySlotSelector: React.FC<DeliverySlotSelectorProps> = ({ onSe
           </View>
         </View>
       </Modal>
+
+      {showExpressUnavailableBanner && (
+        <ErrorBanner
+          title="Express Delivery Unavailable"
+          message={`Express Delivery is currently unavailable. Operating hours are from ${formatTo12Hour(deliverySettings?.expressDeliveryStartTime || "09:00")} to ${formatTo12Hour(deliverySettings?.expressDeliveryEndTime || "21:00")}.`}
+          iconName="time-outline"
+          iconColor={theme.colors.express}
+          buttonText="OK"
+          onDismiss={() => setShowExpressUnavailableBanner(false)}
+        />
+      )}
     </View>
   );
 };
@@ -377,6 +436,11 @@ const styles = StyleSheet.create({
     backgroundColor: theme.colors.express_bg,
     minWidth: 84,
     maxWidth: 115,
+  },
+  fastDeliveryCardDisabled: {
+    borderColor: '#e0e0e0',
+    backgroundColor: '#f5f5f5',
+    opacity: 0.65,
   },
   dateCardActive: {
     backgroundColor: theme.colors.primary_light,

@@ -17,6 +17,8 @@ export interface DeliverySettings {
   expressDeliveryDurationMinutes: number;
   expressDeliveryFee: number;
   expressDeliveryTitle?: string;
+  expressDeliveryStartTime?: string;
+  expressDeliveryEndTime?: string;
   expressDeliveryBadgeText: string;
   expressDeliveryButtonText: string;
   expressDeliveryTagline: string;
