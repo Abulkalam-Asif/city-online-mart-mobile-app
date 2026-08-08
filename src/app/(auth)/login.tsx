@@ -6,7 +6,6 @@ import {
   StyleSheet,
   ScrollView,
   ActivityIndicator,
-  Alert,
 } from "react-native";
 import React, { useState } from "react";
 import { theme } from "@/src/constants/theme";
@@ -16,11 +15,15 @@ import LoginContentBg from "@/src/components/auth/login/LoginContentBg";
 import { useSendOTP, useSignInWithoutOTP } from "@/src/hooks/useAuthUser";
 import { useAuthSettings } from "@/src/hooks/useSettings";
 import { FontAwesome6 } from "@expo/vector-icons";
+import ErrorBanner from "@/src/components/common/ErrorBanner";
+import { getFriendlyErrorMessage } from "@/src/utils/errorUtils";
 
 const LoginScreen = () => {
   const router = useRouter();
   const [phoneNumber, setPhoneNumber] = useState("");
   const [loading, setLoading] = useState(false);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [errorTitle, setErrorTitle] = useState<string>("Login Failed");
 
   const { data: authSettings, isLoading: settingsLoading } = useAuthSettings();
 
@@ -32,10 +35,8 @@ const LoginScreen = () => {
 
   const handleSendOTP = async () => {
     if (phoneNumber.length !== 11) {
-      Alert.alert(
-        "Invalid Number",
-        `Please enter a valid ${11}-digit mobile number.`,
-      );
+      setErrorTitle("Invalid Number");
+      setErrorMessage("Please enter a valid 11-digit mobile number.");
       return;
     }
 
@@ -55,9 +56,9 @@ const LoginScreen = () => {
         router.replace("/home");
       }
     } catch (error: any) {
-      Alert.alert(
-        "Login Failed",
-        error.message || "An unexpected error occurred. Please try again.",
+      setErrorTitle("Login Failed");
+      setErrorMessage(
+        getFriendlyErrorMessage(error, "Unable to sign in. Please try again.")
       );
     } finally {
       setLoading(false);
@@ -130,6 +131,15 @@ const LoginScreen = () => {
           </Pressable>
         </View>
       </View>
+
+      {errorMessage && (
+        <ErrorBanner
+          title={errorTitle}
+          message={errorMessage}
+          buttonText="OK"
+          onDismiss={() => setErrorMessage(null)}
+        />
+      )}
     </ScrollView>
   );
 };
