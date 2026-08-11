@@ -6,7 +6,6 @@ import {
   StyleSheet,
   ScrollView,
   ActivityIndicator,
-  Alert,
   Keyboard,
 } from "react-native";
 import React, { useState, useEffect, useRef } from "react";
@@ -17,12 +16,17 @@ import { FontAwesome6 } from "@expo/vector-icons";
 import { authService } from "@/src/services";
 import { Image } from "expo-image";
 import LoginContentBg from "@/src/components/auth/login/LoginContentBg";
+import ErrorBanner from "@/src/components/common/ErrorBanner";
+import { getFriendlyErrorMessage } from "@/src/utils/errorUtils";
 
 const VerifyOTPScreen = () => {
   const router = useRouter();
   const { phoneNumber } = useLocalSearchParams<{ phoneNumber: string }>();
   const [otpCode, setOtpCode] = useState("");
   const [loading, setLoading] = useState(false);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [errorTitle, setErrorTitle] = useState<string>("Verification Failed");
+  const [onDismissAction, setOnDismissAction] = useState<(() => void) | undefined>(undefined);
 
   const verifyOTPMutation = useVerifyOTP();
   const inputRef = useRef<TextInput>(null);
@@ -30,18 +34,11 @@ const VerifyOTPScreen = () => {
   // Check for valid session on mount
   useEffect(() => {
     if (!authService.pendingConfirmation) {
-      Alert.alert(
-        "Session Expired",
-        "Your verification session has expired. Please try again.",
-        [
-          {
-            text: "OK",
-            onPress: () => router.replace("/login"),
-          },
-        ],
-      );
+      setErrorTitle("Session Expired");
+      setErrorMessage("Your verification session has expired. Please log in again.");
+      setOnDismissAction(() => () => router.replace("/login"));
     }
-  }, []);
+  }, [router]);
 
   const handleVerify = async (code: string = otpCode) => {
     if (code.length !== 6) {
@@ -54,10 +51,11 @@ const VerifyOTPScreen = () => {
       // Navigate home or to previous screen on success
       router.replace("/home");
     } catch (error: any) {
-      Alert.alert(
-        "Verification Failed",
-        "Invalid OTP code. Please try again.",
+      setErrorTitle("Verification Failed");
+      setErrorMessage(
+        getFriendlyErrorMessage(error, "The verification code entered is incorrect. Please try again.")
       );
+      setOnDismissAction(undefined);
       setOtpCode(""); // Clear on failure
     } finally {
       setLoading(false);
@@ -136,6 +134,20 @@ const VerifyOTPScreen = () => {
           </Pressable>
         </View>
       </View>
+
+      {errorMessage && (
+        <ErrorBanner
+          title={errorTitle}
+          message={errorMessage}
+          buttonText="OK"
+          onDismiss={() => {
+            setErrorMessage(null);
+            if (onDismissAction) {
+              onDismissAction();
+            }
+          }}
+        />
+      )}
     </ScrollView>
   );
 };

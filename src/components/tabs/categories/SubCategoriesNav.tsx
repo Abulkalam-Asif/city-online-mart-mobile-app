@@ -64,10 +64,10 @@ const SubCategoriesNav = ({
         onPress={() => setBottomSheetType("sort")}
         selectedSort={selectedSort}
       />
-      <BrandsButton
+      {/* <BrandsButton
         onPress={() => setBottomSheetType("brands")}
         selectedBrands={selectedBrands}
-      />
+      /> */}
       <ScrollView
         contentContainerStyle={[styles.containerContent, loadingSubCategories && { width: "100%" }]}
         horizontal
@@ -111,7 +111,8 @@ export default SubCategoriesNav;
 
 const styles = StyleSheet.create({
   container: {
-    paddingVertical: 8,
+    paddingTop: 2,
+    paddingBottom: 6,
     flexDirection: "row",
     alignItems: "center",
     gap: 8,
@@ -120,7 +121,8 @@ const styles = StyleSheet.create({
   containerContent: {
     alignItems: "center",
     flexDirection: "row",
-    gap: 12,
+    gap: 8,
+    paddingVertical: 2,
   },
   subCategoriesLoadingContainer: {
     width: "100%",
@@ -148,7 +150,7 @@ const styles = StyleSheet.create({
   },
 
   subCategoryNameText: {
-    fontSize: 14,
+    fontSize: 13,
     fontFamily: theme.fonts.regular,
     color: "rgba(0, 0, 0, 0.5)",
   },
