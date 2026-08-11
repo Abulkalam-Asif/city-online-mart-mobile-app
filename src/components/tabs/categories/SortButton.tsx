@@ -14,7 +14,7 @@ const SortButton = ({ onPress, selectedSort }: SortButtonProps) => {
       onPress={onPress}>
       <FontAwesome6
         name="arrow-right-arrow-left"
-        size={20}
+        size={16}
         color="rgba(0, 0, 0, 0.5)"
         style={styles.icon}
       />
@@ -36,7 +36,7 @@ const styles = StyleSheet.create({
   },
   icon: {
     transform: [{ rotate: "1.5708rad" }], // 90 degrees in radians
-    width: 20,
-    height: 20,
+    width: 16,
+    height: 16,
   },
 });

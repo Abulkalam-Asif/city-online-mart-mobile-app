@@ -11,7 +11,7 @@ import CategoriesHeader from "@/src/components/tabs/categories/CategoriesHeader"
 import CategoriesNav from "@/src/components/tabs/categories/CategoriesNav";
 import SubCategoriesNav from "@/src/components/tabs/categories/SubCategoriesNav";
 import { PortalBottomSheet } from "@/src/components/common/PortalBottomSheet";
-import BrandsMenu from "@/src/components/tabs/categories/BrandsMenu";
+// import BrandsMenu from "@/src/components/tabs/categories/BrandsMenu";
 import SortMenu from "@/src/components/tabs/categories/SortMenu";
 import {
   useGetCategoriesForNavbar,
@@ -121,15 +121,9 @@ const CategoriesScreen = () => {
   >(null);
 
   const [selectedSort, setSelectedSort] = useState<ProductSortType>("default");
-  const [selectedBrands, setSelectedBrands] = useState<number[]>([]);
 
   const handleSortApply = (sortType: ProductSortType) => {
     setSelectedSort(sortType);
-    setBottomSheetType(null);
-  };
-
-  const handleBrandsApply = (brands: number[]) => {
-    setSelectedBrands(brands);
     setBottomSheetType(null);
   };
 
@@ -244,7 +238,6 @@ const CategoriesScreen = () => {
           setCurrentSubCategoryId={setCurrentSubCategoryId}
           setBottomSheetType={setBottomSheetType}
           selectedSort={selectedSort}
-          selectedBrands={selectedBrands}
         />
       </View>
 

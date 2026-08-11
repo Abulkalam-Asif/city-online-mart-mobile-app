@@ -3,7 +3,6 @@ import React, { useEffect, useState } from "react";
 import { theme } from "@/src/constants/theme";
 import { SubCategory } from "@/src/types";
 import SortButton from "./SortButton";
-import BrandsButton from "./BrandsButton";
 import Loading from "../../common/Loading";
 import ErrorBanner from "../../common/ErrorBanner";
 import { queryClient, queryKeys } from "@/src/lib/react-query";
@@ -17,7 +16,6 @@ type SubCategoriesNavProps = {
   setCurrentSubCategoryId: (id: string) => void;
   setBottomSheetType: (type: "sort" | "brands" | null) => void;
   selectedSort: string;
-  selectedBrands: number[];
 };
 
 const SubCategoriesNav = ({
@@ -29,7 +27,6 @@ const SubCategoriesNav = ({
   setCurrentSubCategoryId,
   setBottomSheetType,
   selectedSort,
-  selectedBrands,
 }: SubCategoriesNavProps) => {
   const [dismissedError, setDismissedError] = useState(false);
 
@@ -135,7 +132,7 @@ const styles = StyleSheet.create({
   },
 
   subCategoryButton: {
-    paddingVertical: 6,
+    paddingVertical: 4,
     paddingHorizontal: 8,
     backgroundColor: "#F6F7FB",
     borderWidth: 1,
@@ -150,7 +147,7 @@ const styles = StyleSheet.create({
   },
 
   subCategoryNameText: {
-    fontSize: 13,
+    fontSize: 12,
     fontFamily: theme.fonts.regular,
     color: "rgba(0, 0, 0, 0.5)",
   },
