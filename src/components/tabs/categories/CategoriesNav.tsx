@@ -21,31 +21,32 @@ const CategoriesNav = ({
       contentContainerStyle={styles.containerContent}
       horizontal
       showsHorizontalScrollIndicator={false}>
-      {categories.map((category) => (
-        <View
-          key={category.id}
-          collapsable={false}>
-          <Pressable
-            onPress={() => {
-              setCurrentCategoryId(category.id);
-            }}
-            style={({ pressed }) => [
-              styles.categoryButton,
-              currentCategoryId === category.id &&
-              styles.categoryButtonSelected,
-              pressed && styles.categoryButtonPressed,
-            ]}>
-            <Text
-              style={[
-                styles.categoryNameText,
-                currentCategoryId === category.id &&
-                styles.selectedCategoryText,
+      {categories.map((category) => {
+        const isSelected = currentCategoryId === category.id;
+        return (
+          <View
+            key={category.id}
+            collapsable={false}>
+            <Pressable
+              onPress={() => {
+                setCurrentCategoryId(category.id);
+              }}
+              style={({ pressed }) => [
+                styles.categoryButton,
+                isSelected && styles.categoryButtonSelected,
+                pressed && styles.categoryButtonPressed,
               ]}>
-              {category.name}
-            </Text>
-          </Pressable>
-        </View>
-      ))}
+              <Text
+                style={[
+                  styles.categoryNameText,
+                  isSelected && styles.selectedCategoryText,
+                ]}>
+                {category.name}
+              </Text>
+            </Pressable>
+          </View>
+        );
+      })}
     </ScrollView>
   );
 };
@@ -54,31 +55,42 @@ export default CategoriesNav;
 
 const styles = StyleSheet.create({
   container: {
-    paddingBottom: 8,
+    marginVertical: 0,
   },
   containerContent: {
     alignItems: "center",
     flexDirection: "row",
+    paddingHorizontal: 12,
+    paddingTop: 4,
+    paddingBottom: 4,
+    gap: 8,
   },
 
   categoryButton: {
-    paddingTop: 4,
-    paddingHorizontal: 10,
+    paddingVertical: 7,
+    paddingHorizontal: 16,
+    borderRadius: 20,
+    borderWidth: 1,
+    borderColor: theme.colors.primary,
+    backgroundColor: "#FFFFFF",
+    alignItems: "center",
+    justifyContent: "center",
   },
   categoryButtonSelected: {
-    borderBottomWidth: 2,
-    borderBottomColor: theme.colors.primary,
+    backgroundColor: theme.colors.primary,
+    borderColor: theme.colors.primary,
   },
   categoryButtonPressed: {
-    backgroundColor: "rgba(0, 0, 0, 0.05)",
+    opacity: 0.75,
   },
 
   categoryNameText: {
-    fontSize: 12,
-    fontFamily: theme.fonts.semibold,
-    color: theme.colors.text_secondary,
+    fontSize: 13,
+    fontFamily: theme.fonts.medium,
+    color: theme.colors.primary,
   },
   selectedCategoryText: {
-    color: theme.colors.primary,
+    color: "#FFFFFF",
+    fontFamily: theme.fonts.semibold,
   },
 });

@@ -358,12 +358,12 @@ const CategoriesScreen = () => {
         bottomSheetType={bottomSheetType}>
         {bottomSheetType === "sort" ? (
           <SortMenu selectedSort={selectedSort} onApply={handleSortApply} />
-        ) : bottomSheetType === "brands" ? (
+        ) /* : bottomSheetType === "brands" ? (
           <BrandsMenu
             selectedBrands={selectedBrands}
             onApply={handleBrandsApply}
           />
-        ) : null}
+        ) */ : null}
       </PortalBottomSheet>
     </>
   );
