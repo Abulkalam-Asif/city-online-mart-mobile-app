@@ -52,7 +52,7 @@ const ProductCard = ({
     product.validApplicableDiscounts.reduce(
       (best, current) => (current.percentage > (best?.percentage || 0) ? current : best),
       null as typeof product.validApplicableDiscounts[0] | null
-    ), [product.validApplicableDiscounts]
+    ), [product]
   );
 
   const { highestDiscount, discountedPrice, originalPrice, hasDiscount } = useMemo(() => {
@@ -61,7 +61,7 @@ const ProductCard = ({
     const originalPrice = product.price;
     const hasDiscount = product.validApplicableDiscounts.length > 0;
     return { highestDiscount, discountedPrice, originalPrice, hasDiscount };
-  }, [bestDiscount, product.price, product.validApplicableDiscounts]);
+  }, [bestDiscount, product]);
 
   // Get primary image (first image in array)
   const primaryImage = product.multimedia?.images?.[0] || require("@/src/assets/default-image.png");
@@ -71,7 +71,7 @@ const ProductCard = ({
     const usableStock = product.batchStock?.usableStock || 0;
     const committedStock = product.batchStock?.committedStock || 0;
     return Math.max(0, usableStock - committedStock);
-  }, [product.batchStock]);
+  }, [product]);
 
   // Event handlers
   const handleDecrement = useCallback(() => {
@@ -114,32 +114,27 @@ const ProductCard = ({
     });
   }, [quantityInCart, product.id, updateCartItemMutation, availableStock, maxCartQuantity]);
 
-  const handleAddOrViewCart = useCallback(() => {
-    if (quantityInCart === 0) {
-      if (availableStock < 1) {
-        setError({
-          title: "Out of Stock",
-          message: "This item is currently out of stock."
-        });
-        return;
-      }
-
-      // Add to cart for first time
-      addToCartMutation.mutate({
-        productId: product.id,
-        productName: product.info.name,
-        unitPrice: product.price,
-        discountPercentage: highestDiscount,
-        appliedDiscountId: bestDiscount?.id,
-        appliedDiscountSource: bestDiscount?.source,
-        imageUrl: primaryImage,
-        quantity: 1,
+  const handleAddToCart = useCallback(() => {
+    if (availableStock < 1) {
+      setError({
+        title: "Out of Stock",
+        message: "This item is currently out of stock."
       });
-    } else {
-      // Navigate to cart
-      router.push("/cart");
+      return;
     }
-  }, [quantityInCart, product.id, addToCartMutation, bestDiscount, highestDiscount, primaryImage, availableStock]);
+
+    // Add to cart for first time
+    addToCartMutation.mutate({
+      productId: product.id,
+      productName: product.info.name,
+      unitPrice: product.price,
+      discountPercentage: highestDiscount,
+      appliedDiscountId: bestDiscount?.id,
+      appliedDiscountSource: bestDiscount?.source,
+      imageUrl: primaryImage,
+      quantity: 1,
+    });
+  }, [product.id, product.info.name, product.price, addToCartMutation, bestDiscount, highestDiscount, primaryImage, availableStock]);
 
   return (
     <View
@@ -168,7 +163,7 @@ const ProductCard = ({
           </Text>
         ) : null}
         <View style={[styles.imageContainer, availableStock <= 0 && { opacity: 0.5 }]}>
-          <Image source={primaryImage} style={styles.image} />
+          <Image source={primaryImage} style={styles.image} contentFit="contain" />
         </View>
         <Text style={styles.nameText} numberOfLines={2} ellipsizeMode="tail">
           {product.info.name}
@@ -181,48 +176,44 @@ const ProductCard = ({
         </View>
       </Pressable>
       <View style={styles.addToCartSection}>
-        {quantityInCart > 0 && (
+        {quantityInCart > 0 ? (
           <View style={styles.quantitySection}>
             <Pressable
               style={({ pressed }) => [
-                styles.quantityChangeButton,
-                pressed && styles.quantityChangeButtonPressed,
+                styles.decrementButton,
+                pressed && styles.buttonPressed,
               ]}
               onPress={handleDecrement}>
-              <FontAwesome6 name="minus" />
+              <FontAwesome6 name="minus" size={10} color="#FFFFFF" />
             </Pressable>
-            <Text style={styles.quantityText}>{quantityInCart}</Text>
+            <View style={styles.quantityDisplay}>
+              <Text style={styles.quantityText}>{quantityInCart}</Text>
+            </View>
             <Pressable
               style={({ pressed }) => [
-                styles.quantityChangeButton,
-                pressed && styles.quantityChangeButtonPressed,
+                styles.incrementButton,
+                pressed && styles.buttonPressed,
               ]}
               onPress={handleIncrement}>
-              <FontAwesome6 name="plus" />
+              <FontAwesome6 name="plus" size={10} color="#FFFFFF" />
             </Pressable>
           </View>
-        )}
-        
-        {availableStock <= 0 && quantityInCart === 0 ? (
-          <Pressable
-            style={({ pressed }) => [
+        ) : availableStock <= 0 ? (
+          <View
+            style={[
               styles.addToCartButton,
               styles.outOfStockButton,
-              pressed && styles.addToCartButtonPressed,
-            ]}
-            onPress={handleAddOrViewCart}>
+            ]}>
             <Text style={[styles.addToCartText, styles.outOfStockButtonText]}>Out of Stock</Text>
-          </Pressable>
+          </View>
         ) : (
           <Pressable
             style={({ pressed }) => [
               styles.addToCartButton,
               pressed && styles.addToCartButtonPressed,
             ]}
-            onPress={handleAddOrViewCart}>
-            <Text style={styles.addToCartText}>
-              {quantityInCart === 0 ? "Add to Cart" : `View cart`}
-            </Text>
+            onPress={handleAddToCart}>
+            <Text style={styles.addToCartText}>Add to Cart</Text>
           </Pressable>
         )}
       </View>
@@ -248,9 +239,10 @@ const styles = StyleSheet.create({
     backgroundColor: theme.colors.background_3,
   },
   cardPressable: {
-    flex: 1,
     borderRadius: 16,
-    padding: 8,
+    paddingHorizontal: 8,
+    paddingTop: 8,
+    paddingBottom: 2,
     position: "relative",
   },
   cardPressablePressed: {
@@ -267,6 +259,7 @@ const styles = StyleSheet.create({
     lineHeight: 20,
     fontSize: 10,
     fontFamily: theme.fonts.medium,
+    zIndex: 10,
   },
   discountPercentageText: {
     position: "absolute",
@@ -279,31 +272,34 @@ const styles = StyleSheet.create({
     color: "#FFFFFF",
     fontSize: 10,
     fontFamily: theme.fonts.bold,
+    zIndex: 10,
   },
   imageContainer: {
     justifyContent: "center",
     alignItems: "center",
     position: "relative",
     borderRadius: 14,
-    paddingTop: 24,
-    paddingBottom: 16,
+    paddingTop: 12,
+    paddingBottom: 4,
+    height: 150,
+    width: "100%",
   },
   image: {
-    width: 80,
-    height: 80,
-    objectFit: "contain",
+    width: "100%",
+    height: "100%",
   },
   nameText: {
     fontSize: 10,
+    lineHeight: 14,
     fontFamily: theme.fonts.bold,
     color: theme.colors.text,
-    flex: 1,
-    minHeight: 30,
+    minHeight: 28,
   },
   priceContainer: {
     flexDirection: "row",
     alignItems: "baseline",
-    gap: 10,
+    gap: 6,
+    marginTop: 4,
   },
   priceText: {
     fontSize: 12,
@@ -316,38 +312,53 @@ const styles = StyleSheet.create({
     color: "red",
   },
   addToCartSection: {
-    padding: 8,
+    paddingHorizontal: 8,
+    paddingBottom: 8,
     flexDirection: "row",
-    gap: 4,
   },
   quantitySection: {
     flexDirection: "row",
-    alignItems: "center",
+    alignItems: "stretch",
     flex: 1,
     borderWidth: 1,
-    borderColor: theme.colors.background,
+    borderColor: theme.colors.primary,
     borderRadius: 20,
+    height: 28,
+    overflow: "hidden",
   },
-  quantityChangeButton: {
+  decrementButton: {
     flex: 1,
-    flexDirection: "row",
+    backgroundColor: theme.colors.primary,
+    alignItems: "center",
     justifyContent: "center",
-    padding: 5,
-    borderRadius: 20,
   },
-  quantityChangeButtonPressed: {
-    backgroundColor: theme.colors.background,
+  incrementButton: {
+    flex: 1,
+    backgroundColor: theme.colors.primary,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  buttonPressed: {
+    opacity: 0.8,
+  },
+  quantityDisplay: {
+    flex: 1,
+    backgroundColor: "#FFFFFF",
+    alignItems: "center",
+    justifyContent: "center",
   },
   quantityText: {
-    fontFamily: theme.fonts.medium,
-    flex: 1,
+    fontFamily: theme.fonts.bold,
     textAlign: "center",
     fontSize: 12,
+    color: theme.colors.text,
   },
   addToCartButton: {
     flex: 1,
     backgroundColor: theme.colors.primary,
-    paddingVertical: 4,
+    height: 28,
+    alignItems: "center",
+    justifyContent: "center",
     borderRadius: 20,
   },
   outOfStockButton: {

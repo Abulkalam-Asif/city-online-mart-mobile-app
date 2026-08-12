@@ -134,13 +134,13 @@ const styles = StyleSheet.create({
   subCategoryButton: {
     paddingVertical: 4,
     paddingHorizontal: 8,
-    backgroundColor: "#F6F7FB",
     borderWidth: 1,
     borderRadius: 8,
     borderColor: "rgba(0, 0, 0, 0.1)",
   },
   subCategoryButtonSelected: {
     borderColor: theme.colors.primary,
+    backgroundColor: theme.colors.primary_light,
   },
   subCategoryButtonPressed: {
     opacity: 0.7,
