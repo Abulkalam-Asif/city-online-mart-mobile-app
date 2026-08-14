@@ -62,7 +62,7 @@ const AddToCartContainer = ({
 
   const handleIncrement = useCallback(() => {
     const newQuantity = quantityInCart + 1;
-    
+
     if (newQuantity > availableStock) {
       setError({
         title: "Max Available Reached",
@@ -70,7 +70,7 @@ const AddToCartContainer = ({
       });
       return;
     }
-    
+
     if (newQuantity > maxCartQuantity) {
       setError({
         title: "Limit Reached",
@@ -133,16 +133,18 @@ const AddToCartContainer = ({
               ]}
               onPress={handleDecrement}
             >
-              <FontAwesome6 size={20} name="minus" />
+              <FontAwesome6 size={20} name="minus" color="white" />
             </Pressable>
-            <Text style={styles.quantityText}>{quantityInCart}</Text>
+            <View style={styles.quantityDisplay}>
+              <Text style={styles.quantityText}>{quantityInCart}</Text>
+            </View>
             <Pressable
               style={({ pressed }) => [
                 styles.quantityChangeButton,
                 pressed && styles.quantityChangeButtonPressed,
               ]}
               onPress={handleIncrement}>
-              <FontAwesome6 size={20} name="plus" />
+              <FontAwesome6 size={20} name="plus" color="white" />
             </Pressable>
           </View>
         )}
@@ -203,27 +205,34 @@ const styles = StyleSheet.create({
   },
   quantitySection: {
     flexDirection: "row",
-    alignItems: "center",
+    alignItems: "stretch",
     flex: 1,
     borderWidth: 1,
-    borderColor: theme.colors.background,
+    borderColor: theme.colors.primary,
     borderRadius: 30,
+    height: 44,
+    overflow: "hidden",
   },
   quantityChangeButton: {
     flex: 1,
-    flexDirection: "row",
+    backgroundColor: theme.colors.primary,
+    alignItems: "center",
     justifyContent: "center",
-    padding: 11,
-    borderRadius: 30,
   },
   quantityChangeButtonPressed: {
-    backgroundColor: theme.colors.background,
+    opacity: 0.8,
+  },
+  quantityDisplay: {
+    flex: 1,
+    backgroundColor: "#FFFFFF",
+    alignItems: "center",
+    justifyContent: "center",
   },
   quantityText: {
-    fontFamily: theme.fonts.medium,
-    flex: 1,
+    fontFamily: theme.fonts.semibold,
     textAlign: "center",
     fontSize: 18,
+    color: theme.colors.text,
   },
   addToCartButton: {
     flex: 1,

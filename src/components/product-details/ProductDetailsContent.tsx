@@ -45,7 +45,7 @@ const ProductDetailsContent = ({
     product.validApplicableDiscounts.reduce(
       (best, current) => (current.percentage > (best?.percentage || 0) ? current : best),
       null as typeof product.validApplicableDiscounts[0] | null
-    ), [product.validApplicableDiscounts]
+    ), [product]
   );
 
   const { highestDiscount, discountedPrice, originalPrice, hasDiscount } = useMemo(() => {
@@ -251,19 +251,21 @@ const styles = StyleSheet.create({
   },
   priceSection: {
     flexDirection: "row",
-    alignItems: "center",
+    alignItems: "flex-end",
     gap: 10,
   },
   currentPriceText: {
-    fontSize: 16,
+    fontSize: 18,
+    lineHeight: 18,
     fontFamily: theme.fonts.semibold,
     color: theme.colors.secondary,
   },
   oldPriceText: {
-    fontSize: 12,
+    fontSize: 14,
+    lineHeight: 18,
     color: "red",
     textDecorationLine: "line-through",
-    fontFamily: theme.fonts.regular,
+    fontFamily: theme.fonts.medium,
   },
   discountTag: {
     backgroundColor: "#E53935",

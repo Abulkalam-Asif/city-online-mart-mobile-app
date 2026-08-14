@@ -302,14 +302,15 @@ const styles = StyleSheet.create({
     marginTop: 4,
   },
   priceText: {
-    fontSize: 12,
+    fontSize: 14,
     fontFamily: theme.fonts.semibold,
     color: theme.colors.secondary,
   },
   oldPriceText: {
-    fontSize: 8,
+    fontSize: 10,
     textDecorationLine: "line-through",
     color: "red",
+    fontFamily: theme.fonts.medium,
   },
   addToCartSection: {
     paddingHorizontal: 8,
