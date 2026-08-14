@@ -7,6 +7,12 @@ import { getStorage, connectStorageEmulator } from "@react-native-firebase/stora
 // Initialize Firebase services
 export const auth = getAuth();
 
+// Disable native Play Integrity / SafetyNet network check during development
+// This prevents the 80-second timeout delay when calling sendOTP with test phone numbers
+if (__DEV__) {
+  auth.settings.appVerificationDisabledForTesting = true;
+}
+
 export const db = getFirestore();
 
 export const storage = getStorage();
