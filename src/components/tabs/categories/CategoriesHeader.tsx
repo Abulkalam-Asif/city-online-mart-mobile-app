@@ -1,4 +1,4 @@
-import { Pressable, StyleSheet, Text, View, TextInput, Dimensions, Keyboard } from "react-native";
+import { Pressable, StyleSheet, View, TextInput, Dimensions, Keyboard } from "react-native";
 import React, { useState, useEffect } from "react";
 import { FontAwesome6 } from "@expo/vector-icons";
 import { theme } from "@/src/constants/theme";
@@ -59,7 +59,7 @@ const CategoriesHeader = ({ currentCategoryName }: CategoriesHeaderProps) => {
         </Animated.View>
 
         {isSearchActive ? (
-          <Animated.View 
+          <Animated.View
             style={styles.searchBarWrapper}
             entering={FadeIn.duration(200)}
             exiting={FadeOut.duration(200)}
@@ -92,7 +92,7 @@ const CategoriesHeader = ({ currentCategoryName }: CategoriesHeaderProps) => {
         )}
 
         {!isSearchActive && (
-          <Animated.View 
+          <Animated.View
             entering={FadeIn.duration(200)}
             exiting={FadeOut.duration(200)}
             layout={LinearTransition}
@@ -129,8 +129,8 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     flexDirection: "row",
     alignItems: "center",
-    paddingTop: 16,
-    paddingBottom: 8,
+    paddingTop: 8,
+    paddingBottom: 2,
   },
   categoryNameText: {
     fontFamily: theme.fonts.semibold,

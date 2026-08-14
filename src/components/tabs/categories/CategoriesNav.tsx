@@ -61,14 +61,14 @@ const styles = StyleSheet.create({
     alignItems: "center",
     flexDirection: "row",
     paddingHorizontal: 12,
-    paddingTop: 4,
+    paddingTop: 2,
     paddingBottom: 4,
     gap: 8,
   },
 
   categoryButton: {
-    paddingVertical: 7,
-    paddingHorizontal: 16,
+    paddingVertical: 4,
+    paddingHorizontal: 8,
     borderRadius: 20,
     borderWidth: 1,
     borderColor: theme.colors.primary,
@@ -85,7 +85,7 @@ const styles = StyleSheet.create({
   },
 
   categoryNameText: {
-    fontSize: 13,
+    fontSize: 12,
     fontFamily: theme.fonts.medium,
     color: theme.colors.primary,
   },

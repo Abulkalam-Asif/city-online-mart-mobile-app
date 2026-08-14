@@ -79,7 +79,7 @@ const CustomTabBar: React.FC<BottomTabBarProps> = ({
   };
 
   return (
-    <View style={[styles.container, { bottom: 16 }]}>
+    <View style={[styles.container, { bottom: 10 }]}>
       {/* Floating WhatsApp Button */}
       {state.routes.some((route) => route.name === "quick-order") && (
         <Pressable
@@ -89,9 +89,9 @@ const CustomTabBar: React.FC<BottomTabBarProps> = ({
           ]}
           onPress={handleQuickOrder}>
           <View style={styles.quickOrderIconContainer}>
-            <MaterialCommunityIcons name="whatsapp" size={34} color="white" />
+            <MaterialCommunityIcons name="whatsapp" size={28} color="white" />
           </View>
-          <Text style={[styles.tabLabel, { color: "#ffffff" }]}>
+          <Text style={[styles.tabLabel, { color: "#ffffff", marginTop: 1 }]}>
             Quick Order
           </Text>
         </Pressable>
@@ -181,8 +181,8 @@ const styles = StyleSheet.create({
     maxWidth: 450,
     flexDirection: "row",
     backgroundColor: theme.colors.primary,
-    height: 70,
-    borderRadius: 36,
+    height: 60,
+    borderRadius: 30,
     shadowColor: "#000",
     shadowOffset: {
       width: 0,
@@ -196,47 +196,46 @@ const styles = StyleSheet.create({
     flex: 1,
     alignItems: "center",
     justifyContent: "center",
-    borderRadius: 40,
   },
   activeIndicator: {
     position: "absolute",
-    bottom: 10,
-    width: 16,
-    height: 3,
-    borderRadius: 2,
+    bottom: 4,
+    width: 14,
+    height: 2.5,
+    borderRadius: 1.25,
     backgroundColor: "#ffffff",
   },
   tabLabel: {
     fontSize: 10,
-    marginTop: 4,
+    marginTop: 2,
     fontFamily: theme.fonts.medium,
     fontWeight: "500",
   },
   quickOrderButton: {
     position: "absolute",
-    top: -20,
+    top: -14,
     left: "50%",
-    marginLeft: -14,
+    marginLeft: -12,
     zIndex: 60,
     alignItems: "center",
   },
   quickOrderIconContainer: {
-    width: 60,
-    height: 60,
-    borderRadius: 30,
+    width: 50,
+    height: 50,
+    borderRadius: 25,
     backgroundColor: "#25D366", // Standard WhatsApp Color
     alignItems: "center",
     justifyContent: "center",
-    borderWidth: 4,
+    borderWidth: 3,
     borderColor: "#ffffff",
     shadowColor: "#000",
     shadowOffset: {
       width: 0,
-      height: 6,
+      height: 4,
     },
-    shadowOpacity: 0.3,
-    shadowRadius: 8,
-    elevation: 10,
+    shadowOpacity: 0.25,
+    shadowRadius: 6,
+    elevation: 8,
   },
 
   badge: {
