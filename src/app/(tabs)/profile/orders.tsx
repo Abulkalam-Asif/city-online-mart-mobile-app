@@ -18,14 +18,12 @@ import { useGetInfiniteCustomerOrders } from "@/src/hooks/useOrders";
 import { CONSTANTS } from "@/src/constants/constants";
 import { convertTimestamp } from "@/src/utils/firestoreUtils";
 import ErrorBanner from "@/src/components/common/ErrorBanner";
-import { auth } from "@/firebaseConfig";
-
 type OrderTab = "all" | OrderStatus;
 
 const OrdersScreen = () => {
   const [activeTab, setActiveTab] = useState<OrderTab>("all");
-  const { isLoading: authLoading } = useAuthUser();
-  const firebaseUid = auth.currentUser?.uid;
+  const { data: user, isLoading: authLoading } = useAuthUser();
+  const firebaseUid = user?.uid;
   const isAuthReady = !!firebaseUid;
 
   const ordersQuery = useGetInfiniteCustomerOrders(

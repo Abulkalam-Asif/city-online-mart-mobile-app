@@ -1,13 +1,13 @@
 {
   "project_info": {
-    "project_number": "45370836688",
-    "project_id": "city-online-mart-7c235",
-    "storage_bucket": "city-online-mart-7c235.firebasestorage.app"
+    "project_number": "1045903565882",
+    "project_id": "city-hub-30961",
+    "storage_bucket": "city-hub-30961.firebasestorage.app"
   },
   "client": [
     {
       "client_info": {
-        "mobilesdk_app_id": "1:45370836688:android:a36dc81317382b3645c0d5",
+        "mobilesdk_app_id": "1:1045903565882:android:24024e51cb69588d0c4103",
         "android_client_info": {
           "package_name": "com.cityonlinemart.com"
         }
@@ -15,7 +15,7 @@
       "oauth_client": [],
       "api_key": [
         {
-          "current_key": "AIzaSyAoC55ICS8zdyof_ganB2UlTz4mo-7P7iU"
+          "current_key": "AIzaSyANLnXUJR4pRDyIDIwW2JlZI91EKhmXWWg"
         }
       ],
       "services": {
