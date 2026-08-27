@@ -1,4 +1,4 @@
-import { getCityDb, getCityAuth, getCityStorage, getCityFunctions } from "../lib/cityFirebase";
+import { getCityDb, getCityAuth, getCityStorage, getCityFunctions, getCityApp } from "../lib/cityFirebase";
 import { AuthService } from "./AuthService";
 import { CartService } from "./CartService";
 import { DiscountService } from "./DiscountService";
@@ -29,10 +29,31 @@ function createServices() {
   };
 }
 
+let _cachedServices: ReturnType<typeof createServices> | null = null;
+let _cachedCityId: string | null = null;
+
+
+
+function getServices() {
+  const currentCityId = getCityApp().name;
+  if (_cachedServices && _cachedCityId === currentCityId) {
+    return _cachedServices;
+  }
+  _cachedServices = createServices();
+  _cachedCityId = currentCityId;
+  return _cachedServices;
+}
+
+/** Call this when clearing a city (logout / city switch) to release the old service graph for GC. */
+export function resetServiceCache(): void {
+  _cachedServices = null;
+  _cachedCityId = null;
+}
+
 function createProxy<T extends keyof ReturnType<typeof createServices>>(serviceName: T) {
   return new Proxy({} as ReturnType<typeof createServices>[T], {
     get: (_, prop) => {
-      return (createServices()[serviceName] as any)[prop];
+      return (getServices()[serviceName] as any)[prop];
     }
   });
 }

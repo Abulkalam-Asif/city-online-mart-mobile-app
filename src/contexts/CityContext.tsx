@@ -30,6 +30,7 @@ import storage from "@react-native-firebase/storage";
 import functions from "@react-native-firebase/functions";
 import { logger } from "../utils/logger";
 import { setCityFirebaseInstances, clearCityFirebaseInstances } from "../lib/cityFirebase";
+import { resetServiceCache } from "../services";
 
 // ── Types ──────────────────────────────────────────────────────────────────────
 
@@ -218,6 +219,7 @@ export const CityProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   const clearCity = useCallback(async (): Promise<void> => {
     await AsyncStorage.removeItem(CITY_STORAGE_KEY);
     clearCityFirebaseInstances();
+    resetServiceCache();
     setSelectedCity(null);
     setIsCityReady(false);
   }, []);
