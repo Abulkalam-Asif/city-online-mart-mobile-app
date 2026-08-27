@@ -87,9 +87,11 @@ export const CityProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       const appName = `city-${city.id}`;
       const existingApps = firebase.apps;
       let app = existingApps.find((a) => a.name === appName);
+      let isNewApp = false;
 
       if (!app) {
-        // React Native Firebase often throws an error if databaseURL is missing when initializing a secondary app
+        isNewApp = true;
+        // Fix for RNFirebase crash: must inject synthetic databaseURL if omitted
         const configWithDb = {
           ...city.firebaseConfig,
           databaseURL: `https://${city.firebaseConfig.projectId}.firebaseio.com`,
@@ -109,7 +111,7 @@ export const CityProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         cityAuth.settings.appVerificationDisabledForTesting = true;
       }
 
-      if (__DEV__ && USE_EMULATOR) {
+      if (__DEV__ && USE_EMULATOR && isNewApp) {
         try {
           // Android Emulator requires 10.0.2.2 instead of localhost
           const host = "10.0.2.2";

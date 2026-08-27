@@ -24,7 +24,6 @@ import { logger } from "../utils/logger";
 
 export class AuthService {
   private static readonly USERS_COLLECTION = "USERS";
-  private static readonly AUTH_STORAGE_KEY = "@auth_user";
   private _confirmationResult: FirebaseAuthTypes.ConfirmationResult | null =
     null;
 
@@ -213,10 +212,15 @@ export class AuthService {
     }
   }
 
+  private get authStorageKey(): string {
+    // Scope the storage key to the currently active city's Firebase App name
+    return `@auth_user_${this.auth.app.name}`;
+  }
+
   async setStoredUser(user: AuthUser): Promise<void> {
     try {
       await AsyncStorage.setItem(
-        AuthService.AUTH_STORAGE_KEY,
+        this.authStorageKey,
         JSON.stringify(user),
       );
     } catch (error) {
@@ -227,7 +231,7 @@ export class AuthService {
   async getStoredUser(): Promise<AuthUser | null> {
     try {
       const stored = await AsyncStorage.getItem(
-        AuthService.AUTH_STORAGE_KEY,
+        this.authStorageKey,
       );
       return stored ? JSON.parse(stored) : null;
     } catch (error) {
@@ -238,7 +242,7 @@ export class AuthService {
 
   async clearStoredUser(): Promise<void> {
     try {
-      await AsyncStorage.removeItem(AuthService.AUTH_STORAGE_KEY);
+      await AsyncStorage.removeItem(this.authStorageKey);
     } catch (error) {
       logger.error("clearStoredUser", error);
     }
