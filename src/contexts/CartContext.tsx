@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useEffect, useState, useCallback } from "react";
 import { Cart, ICartItem } from "../types";
 import { cartService } from "../services";
+import { useCityContext } from "./CityContext";
 
 interface CartContextType {
   cart: Cart | null;
@@ -33,11 +34,16 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [cart, setCart] = useState<Cart | null>(null);
   const [loading, setLoading] = useState(true);
   const [isPending, setIsPending] = useState(false);
+  const { selectedCity, isCityReady } = useCityContext();
 
-  // Load cart from AsyncStorage on mount
+  // Load cart from AsyncStorage when app mounts or city changes
   useEffect(() => {
+    // Only load if a city is fully selected
+    if (!isCityReady) return;
+
     const loadCart = async () => {
       try {
+        setLoading(true);
         const storedCart = await cartService.getCart();
         setCart(storedCart);
       } catch (error) {
@@ -49,7 +55,7 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
     };
 
     loadCart();
-  }, []);
+  }, [selectedCity?.id, isCityReady]);
 
   // Helper to calculate cart items subtotal
   const calculateCartItemsSubtotal = useCallback((items: ICartItem[]): number => {

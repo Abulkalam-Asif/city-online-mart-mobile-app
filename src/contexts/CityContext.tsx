@@ -200,6 +200,14 @@ export const CityProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       logger.warn("CityContext.setCity", `City "${cityId}" not found`);
       return;
     }
+
+    // Completely wipe all cached React Query data (e.g. Products, Categories)
+    // so the new city doesn't accidentally display the old city's data.
+    import("../lib/react-query").then(({ queryClient }) => {
+      queryClient.clear();
+      logger.info("React Query cache cleared for city switch.");
+    });
+
     await AsyncStorage.setItem(CITY_STORAGE_KEY, JSON.stringify(city));
     await initializeCityFirebase(city);
   }, [cities, initializeCityFirebase]);
