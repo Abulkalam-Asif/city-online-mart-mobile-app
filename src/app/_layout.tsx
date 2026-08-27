@@ -10,6 +10,7 @@ import { queryClient } from "../lib/react-query";
 import { ModalProvider } from "../contexts/ModalContext";
 import { AuthProvider } from "../contexts/AuthContext";
 import { CartProvider } from "../contexts/CartContext";
+import { CityProvider } from "../contexts/CityContext";
 import { ModalPortal } from "../components/common/ModalPortal";
 import PushNotificationHandler from "../components/notifications/PushNotificationHandler";
 
@@ -33,30 +34,33 @@ export default function RootLayout() {
 
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
-      <QueryClientProvider client={queryClient}>
-        <AuthProvider>
-          <CartProvider>
-            <SafeAreaProvider>
-              <ModalProvider>
-                <SafeAreaView style={{ flex: 1, backgroundColor: '#3A591E' }}>
-                  <StatusBar style="light" backgroundColor="#3A591E" />
-                  <View style={{ flex: 1, backgroundColor: '#ffffff' }}>
-                    <Stack
-                      screenOptions={{
-                        headerShown: false,
-                      }}>
-                      <Stack.Screen name="index" />
-                      <Stack.Screen name="(tabs)" />
-                    </Stack>
-                    <ModalPortal />
-                    <PushNotificationHandler />
-                  </View>
-                </SafeAreaView>
-              </ModalProvider>
-            </SafeAreaProvider>
-          </CartProvider>
-        </AuthProvider>
-      </QueryClientProvider>
+      <CityProvider>
+        <QueryClientProvider client={queryClient}>
+          <AuthProvider>
+            <CartProvider>
+              <SafeAreaProvider>
+                <ModalProvider>
+                  <SafeAreaView style={{ flex: 1, backgroundColor: '#3A591E' }}>
+                    <StatusBar style="light" backgroundColor="#3A591E" />
+                    <View style={{ flex: 1, backgroundColor: '#ffffff' }}>
+                      <Stack
+                        screenOptions={{
+                          headerShown: false,
+                        }}>
+                        <Stack.Screen name="index" />
+                        <Stack.Screen name="city-select" />
+                        <Stack.Screen name="(tabs)" />
+                      </Stack>
+                      <ModalPortal />
+                      <PushNotificationHandler />
+                    </View>
+                  </SafeAreaView>
+                </ModalProvider>
+              </SafeAreaProvider>
+            </CartProvider>
+          </AuthProvider>
+        </QueryClientProvider>
+      </CityProvider>
     </GestureHandlerRootView>
   );
 }
