@@ -5,11 +5,6 @@ import { logger } from "../utils/logger";
 
 export class CartService {
   /**
-   * Storage key for cart data
-   */
-  private static readonly CART_STORAGE_KEY = "@cart_data";
-
-  /**
    * Calculates the subtotal price of all items in the cart after applying product discounts
    * @param items - The array of cart items.
    * @returns The subtotal price of all items in the cart.
@@ -20,6 +15,21 @@ export class CartService {
       0
     );
   }
+  /**
+   * Helper function to get the dynamic storage key scoped by the active city
+   */
+  private static getStorageKey = async (): Promise<string> => {
+    try {
+      const cityJson = await AsyncStorage.getItem("@app_selected_city");
+      if (cityJson) {
+        const city = JSON.parse(cityJson);
+        return `@cart_data_${city.id}`;
+      }
+    } catch (error) {
+      logger.error("getStorageKey", error);
+    }
+    return "@cart_data_default";
+  }
 
   /**
    * Helper function to get cart from AsyncStorage
@@ -27,7 +37,8 @@ export class CartService {
    */
   private static getStoredCart = async (): Promise<Cart | null> => {
     try {
-      const cartJson = await AsyncStorage.getItem(CartService.CART_STORAGE_KEY);
+      const storageKey = await CartService.getStorageKey();
+      const cartJson = await AsyncStorage.getItem(storageKey);
       if (cartJson) {
         const cartData = JSON.parse(cartJson);
         return cartData;
@@ -45,8 +56,9 @@ export class CartService {
    */
   private static saveCart = async (cart: Cart): Promise<void> => {
     try {
+      const storageKey = await CartService.getStorageKey();
       const cartJson = JSON.stringify(cart);
-      await AsyncStorage.setItem(CartService.CART_STORAGE_KEY, cartJson);
+      await AsyncStorage.setItem(storageKey, cartJson);
     } catch (error) {
       logger.error("saveCart", error);
       throw error;

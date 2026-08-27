@@ -1,6 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { arrayRemove, arrayUnion, doc, updateDoc, setDoc } from "@react-native-firebase/firestore";
-import { db } from "../../firebaseConfig";
+import { arrayRemove, arrayUnion, doc, setDoc } from "@react-native-firebase/firestore";
+import { getCityDb } from "../lib/cityFirebase";
 import { authService, productService } from "../services";
 import { queryKeys } from "../lib/react-query";
 import { useAuth } from "../contexts/AuthContext";
@@ -17,7 +17,7 @@ export const useFavourites = () => {
     mutationFn: async (productId: string) => {
       if (!user?.uid) throw new Error("Must be logged in to manage favourites");
 
-      const userRef = doc(db, "USERS", user.uid);
+      const userRef = doc(getCityDb(), "USERS", user.uid);
       const isFavourite = favourites.includes(productId);
 
       if (isFavourite) {

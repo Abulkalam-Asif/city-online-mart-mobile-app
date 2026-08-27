@@ -12,7 +12,7 @@ import {
 } from "@expo/vector-icons";
 import { theme } from "@/src/constants/theme";
 import { useAuthUser, useSignOut } from "@/src/hooks/useAuthUser";
-import { db } from "@/firebaseConfig";
+import { getCityDb } from "@/src/lib/cityFirebase";
 import { logger } from "@/src/utils/logger";
 
 const SettingsScreen = () => {
@@ -40,7 +40,7 @@ const SettingsScreen = () => {
     setIsUpdatingNotifications(true);
 
     try {
-      const userRef = doc(db, "USERS", authUser.uid);
+      const userRef = doc(getCityDb(), "USERS", authUser.uid);
       await updateDoc(userRef, { notificationsEnabled: nextValue });
       logger.info(
         `Notifications: preference updated (uid=${authUser.uid}, enabled=${nextValue})`,
@@ -71,7 +71,7 @@ const SettingsScreen = () => {
       setIsLoadingNotifications(true);
 
       try {
-        const userRef = doc(db, "USERS", authUser.uid);
+        const userRef = doc(getCityDb(), "USERS", authUser.uid);
         const userSnap = await getDoc(userRef);
 
         if (!userSnap.exists()) {

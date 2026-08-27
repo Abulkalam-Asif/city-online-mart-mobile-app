@@ -8,7 +8,8 @@ import {
   where,
 } from "@react-native-firebase/firestore";
 import { Category, SubCategory } from "../types";
-import { convertEmulatorUrl, db } from "@/firebaseConfig";
+import { convertEmulatorUrl } from "../utils/emulator";
+import { getCityDb } from "../lib/cityFirebase";
 import { logger } from "../utils/logger";
 
 const CATEGORIES_COLLECTION = "CATEGORIES";
@@ -91,7 +92,7 @@ export const categoryService = {
         constraints.push(where("productsCount", ">", 0) as QueryConstraint);
       }
 
-      const categoriesRef = collection(db, CATEGORIES_COLLECTION);
+      const categoriesRef = collection(getCityDb(), CATEGORIES_COLLECTION);
       const q = query(
         categoriesRef,
         ...constraints,
@@ -116,7 +117,7 @@ export const categoryService = {
     filter?: { isActive?: boolean; showOnNavbar?: boolean },
   ): Promise<SubCategory[]> {
     try {
-      const subCategoriesRef = collection(db, SUBCATEGORIES_COLLECTION);
+      const subCategoriesRef = collection(getCityDb(), SUBCATEGORIES_COLLECTION);
       const constraints: QueryConstraint[] = [];
 
       if (filter?.isActive !== undefined) {

@@ -1,9 +1,16 @@
-import { Tabs } from "expo-router";
+import { Tabs, Redirect } from "expo-router";
 import React from "react";
 import CustomTabBar from "@/src/components/navigation/CustomTabBar";
 import { ModalPortal } from "@/src/components/common/ModalPortal";
+import { useCityContext } from "@/src/contexts/CityContext";
 
 export default function TabsLayout() {
+  const { isCityReady, citiesLoading } = useCityContext();
+
+  if (!citiesLoading && !isCityReady) {
+    return <Redirect href={"/city-select" as any} />;
+  }
+
   return (
     <>
       <Tabs

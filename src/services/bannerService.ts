@@ -1,5 +1,6 @@
 import { collection, getDocs, query, orderBy, where, FirebaseFirestoreTypes } from "@react-native-firebase/firestore";
-import { convertEmulatorUrl, db } from "../../firebaseConfig";
+import { convertEmulatorUrl } from "../utils/emulator";
+import { getCityDb } from "../lib/cityFirebase";
 import type { BannerMinimal } from "@/src/types";
 import { logger } from "../utils/logger";
 
@@ -25,7 +26,7 @@ const bannerService = {
   async getHomepageBanners(): Promise<BannerMinimal[]> {
     try {
       const q = query(
-        collection(db, COLLECTION_NAME),
+        collection(getCityDb(), COLLECTION_NAME),
         where("bannerType", "==", "homepage"),
         where("isActive", "==", true),
         orderBy("displayOrder", "asc")
@@ -50,7 +51,7 @@ const bannerService = {
   async getPopupBanner(): Promise<BannerMinimal | null> {
     try {
       const q = query(
-        collection(db, COLLECTION_NAME),
+        collection(getCityDb(), COLLECTION_NAME),
         where("bannerType", "==", "popup"),
         where("isActive", "==", true),
       );

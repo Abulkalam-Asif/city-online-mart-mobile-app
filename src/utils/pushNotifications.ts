@@ -7,7 +7,7 @@ import {
   setDoc,
 } from "@react-native-firebase/firestore";
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import { db } from "../../firebaseConfig";
+import { getCityDb } from "../lib/cityFirebase";
 import { logger } from "./logger";
 
 const DEVICE_TOKENS_SUBCOLLECTION = "deviceTokens";
@@ -86,7 +86,7 @@ export const registerPushTokenForUser = async (
       const cachedToken = await AsyncStorage.getItem(PUSH_TOKEN_STORAGE_KEY);
       if (cachedToken) {
         const tokenRef = doc(
-          db,
+          getCityDb(),
           USERS_COLLECTION,
           userId,
           DEVICE_TOKENS_SUBCOLLECTION,
@@ -124,7 +124,7 @@ export const registerPushTokenForUser = async (
 
     // Store token under the user so each device can be tracked separately.
     const tokenRef = doc(
-      db,
+      getCityDb(),
       USERS_COLLECTION,
       userId,
       DEVICE_TOKENS_SUBCOLLECTION,

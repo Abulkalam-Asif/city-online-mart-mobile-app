@@ -8,10 +8,13 @@ import {
 } from "../hooks/useAuthUser";
 import { useQueryClient } from "@tanstack/react-query";
 import { queryKeys } from "../lib/react-query";
-import { onAuthStateChanged } from "@react-native-firebase/auth";
+import {
+  onAuthStateChanged,
+  FirebaseAuthTypes,
+} from "@react-native-firebase/auth";
 import { logger } from "../utils/logger";
-import { FirebaseAuthTypes } from "@react-native-firebase/auth";
 import { registerPushTokenForUser } from "../utils/pushNotifications";
+import { useCityContext } from "./CityContext";
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
@@ -25,7 +28,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
   const signInWithoutOTPMutation = useSignInWithoutOTP();
   const signOutMutation = useSignOut();
 
+  const { isCityReady } = useCityContext();
+
   useEffect(() => {
+    if (!isCityReady) return;
+
     // Listen for Firebase auth state changes to keep React Query cache in sync
     const unsubscribe = onAuthStateChanged(
       authService.authInstance,
@@ -46,7 +53,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
     );
 
     return unsubscribe;
-  }, []);
+  }, [isCityReady, queryClient]);
 
   useEffect(() => {
     if (!user?.uid) return;

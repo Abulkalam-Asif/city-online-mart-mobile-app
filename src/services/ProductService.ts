@@ -12,7 +12,7 @@ import {
   QueryConstraint,
 } from "@react-native-firebase/firestore";
 import { Product, ProductSortType } from "../types";
-import { convertEmulatorUrl } from "@/firebaseConfig";
+import { convertEmulatorUrl } from "../utils/emulator";
 import { logger } from "../utils/logger";
 import { PaginatedResult } from "../types/common.types";
 
