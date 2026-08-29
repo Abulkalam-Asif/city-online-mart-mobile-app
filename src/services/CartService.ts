@@ -27,8 +27,9 @@ export class CartService {
       }
     } catch (error) {
       logger.error("getStorageKey", error);
+      throw error;
     }
-    return "@cart_data_default";
+    throw new Error("No active city found. Cart operations are not allowed.");
   }
 
   /**

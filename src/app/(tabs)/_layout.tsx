@@ -3,11 +3,21 @@ import React from "react";
 import CustomTabBar from "@/src/components/navigation/CustomTabBar";
 import { ModalPortal } from "@/src/components/common/ModalPortal";
 import { useCityContext } from "@/src/contexts/CityContext";
+import Loading from "@/src/components/common/Loading";
 
 export default function TabsLayout() {
   const { isCityReady, citiesLoading } = useCityContext();
 
-  if (!citiesLoading && !isCityReady) {
+  if (citiesLoading) {
+    return (
+      <Loading
+        text="Loading..."
+        style={{ flex: 1, backgroundColor: "#fff" }}
+      />
+    );
+  }
+
+  if (!isCityReady) {
     return <Redirect href={"/city-select" as any} />;
   }
 
