@@ -279,8 +279,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
     position: "relative",
     borderRadius: 14,
-    paddingTop: 12,
-    paddingBottom: 4,
+    overflow: "hidden",
     height: 150,
     width: "100%",
   },
@@ -289,11 +288,12 @@ const styles = StyleSheet.create({
     height: "100%",
   },
   nameText: {
-    fontSize: 10,
-    lineHeight: 14,
-    fontFamily: theme.fonts.bold,
+    fontSize: 12,
+    lineHeight: 16,
+    fontFamily: theme.fonts.regular,
     color: theme.colors.text,
     minHeight: 28,
+    marginTop: 4
   },
   priceContainer: {
     flexDirection: "row",
