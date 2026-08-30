@@ -98,7 +98,7 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
-    marginBottom: 16,
+    marginBottom: 8,
     paddingHorizontal: 20,
   },
   sectionTitleText: {
@@ -112,6 +112,7 @@ const styles = StyleSheet.create({
     color: theme.colors.secondary,
   },
   scrollContent: {
+    paddingTop: 8,
     paddingHorizontal: 20,
     flexDirection: "row",
     gap: 18,
