@@ -9,3 +9,11 @@ export function useGetValidOrderDiscounts() {
     staleTime: 1000 * 60 * 30, // 30 minutes
   });
 }
+
+export function useGetValidCategoryDiscounts() {
+  return useQuery({
+    queryKey: queryKeys.discounts.validCategoryDiscounts(),
+    queryFn: () => discountService.getValidCategoryDiscounts(),
+    staleTime: 1000 * 60 * 30, // 30 minutes
+  });
+}

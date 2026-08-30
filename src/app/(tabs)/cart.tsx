@@ -11,7 +11,7 @@ import CartItem from "@/src/components/tabs/cart/CartItem";
 import EmptyCart from "@/src/components/tabs/cart/EmptyCart";
 import { theme } from "@/src/constants/theme";
 import { router } from "expo-router";
-import { useCart, useUpdateCartItem, useRemoveFromCart, useClearCart } from "@/src/hooks/useCart";
+import { useCart, useUpdateCartItem, useRemoveFromCart } from "@/src/hooks/useCart";
 import { useCartContext } from "@/src/contexts/CartContext";
 import Loading from "@/src/components/common/Loading";
 import { useRefreshCartItemsStock } from "@/src/hooks/useProducts";
@@ -88,7 +88,6 @@ export default function CartScreen() {
   const { mutate: updateCartItem } = updateCartItemMutation;
   const removeFromCartMutation = useRemoveFromCart();
   const { mutate: removeFromCart } = removeFromCartMutation;
-  const clearCartMutation = useClearCart();
 
   const processedStockDataRef = React.useRef<any>(null);
 
@@ -174,11 +173,8 @@ export default function CartScreen() {
 
   const keyExtractor = useCallback((item: ICartItem) => item.productId, []);
 
-  const handleClearCart = useCallback(() => {
-    clearCartMutation.mutate();
-  }, [clearCartMutation])
 
-  const { minimumOrderAmount, itemsSubtotal, orderDiscountAmount, finalSubtotal, canProceedToCheckout, isCartEmpty, totalProductDiscounts } = useMemo(() => {
+  const { minimumOrderAmount, orderDiscountAmount, finalSubtotal, canProceedToCheckout, isCartEmpty, totalProductDiscounts } = useMemo(() => {
     const minimumOrderAmount = orderSettings?.minimumOrderAmount || 0;
     const itemsSubtotal = cart?.itemsSubtotal || 0;
 
@@ -504,7 +500,7 @@ const styles = StyleSheet.create({
   bachatText: {
     fontSize: 11,
     fontFamily: theme.fonts.semibold,
-    color: '#e53935',
+    color: theme.colors.red,
   },
   proceedButton: {
     backgroundColor: theme.colors.primary,

@@ -268,7 +268,7 @@ const styles = StyleSheet.create({
     fontFamily: theme.fonts.medium,
   },
   discountTag: {
-    backgroundColor: "#E53935",
+    backgroundColor: theme.colors.red,
     fontSize: 10,
     fontFamily: theme.fonts.bold,
     paddingHorizontal: 10,
