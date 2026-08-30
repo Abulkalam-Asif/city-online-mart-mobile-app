@@ -71,4 +71,28 @@ export class DiscountService {
       throw error;
     }
   }
+
+  /**
+   * Fetches all valid category-level discounts.
+   */
+  async getValidCategoryDiscounts(): Promise<Discount[]> {
+    try {
+      const discountsRef = collection(this.db, DiscountService.COLLECTION_NAME);
+      const q = query(
+        discountsRef,
+        where("type", "==", "category"),
+        where("isActive", "==", true)
+      );
+      const snapshot = await getDocs(q);
+      const discounts = snapshot.docs.map((d: FirebaseFirestoreTypes.DocumentData) =>
+        DiscountService.firestoreToDiscount(d.id, d.data())
+      );
+
+      // Final date-range filter
+      return discounts.filter((d: Discount) => DiscountService.isDiscountValid(d));
+    } catch (error) {
+      logger.error("Error fetching valid category discounts:", error);
+      throw error;
+    }
+  }
 }

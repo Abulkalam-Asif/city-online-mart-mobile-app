@@ -10,6 +10,7 @@ type CategoryCardProps = {
   name: string;
   imageSource?: string;
   backgroundColor?: string;
+  discountPercentage?: number;
 };
 
 const CategoryCard = ({
@@ -17,6 +18,7 @@ const CategoryCard = ({
   imageSource,
   name,
   backgroundColor,
+  discountPercentage,
 }: CategoryCardProps) => {
   return (
     <Pressable
@@ -30,6 +32,11 @@ const CategoryCard = ({
       }}
       style={({ pressed }) => [styles.card, pressed && styles.cardPressed]}>
       <View style={[styles.imageContainer, { backgroundColor }]}>
+        {discountPercentage && discountPercentage > 0 ? (
+          <View style={styles.badgeContainer}>
+            <Text style={styles.badgeText}>{discountPercentage}% OFF</Text>
+          </View>
+        ) : null}
         <Image
           source={
             imageSource
@@ -66,6 +73,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
     borderWidth: 1,
     borderColor: theme.colors.secondary,
+    position: "relative",
   },
   image: {
     width: "100%",
@@ -77,5 +85,20 @@ const styles = StyleSheet.create({
     fontFamily: theme.fonts.regular,
     color: theme.colors.text,
     textAlign: "center",
+  },
+  badgeContainer: {
+    position: "absolute",
+    top: -8,
+    alignSelf: "flex-end",
+    backgroundColor: theme.colors.red,
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 8,
+    zIndex: 10,
+  },
+  badgeText: {
+    color: "#fff",
+    fontSize: getResponsiveValue<number>(7, 9),
+    fontFamily: theme.fonts.bold,
   },
 });

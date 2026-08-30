@@ -186,22 +186,31 @@ const CategoriesScreen = () => {
     }
   };
 
+  // Number of columns for the grid
+  const numColumns = getResponsiveValue<number>(2, 3);
+
   // Calculate product card width based on screen (moved before renderProduct for useCallback dependency)
   const productCardWidth = getResponsiveValue<number>(
-    (width) => (width - 48) / 2,
-    (width) => (width - 64) / 3
+    (width) => (width - 30) / 2,
+    (width) => (width - 36) / 3 // 12 (left edge) + 6 (gap) + 6 (gap) + 12 (right edge) = 36 total padding
   );
 
   // Render product item - memoized for performance
   const renderProduct = useCallback(
     ({ item, index }: { item: Product; index: number }) => {
       const cartItem = cart?.items.find((i) => i.productId === item.id);
+
+      let itemStyle;
+      if (numColumns === 3) {
+        if (index % 3 === 0) itemStyle = styles.productItemLeft3Col;
+        else if (index % 3 === 1) itemStyle = styles.productItemMiddle3Col;
+        else itemStyle = styles.productItemRight3Col;
+      } else {
+        itemStyle = index % 2 === 0 ? styles.productItemLeft : styles.productItemRight;
+      }
+
       return (
-        <View
-          style={[
-            styles.productItem,
-            index % 2 === 0 ? styles.productItemLeft : styles.productItemRight,
-          ]}>
+        <View style={[styles.productItem, itemStyle]}>
           <ProductCard
             product={item}
             cardWidth={productCardWidth}
@@ -210,11 +219,8 @@ const CategoriesScreen = () => {
         </View>
       );
     },
-    [productCardWidth, cart]
+    [productCardWidth, cart, numColumns]
   );
-
-  // Number of columns for the grid
-  const numColumns = getResponsiveValue<number>(2, 3);
 
   const listHeader = (
     <>
@@ -373,7 +379,7 @@ const styles = StyleSheet.create({
     paddingBottom: 100,
   },
   columnWrapper: {
-    paddingTop: 16,
+    paddingTop: 8,
   },
   stickyHeader: {
     backgroundColor: "#fff",
@@ -412,12 +418,24 @@ const styles = StyleSheet.create({
     // marginBottom: 16,
   },
   productItemLeft: {
-    paddingLeft: 16,
-    paddingRight: 8,
+    paddingLeft: 12,
+    paddingRight: 3,
   },
   productItemRight: {
-    paddingLeft: 8,
-    paddingRight: 16,
+    paddingLeft: 3,
+    paddingRight: 12,
+  },
+  productItemLeft3Col: {
+    paddingLeft: 12,
+    paddingRight: 0,
+  },
+  productItemMiddle3Col: {
+    paddingLeft: 6,
+    paddingRight: 6,
+  },
+  productItemRight3Col: {
+    paddingLeft: 0,
+    paddingRight: 12,
   },
   footer: {
     paddingVertical: 40,

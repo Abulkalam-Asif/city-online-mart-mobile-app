@@ -89,9 +89,7 @@ const SubCategoriesNav = ({
                 ]}>
                 <Text
                   style={[
-                    styles.subCategoryNameText,
-                    currentSubCategoryId === subCategory.id &&
-                    styles.selectedSubCategoryText,
+                    styles.subCategoryNameText
                   ]}>
                   {subCategory.name}
                 </Text>
@@ -148,10 +146,7 @@ const styles = StyleSheet.create({
 
   subCategoryNameText: {
     fontSize: 12,
-    fontFamily: theme.fonts.regular,
-    color: "rgba(0, 0, 0, 0.5)",
-  },
-  selectedSubCategoryText: {
+    fontFamily: theme.fonts.medium,
     color: theme.colors.primary,
   },
 });

@@ -5,6 +5,7 @@ import {
   Text,
   TouchableOpacity,
 } from "react-native";
+import { useGetValidCategoryDiscounts } from "@/src/hooks/useDiscounts";
 import React from "react";
 import CategoryCard from "./CategoryCard";
 import { theme } from "@/src/constants/theme";
@@ -19,6 +20,8 @@ const CategoriesSection = () => {
     isLoading: loadingCategories,
     error: errorGettingCategories,
   } = useGetCategoriesForHomepage();
+
+  const { data: categoryDiscounts } = useGetValidCategoryDiscounts();
 
   // In case of error, we simply don't render the section
   if (errorGettingCategories) {
@@ -63,15 +66,21 @@ const CategoriesSection = () => {
         contentContainerStyle={styles.scrollContent}>
         {categoryColumns.map((column, columnIndex) => (
           <View key={columnIndex} style={styles.column}>
-            {column.map((category) => (
-              <CategoryCard
-                key={category.id}
-                imageSource={category.image}
-                name={category.name}
-                backgroundColor={theme.colors.background_2}
-                id={category.id}
-              />
-            ))}
+            {column.map((category) => {
+              const discount = categoryDiscounts?.find(
+                (d) => d.id === category.discountId
+              );
+              return (
+                <CategoryCard
+                  key={category.id}
+                  imageSource={category.image}
+                  name={category.name}
+                  backgroundColor={theme.colors.background_2}
+                  id={category.id}
+                  discountPercentage={discount?.percentage}
+                />
+              );
+            })}
           </View>
         ))}
       </ScrollView>
@@ -105,14 +114,14 @@ const styles = StyleSheet.create({
   scrollContent: {
     paddingHorizontal: 20,
     flexDirection: "row",
-    gap: 24,
+    gap: 18,
   },
   column: {
     flexDirection: "column",
     gap: getResponsiveValue(8, 16),
     width: getResponsiveValue(
-      (width) => (width - 112) / 4, // 4 cards in view
-      (width) => (width - 184) / 7 // 7 cards in view
+      (width) => (width - 94) / 4, // 4 cards in view
+      (width) => (width - 148) / 7 // 7 cards in view
     ),
   },
 });

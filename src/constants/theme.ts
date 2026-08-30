@@ -10,6 +10,7 @@ export const theme = {
     background: "#E0E0E0",
     background_2: "#FFF1D3",
     background_3: "#f8f7f7ff",
+    red: "#E53935",
 
     success: "#537D2B",
     success_light: "#EAFCD9",

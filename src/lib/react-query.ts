@@ -147,6 +147,7 @@ export const queryKeys = {
     // Base key - invalidates ALL discount queries
     all: ["discounts"] as const,
     validOrderDiscounts: () => [...queryKeys.discounts.all, "validOrderDiscounts"] as const,
+    validCategoryDiscounts: () => [...queryKeys.discounts.all, "validCategoryDiscounts"] as const,
   },
 
   // ========================================
