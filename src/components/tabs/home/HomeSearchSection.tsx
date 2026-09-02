@@ -56,7 +56,7 @@ const HomeSearchSection: React.FC<HomeSearchSectionProps> = ({
           <FontAwesome6 name="bell" size={20} color={"#fff"} />
         </Pressable>
       </View>
-      
+
       {/* Invisible overlay to dismiss search when clicking outside */}
       {debouncedSearchTerm.trim().length > 0 && (
         <Pressable style={styles.overlay} onPress={handleDismiss} />
@@ -78,17 +78,16 @@ const styles = StyleSheet.create({
   },
   container: {
     paddingHorizontal: 16,
-    paddingTop: 16,
-    paddingBottom: 8,
+    paddingTop: 6,
     flexDirection: "row",
     alignItems: "center",
-    gap: 12,
+    gap: 6,
   },
   textInput: {
     backgroundColor: theme.colors.background_3,
     borderRadius: 24,
     paddingHorizontal: 20,
-    paddingVertical: 10,
+    paddingVertical: 8,
     fontFamily: theme.fonts.regular,
     fontSize: 14,
     color: theme.colors.text,
@@ -106,7 +105,7 @@ const styles = StyleSheet.create({
   },
   overlay: {
     position: "absolute",
-    top: 70, // Start right below the search bar
+    top: 55, // Start right below the search bar
     left: 0,
     right: 0,
     bottom: -screenHeight, // Stretch far down the screen

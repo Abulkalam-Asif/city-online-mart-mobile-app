@@ -113,16 +113,16 @@ const styles = StyleSheet.create({
   },
   scrollContent: {
     paddingTop: 8,
-    paddingHorizontal: 20,
+    paddingHorizontal: 16,
     flexDirection: "row",
-    gap: 18,
+    gap: 16,
   },
   column: {
     flexDirection: "column",
-    gap: getResponsiveValue(8, 16),
+    gap: getResponsiveValue(4, 16),
     width: getResponsiveValue(
-      (width) => (width - 94) / 4, // 4 cards in view
-      (width) => (width - 148) / 7 // 7 cards in view
+      (width) => (width - 80) / 3.25, // 3.25 cards in view
+      (width) => (width - 112) / 6 // 7 cards in view
     ),
   },
 });

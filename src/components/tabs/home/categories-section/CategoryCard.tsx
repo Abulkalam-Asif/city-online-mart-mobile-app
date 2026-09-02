@@ -61,7 +61,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "flex-start",
     gap: 8,
-    height: getResponsiveValue<number>(105, 200),
+    height: getResponsiveValue<number>(120, 150),
   },
   cardPressed: {
     opacity: 0.7,
@@ -80,9 +80,9 @@ const styles = StyleSheet.create({
     aspectRatio: 1,
   },
   nameText: {
-    fontSize: getResponsiveValue<number>(8, 12),
+    fontSize: getResponsiveValue<number>(10, 12),
     lineHeight: getResponsiveValue<number>(12, 16),
-    fontFamily: theme.fonts.regular,
+    fontFamily: theme.fonts.medium,
     color: theme.colors.text,
     textAlign: "center",
   },
