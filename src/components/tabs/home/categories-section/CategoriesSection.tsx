@@ -75,7 +75,8 @@ const CategoriesSection = () => {
                   key={category.id}
                   imageSource={category.image}
                   name={category.name}
-                  backgroundColor={theme.colors.background_2}
+                  backgroundColor={category.backgroundColor || theme.colors.background_2}
+                  borderColor={category.borderColor || theme.colors.secondary}
                   id={category.id}
                   discountPercentage={discount?.percentage}
                 />

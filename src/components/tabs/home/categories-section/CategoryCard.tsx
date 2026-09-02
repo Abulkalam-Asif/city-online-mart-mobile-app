@@ -10,6 +10,7 @@ type CategoryCardProps = {
   name: string;
   imageSource?: string;
   backgroundColor?: string;
+  borderColor?: string;
   discountPercentage?: number;
 };
 
@@ -18,6 +19,7 @@ const CategoryCard = ({
   imageSource,
   name,
   backgroundColor,
+  borderColor,
   discountPercentage,
 }: CategoryCardProps) => {
   return (
@@ -31,7 +33,7 @@ const CategoryCard = ({
         });
       }}
       style={({ pressed }) => [styles.card, pressed && styles.cardPressed]}>
-      <View style={[styles.imageContainer, { backgroundColor }]}>
+      <View style={[styles.imageContainer, { backgroundColor, borderColor }]}>
         {discountPercentage && discountPercentage > 0 ? (
           <View style={styles.badgeContainer}>
             <Text style={styles.badgeText}>{discountPercentage}% OFF</Text>

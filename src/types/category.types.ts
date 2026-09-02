@@ -20,4 +20,6 @@ export interface Category {
   showOnNavbar: boolean;
   discountId?: string;
   manufacturerIds: string[];
+  backgroundColor?: string;
+  borderColor?: string;
 }

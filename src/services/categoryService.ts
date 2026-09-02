@@ -33,6 +33,8 @@ const firestoreToCategory = (id: string, data: any): Category => {
     showOnNavbar: data.showOnNavbar ?? false,
     manufacturerIds: data.manufacturerIds || [],
     discountId: data.discountId || null,
+    backgroundColor: data.backgroundColor || undefined,
+    borderColor: data.borderColor || undefined,
   };
 };
 
