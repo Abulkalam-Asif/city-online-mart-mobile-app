@@ -46,7 +46,7 @@ const SearchDropdownItem = ({ product, canPress }: { product: Product, canPress:
     product.validApplicableDiscounts?.reduce(
       (best, current) => (current.percentage > (best?.percentage || 0) ? current : best),
       null as typeof product.validApplicableDiscounts[0] | null
-    ), [product.validApplicableDiscounts]
+    ), [product]
   );
 
   const highestDiscount = bestDiscount?.percentage || 0;
@@ -86,7 +86,7 @@ const SearchDropdownItem = ({ product, canPress }: { product: Product, canPress:
 
   const handleIncrement = useCallback(() => {
     const newQuantity = quantityInCart + 1;
-    
+
     if (newQuantity > availableStock) {
       setError({
         title: "Max Available Reached",
@@ -94,7 +94,7 @@ const SearchDropdownItem = ({ product, canPress }: { product: Product, canPress:
       });
       return;
     }
-    
+
     if (newQuantity > maxCartQuantity) {
       setError({
         title: "Limit Reached",
@@ -140,12 +140,12 @@ const SearchDropdownItem = ({ product, canPress }: { product: Product, canPress:
       {/* Add To Cart Section */}
       <View style={styles.cartActionContainer}>
         {quantityInCart === 0 ? (
-          <Pressable 
+          <Pressable
             style={({ pressed }) => [
-              styles.circularAddButton, 
+              styles.circularAddButton,
               availableStock < 1 && styles.buttonDisabled,
               pressed && availableStock >= 1 && styles.buttonPressed
-            ]} 
+            ]}
             onPress={handleAdd}
             disabled={availableStock < 1}
           >
@@ -153,15 +153,15 @@ const SearchDropdownItem = ({ product, canPress }: { product: Product, canPress:
           </Pressable>
         ) : (
           <View style={styles.quantityControl}>
-            <Pressable 
-              style={({ pressed }) => [styles.qtyBtn, pressed && styles.buttonPressed]} 
+            <Pressable
+              style={({ pressed }) => [styles.qtyBtn, pressed && styles.buttonPressed]}
               onPress={handleDecrement}
             >
               <FontAwesome6 name="minus" size={12} color="#fff" />
             </Pressable>
             <Text style={styles.qtyText}>{quantityInCart}</Text>
-            <Pressable 
-              style={({ pressed }) => [styles.qtyBtn, pressed && styles.buttonPressed]} 
+            <Pressable
+              style={({ pressed }) => [styles.qtyBtn, pressed && styles.buttonPressed]}
               onPress={handleIncrement}
             >
               <FontAwesome6 name="plus" size={12} color="#fff" />
@@ -202,7 +202,7 @@ const SearchDropdown: React.FC<SearchDropdownProps> = ({ searchTerm }) => {
         </View>
       ) : products?.length === 0 ? (
         <View style={styles.centerContainer}>
-          <Text style={styles.emptyText}>No products found for "{searchTerm}"</Text>
+          <Text style={styles.emptyText}>{`No products found for "${searchTerm}"`}</Text>
         </View>
       ) : (
         <ScrollView
@@ -224,7 +224,7 @@ export default SearchDropdown;
 const styles = StyleSheet.create({
   container: {
     position: "absolute",
-    top: 70, // Below the search bar
+    top: 55, // Below the search bar
     left: 16,
     right: 16,
     backgroundColor: "#fff",

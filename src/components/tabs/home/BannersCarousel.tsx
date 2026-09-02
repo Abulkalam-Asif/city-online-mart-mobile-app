@@ -1,9 +1,8 @@
-import { Dimensions, StyleSheet, Text, Pressable, View } from "react-native";
+import { Dimensions, StyleSheet, Pressable, View } from "react-native";
 import Carousel from "react-native-reanimated-carousel";
 import { Image } from "expo-image";
 import { CONSTANTS } from "@/src/constants/constants";
 import { BannerMinimal } from "@/src/types/banner.types";
-import { theme } from "@/src/constants/theme";
 import CarouselAnimatedDots from "../../general/CarouselAnimatedDots";
 import { useGetHomepageBanners } from "@/src/hooks/useBanners";
 import { router } from "expo-router";
@@ -17,8 +16,8 @@ const BannersCarousel = () => {
   const { data: bannersData, isLoading: loadingBannersData, error: errorGettingBanners } =
     useGetHomepageBanners();
   // Calculate card width to show main card fully + partial next card
-  const cardWidth = width * 0.85; // Main card takes 85% of screen
-  const cardSpacing = 16; // Space between cards
+  const cardWidth = width * 0.9; // Main card takes 85% of screen
+  const cardSpacing = 0; // Space between cards
 
   const progressValue = useSharedValue<number>(0);
 
@@ -41,7 +40,6 @@ const BannersCarousel = () => {
 
   return (
     <View style={styles.container}>
-      <Text style={styles.sectionTitleText}>Find your Best Deals</Text>
       <Carousel
         width={cardWidth}
         height={cardWidth / CONSTANTS.homepageBannerRatio}
@@ -55,7 +53,7 @@ const BannersCarousel = () => {
         }}
         modeConfig={{
           parallaxScrollingScale: 0.9,
-          parallaxScrollingOffset: 40,
+          parallaxScrollingOffset: 30,
         }}
         renderItem={({ item }: { item: BannerMinimal; index: number }) => (
           <Pressable
@@ -78,14 +76,7 @@ export default React.memo(BannersCarousel);
 
 const styles = StyleSheet.create({
   container: {
-    marginBottom: 30,
-  },
-  sectionTitleText: {
-    fontFamily: theme.fonts.semibold,
-    fontSize: 16,
-    marginBottom: 8,
-    paddingLeft: 20,
-    color: "#fff",
+    marginBottom: 20,
   },
   imageContainer: {
     justifyContent: "center",

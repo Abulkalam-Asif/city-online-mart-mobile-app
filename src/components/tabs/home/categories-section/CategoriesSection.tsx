@@ -75,7 +75,8 @@ const CategoriesSection = () => {
                   key={category.id}
                   imageSource={category.image}
                   name={category.name}
-                  backgroundColor={theme.colors.background_2}
+                  backgroundColor={category.backgroundColor || theme.colors.background_2}
+                  borderColor={category.borderColor || theme.colors.secondary}
                   id={category.id}
                   discountPercentage={discount?.percentage}
                 />
@@ -98,7 +99,7 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
-    marginBottom: 16,
+    marginBottom: 8,
     paddingHorizontal: 20,
   },
   sectionTitleText: {
@@ -112,16 +113,17 @@ const styles = StyleSheet.create({
     color: theme.colors.secondary,
   },
   scrollContent: {
-    paddingHorizontal: 20,
+    paddingTop: 8,
+    paddingHorizontal: 16,
     flexDirection: "row",
-    gap: 18,
+    gap: 16,
   },
   column: {
     flexDirection: "column",
-    gap: getResponsiveValue(8, 16),
+    gap: getResponsiveValue(4, 16),
     width: getResponsiveValue(
-      (width) => (width - 94) / 4, // 4 cards in view
-      (width) => (width - 148) / 7 // 7 cards in view
+      (width) => (width - 80) / 3.25, // 3.25 cards in view
+      (width) => (width - 112) / 6 // 7 cards in view
     ),
   },
 });

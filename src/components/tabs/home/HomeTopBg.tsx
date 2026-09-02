@@ -11,7 +11,7 @@ const HomeTopBg = () => {
         style={[
           styles.container,
           {
-            height: height * 0.25,
+            height: height * 0.2,
           },
         ]}></View>
     </>
