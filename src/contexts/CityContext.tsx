@@ -105,6 +105,7 @@ export const CityProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       const cityFunctions = functions(app);
 
       const USE_EMULATOR = process.env.EXPO_PUBLIC_USE_EMULATOR === "true";
+      const EMULATOR_HOST = process.env.EXPO_PUBLIC_EMULATOR_HOST || "10.0.2.2";
 
       if (__DEV__) {
         // Disable native Play Integrity / SafetyNet network check during development
@@ -114,12 +115,11 @@ export const CityProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       if (__DEV__ && USE_EMULATOR && isNewApp) {
         try {
           // Android Emulator requires 10.0.2.2 instead of localhost
-          const host = "10.0.2.2";
-          cityAuth.useEmulator(`http://${host}:9099`);
-          cityDb.useEmulator(host, 8080);
-          cityStorage.useEmulator(host, 9199);
-          // cityFunctions.useEmulator(host, 5001); // Often disabled for Gen 2
-          logger.info(`CityContext: Connected to local emulators at ${host}`);
+          cityAuth.useEmulator(`http://${EMULATOR_HOST}:9099`);
+          cityDb.useEmulator(EMULATOR_HOST, 8080);
+          cityStorage.useEmulator(EMULATOR_HOST, 9199);
+          // cityFunctions.useEmulator(EMULATOR_HOST, 5001); // Often disabled for Gen 2
+          logger.info(`CityContext: Connected to local emulators at ${EMULATOR_HOST}`);
         } catch {
           logger.warn("CityContext", "Emulator connection failed or already connected.");
         }
