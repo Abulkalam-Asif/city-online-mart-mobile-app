@@ -12,5 +12,8 @@ export const CONSTANTS = {
 
   checkout: {
     addressMinLength: 5,
-  }
+  },
+
+  // Store Contact
+  whatsappNumber: process.env.EXPO_PUBLIC_WHATSAPP_NUMBER || "15556688705",
 };
