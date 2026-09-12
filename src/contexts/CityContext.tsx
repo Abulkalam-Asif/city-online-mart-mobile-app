@@ -118,7 +118,7 @@ export const CityProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
           cityAuth.useEmulator(`http://${EMULATOR_HOST}:9099`);
           cityDb.useEmulator(EMULATOR_HOST, 8080);
           cityStorage.useEmulator(EMULATOR_HOST, 9199);
-          // cityFunctions.useEmulator(EMULATOR_HOST, 5001); // Often disabled for Gen 2
+          cityFunctions.useEmulator(EMULATOR_HOST, 5001); // Enabled to ensure custom tokens hit local emulator
           logger.info(`CityContext: Connected to local emulators at ${EMULATOR_HOST}`);
         } catch {
           logger.warn("CityContext", "Emulator connection failed or already connected.");

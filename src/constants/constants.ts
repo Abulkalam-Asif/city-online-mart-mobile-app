@@ -15,5 +15,5 @@ export const CONSTANTS = {
   },
 
   // Store Contact
-  whatsappNumber: "923197303810",
+  whatsappNumber: process.env.EXPO_PUBLIC_WHATSAPP_NUMBER || "15556688705",
 };

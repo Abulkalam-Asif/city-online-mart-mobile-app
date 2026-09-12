@@ -191,9 +191,6 @@ export default function PaymentsScreen() {
           <View style={styles.uploadSection}>
             <Text style={styles.sectionTitle}>Verify Payment via WhatsApp</Text>
             <WhatsAppPaymentSection
-              orderId={orderId}
-              totalAmount={orderTotal}
-              paymentMethodName={selectedPaymentMethod ? getPaymentMethodDisplayName(selectedPaymentMethod.type, selectedPaymentMethod.accountDetails?.bankName) : undefined}
               isChecked={isChecked}
               setChecked={setChecked}
             />

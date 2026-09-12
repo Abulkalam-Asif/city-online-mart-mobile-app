@@ -13,37 +13,22 @@ import { theme } from "@/src/constants/theme";
 import { CONSTANTS } from "@/src/constants/constants";
 
 type WhatsAppPaymentSectionProps = {
-  orderId: string;
-  totalAmount?: number;
-  paymentMethodName?: string;
   isChecked: boolean;
   setChecked: (value: boolean) => void;
 };
 
 const WhatsAppPaymentSection = ({
-  orderId,
-  totalAmount,
-  paymentMethodName,
   isChecked,
   setChecked,
 }: WhatsAppPaymentSectionProps) => {
-  const whatsappNumber = CONSTANTS.whatsappNumber || "923197303810";
+  const whatsappNumber = CONSTANTS.whatsappNumber || "15556688705";
 
   const handleOpenWhatsApp = useCallback(() => {
-    let msg = `Hi City Online Mart! I have placed Order #${orderId}`;
-    if (totalAmount) {
-      msg += ` (Total: Rs. ${totalAmount})`;
-    }
-    if (paymentMethodName) {
-      msg += ` paid via ${paymentMethodName}`;
-    }
-    msg += `. Here is my payment screenshot:`;
-
-    const url = `https://wa.me/${whatsappNumber}?text=${encodeURIComponent(msg)}`;
+    const url = `https://wa.me/${whatsappNumber}`;
     Linking.openURL(url).catch((err) => {
       console.error("Failed to open WhatsApp URL:", err);
     });
-  }, [orderId, totalAmount, paymentMethodName, whatsappNumber]);
+  }, [whatsappNumber]);
 
   return (
     <View style={styles.cardContainer}>
@@ -57,7 +42,8 @@ const WhatsAppPaymentSection = ({
 
       {/* Instruction */}
       <Text style={styles.instructionText}>
-        Please send the payment using your selected method, then tap below to share your payment proof screenshot with us on WhatsApp.
+        Please send the payment using your selected method, then tap below to
+        share your payment proof screenshot with us on WhatsApp.
       </Text>
 
       {/* Prominent WhatsApp CTA Button */}
@@ -66,9 +52,7 @@ const WhatsAppPaymentSection = ({
         onPress={handleOpenWhatsApp}
         activeOpacity={0.82}>
         <Ionicons name="logo-whatsapp" size={24} color="#FFFFFF" />
-        <Text style={styles.whatsappButtonText}>
-          Share Screenshot
-        </Text>
+        <Text style={styles.whatsappButtonText}>Share Screenshot</Text>
       </TouchableOpacity>
 
       {/* Checkbox Option Row */}
@@ -85,7 +69,11 @@ const WhatsAppPaymentSection = ({
           onValueChange={setChecked}
           color={isChecked ? "#25D366" : theme.colors.primary}
         />
-        <Text style={[styles.checkboxLabelText, isChecked && styles.checkboxLabelTextChecked]}>
+        <Text
+          style={[
+            styles.checkboxLabelText,
+            isChecked && styles.checkboxLabelTextChecked,
+          ]}>
           I have sent payment proof on WhatsApp
         </Text>
       </Pressable>
