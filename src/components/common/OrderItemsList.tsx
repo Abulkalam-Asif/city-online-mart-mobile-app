@@ -12,6 +12,8 @@ export interface DisplayItem {
   imageUrl?: string;
   originalPrice?: number;
   discountPercentage?: number;
+  /** Order Details only: "Refunded" or "2 of 3 refunded" (active refunds). */
+  refundLabel?: string;
 }
 
 interface OrderItemsListProps {
