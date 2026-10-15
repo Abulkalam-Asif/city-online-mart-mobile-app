@@ -146,7 +146,7 @@ const OrderItem = ({
 
       <View style={styles.rightContainer}>
         {status === "delivered" && (
-          <Text style={styles.reviewText}>Leave your Review</Text>
+          <Text style={styles.reviewText} numberOfLines={1}>Leave your Review</Text>
         )}
         <View style={[styles.statusBadge, { backgroundColor: colors.bg }]}>
           <Text style={[styles.statusText, { color: colors.text }]}>
@@ -173,14 +173,14 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     paddingVertical: 8,
     backgroundColor: "#fff",
-    gap: 16,
+    gap: 12,
   },
   containerPressed: {
     backgroundColor: theme.colors.background_3,
   },
   iconContainer: {
-    width: 56,
-    height: 56,
+    width: 50,
+    height: 50,
     borderRadius: 12,
     justifyContent: "center",
     alignItems: "center",
@@ -217,7 +217,7 @@ const styles = StyleSheet.create({
     color: theme.colors.secondary,
   },
   rightContainer: {
-    alignItems: "flex-end",
+    alignItems: "center",
     gap: 6,
   },
   reviewText: {
@@ -226,8 +226,8 @@ const styles = StyleSheet.create({
     color: theme.colors.secondary,
   },
   statusBadge: {
-    paddingHorizontal: 12,
-    paddingVertical: 6,
+    paddingHorizontal: 10,
+    paddingVertical: 4,
     borderRadius: 20,
   },
   statusText: {
