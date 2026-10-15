@@ -33,6 +33,7 @@ import {
 import { format, parse } from "date-fns";
 import { formatSlotTimeRange } from "@/src/utils/slotUtils";
 import { useFocusEffect } from "@react-navigation/native";
+import { getOrderRefundSummary } from "@/src/utils/refundUtils";
 
 type OrderDetailsContentProps = {
   orderId?: string;
@@ -73,6 +74,12 @@ const OrderDetailsContent = ({ orderId }: OrderDetailsContentProps) => {
       };
     });
   }, [orderData?.items]);
+
+  // Active refunds only; null when there is nothing to show
+  const refundSummary = useMemo(
+    () => (orderData ? getOrderRefundSummary(orderData) : null),
+    [orderData],
+  );
 
   const paymentImageSource = orderData?.paymentMethod?.type
     ? getPaymentMethodImage(orderData.paymentMethod.type)
@@ -475,6 +482,7 @@ const OrderDetailsContent = ({ orderId }: OrderDetailsContentProps) => {
         paymentStatusLabel={getPaymentStatusLabel()}
         displayItems={displayItems}
         customerPhone={orderData.customerPhone}
+        refundSummary={refundSummary}
       />
 
       <ConfirmationModal

@@ -4,6 +4,7 @@ import ViewShot from "react-native-view-shot";
 import { DisplayItem } from "@/src/components/common/OrderItemsList";
 
 import { formatSlotTimeRange } from "@/src/utils/slotUtils";
+import { OrderRefundSummary, roundAmount } from "@/src/utils/refundUtils";
 import { format, parse } from "date-fns";
 
 const formatSlotDate = (dateStr?: string) => {
@@ -39,6 +40,8 @@ type HiddenCaptureViewProps = {
   paymentStatusLabel: string;
   displayItems: DisplayItem[];
   customerPhone?: string;
+  /** Active refunds only (from getOrderRefundSummary); null hides the refund block. */
+  refundSummary: OrderRefundSummary | null;
 };
 
 const DottedLine = () => (
@@ -60,6 +63,7 @@ const HiddenCaptureView = ({
   paymentStatusLabel,
   displayItems,
   customerPhone,
+  refundSummary,
 }: HiddenCaptureViewProps) => {
   return (
     <>
@@ -148,11 +152,72 @@ const HiddenCaptureView = ({
               <Text style={styles.grandTotalText}>Rs {totalAmount}</Text>
             </View>
 
+            {/* Refunds Applied: active refunds only, never the reason (same as AdminPrintReceipt) */}
+            {refundSummary && (
+              <>
+                <DottedLine />
+                <View style={styles.summaryContainer}>
+                  <Text style={[styles.posTextBold, styles.refundsTitle]}>Refunds Applied:</Text>
+                  {refundSummary.refundedItems.map((item, index) => (
+                    <View key={`refund-item-${index}`} style={styles.summaryRow}>
+                      <Text style={[styles.posText, styles.refundLabel]}>- {item.quantity}x {item.productName}:</Text>
+                      <Text style={styles.posText}>-Rs {roundAmount(item.subtotal)}</Text>
+                    </View>
+                  ))}
+                  {refundSummary.refundsWithoutDetails.map((refund) => (
+                    <View key={`refund-${refund.refundId}`} style={styles.summaryRow}>
+                      <Text style={[styles.posText, styles.refundLabel]}>- Refund:</Text>
+                      <Text style={styles.posText}>-Rs {roundAmount(refund.amount)}</Text>
+                    </View>
+                  ))}
+                  {refundSummary.deliveryFeeRefunded > 0 && (
+                    <View style={styles.summaryRow}>
+                      <Text style={[styles.posText, styles.refundLabel]}>- Delivery Fee Refunded:</Text>
+                      <Text style={styles.posText}>-Rs {refundSummary.deliveryFeeRefunded}</Text>
+                    </View>
+                  )}
+                  {refundSummary.orderDiscountRecovered > 0 && (
+                    <View style={styles.summaryRow}>
+                      <Text style={[styles.posText, styles.refundLabel]}>- Order Discount No Longer Applies:</Text>
+                      <Text style={styles.posText}>+Rs {refundSummary.orderDiscountRecovered}</Text>
+                    </View>
+                  )}
+                  {refundSummary.onlineDiscountRecovered > 0 && (
+                    <View style={styles.summaryRow}>
+                      <Text style={[styles.posText, styles.refundLabel]}>- Online Discount No Longer Applies:</Text>
+                      <Text style={styles.posText}>+Rs {refundSummary.onlineDiscountRecovered}</Text>
+                    </View>
+                  )}
+                  {refundSummary.customAdjustment !== 0 && (
+                    <View style={styles.summaryRow}>
+                      <Text style={[styles.posText, styles.refundLabel]}>- Adjustment:</Text>
+                      <Text style={styles.posText}>
+                        {refundSummary.customAdjustment > 0 ? "-" : "+"}Rs {Math.abs(refundSummary.customAdjustment)}
+                      </Text>
+                    </View>
+                  )}
+                  <View style={[styles.summaryRow, styles.totalRefundedRow]}>
+                    <Text style={styles.posTextBold}>TOTAL REFUNDED:</Text>
+                    <Text style={styles.posTextBold}>-Rs {refundSummary.totalRefunded}</Text>
+                  </View>
+                </View>
+                <DottedLine />
+                <View style={styles.grandTotalContainer}>
+                  <Text style={styles.grandTotalText}>ADJUSTED TOTAL:</Text>
+                  <Text style={styles.grandTotalText}>Rs {refundSummary.adjustedTotal}</Text>
+                </View>
+              </>
+            )}
+
             {/* Extra Details */}
             <View style={styles.detailsContainer}>
               <View style={styles.detailsRow}>
                 <Text style={styles.posText}>Order Status:</Text>
-                <Text style={styles.posText}>{getStatusText()}</Text>
+                <Text style={styles.posText}>
+                  {getStatusText()}
+                  {/* A full refund locks the order without changing its status */}
+                  {refundSummary?.isFullyRefunded ? " (Fully Refunded)" : ""}
+                </Text>
               </View>
               <View style={styles.detailsRow}>
                 <Text style={styles.posText}>Payment Method:</Text>
@@ -299,6 +364,16 @@ const styles = StyleSheet.create({
     fontFamily,
     fontWeight: "bold",
     color: "#000",
+  },
+  refundsTitle: {
+    marginBottom: 4,
+  },
+  refundLabel: {
+    flex: 1,
+    marginRight: 8,
+  },
+  totalRefundedRow: {
+    marginTop: 4,
   },
   detailsContainer: {
     marginTop: 8,
