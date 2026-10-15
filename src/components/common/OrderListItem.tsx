@@ -39,6 +39,10 @@ const OrderListItem = ({ item }: OrderListItemProps) => {
           {item.discountPercentage && item.discountPercentage > 0 ? (
             <Text style={styles.discountTag}>{`${item.discountPercentage}% off`}</Text>
           ) : null}
+
+          {item.refundLabel ? (
+            <Text style={styles.refundTag}>{item.refundLabel}</Text>
+          ) : null}
         </View>
       </View>
     </View>
@@ -112,5 +116,15 @@ const styles = StyleSheet.create({
     paddingVertical: 1,
     borderRadius: 10,
     color: "black",
+  },
+  refundTag: {
+    backgroundColor: theme.colors.error_light,
+    fontSize: 8,
+    lineHeight: 16,
+    fontFamily: theme.fonts.semibold,
+    paddingHorizontal: 6,
+    paddingVertical: 1,
+    borderRadius: 10,
+    color: theme.colors.error,
   },
 });

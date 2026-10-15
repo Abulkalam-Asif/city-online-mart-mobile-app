@@ -33,6 +33,11 @@ import {
 import { format, parse } from "date-fns";
 import { formatSlotTimeRange } from "@/src/utils/slotUtils";
 import { useFocusEffect } from "@react-navigation/native";
+import {
+  getItemRefundLabel,
+  getOrderRefundSummary,
+  getRefundedQuantities,
+} from "@/src/utils/refundUtils";
 
 type OrderDetailsContentProps = {
   orderId?: string;
@@ -59,6 +64,7 @@ const OrderDetailsContent = ({ orderId }: OrderDetailsContentProps) => {
   // Map order items to DisplayItem format
   const displayItems = useMemo<DisplayItem[]>(() => {
     if (!orderData?.items) return [];
+    const refundedQuantities = getRefundedQuantities(orderData);
     return orderData.items.map(item => {
       const isDiscounted = !!item.appliedDiscount && item.appliedDiscount.percentage > 0;
       return {
@@ -70,9 +76,16 @@ const OrderDetailsContent = ({ orderId }: OrderDetailsContentProps) => {
         imageUrl: item.imageUrl,
         originalPrice: isDiscounted ? item.unitPrice : undefined,
         discountPercentage: isDiscounted ? item.appliedDiscount!.percentage : undefined,
+        refundLabel: getItemRefundLabel(item.quantity, refundedQuantities[item.productId] || 0) ?? undefined,
       };
     });
-  }, [orderData?.items]);
+  }, [orderData]);
+
+  // Active refunds only; null when there is nothing to show
+  const refundSummary = useMemo(
+    () => (orderData ? getOrderRefundSummary(orderData) : null),
+    [orderData],
+  );
 
   const paymentImageSource = orderData?.paymentMethod?.type
     ? getPaymentMethodImage(orderData.paymentMethod.type)
@@ -454,6 +467,20 @@ const OrderDetailsContent = ({ orderId }: OrderDetailsContentProps) => {
                 <Text style={styles.totalAmountText}>Total Amount</Text>
                 <Text style={styles.totalAmountText}>Rs. {totalAmount}</Text>
               </View>
+
+              {/* Active refunds only, never the reason */}
+              {refundSummary && (
+                <>
+                  <View style={styles.refundRow}>
+                    <Text style={styles.billingLabelText}>Refunded</Text>
+                    <Text style={styles.refundAmountText}>-Rs. {refundSummary.totalRefunded}</Text>
+                  </View>
+                  <View style={styles.refundRow}>
+                    <Text style={styles.adjustedTotalText}>Adjusted Total</Text>
+                    <Text style={styles.adjustedTotalText}>Rs. {refundSummary.adjustedTotal}</Text>
+                  </View>
+                </>
+              )}
             </View>
           )}
         </View>
@@ -475,6 +502,7 @@ const OrderDetailsContent = ({ orderId }: OrderDetailsContentProps) => {
         paymentStatusLabel={getPaymentStatusLabel()}
         displayItems={displayItems}
         customerPhone={orderData.customerPhone}
+        refundSummary={refundSummary}
       />
 
       <ConfirmationModal
@@ -775,6 +803,22 @@ const styles = StyleSheet.create({
     justifyContent: "space-between",
     alignItems: "center",
     paddingTop: 8,
+  },
+  refundRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    marginTop: 8,
+  },
+  refundAmountText: {
+    fontSize: 12,
+    fontFamily: theme.fonts.medium,
+    color: theme.colors.error,
+  },
+  adjustedTotalText: {
+    fontSize: 12,
+    fontFamily: theme.fonts.semibold,
+    color: theme.colors.text,
   },
 
   // Bottom Buttons

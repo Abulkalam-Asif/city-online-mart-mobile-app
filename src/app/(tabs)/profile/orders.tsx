@@ -18,6 +18,7 @@ import { useGetInfiniteCustomerOrders } from "@/src/hooks/useOrders";
 import { CONSTANTS } from "@/src/constants/constants";
 import { convertTimestamp } from "@/src/utils/firestoreUtils";
 import ErrorBanner from "@/src/components/common/ErrorBanner";
+import { getOrderRefundSummary } from "@/src/utils/refundUtils";
 type OrderTab = "all" | OrderStatus;
 
 const OrdersScreen = () => {
@@ -86,18 +87,30 @@ const OrdersScreen = () => {
     );
   }
 
-  const renderOrderItem = ({ item }: { item: typeof filteredOrders[number] }) => (
-    <OrderItem
-      orderId={item.id}
-      date={formatDate(convertTimestamp(item.createdAt))}
-      itemCount={item.items.reduce(
-        (total, orderItem) => total + orderItem.quantity,
-        0,
-      )}
-      price={item.total}
-      status={item.status}
-    />
-  );
+  const renderOrderItem = ({ item }: { item: typeof filteredOrders[number] }) => {
+    // Active refunds only; undefined keeps the row as it was
+    const refundSummary = getOrderRefundSummary(item);
+    return (
+      <OrderItem
+        orderId={item.id}
+        date={formatDate(convertTimestamp(item.createdAt))}
+        itemCount={item.items.reduce(
+          (total, orderItem) => total + orderItem.quantity,
+          0,
+        )}
+        price={item.total}
+        status={item.status}
+        refund={
+          refundSummary
+            ? {
+              adjustedPrice: refundSummary.adjustedTotal,
+              label: refundSummary.isFullyRefunded ? "Refunded" : "Partly refunded",
+            }
+            : undefined
+        }
+      />
+    );
+  };
 
   const listFooter = ordersQuery.isFetchingNextPage ? (
     <View style={styles.footer}>

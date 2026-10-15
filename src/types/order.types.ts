@@ -83,6 +83,11 @@ export interface Order {
   shippedAt?: FirebaseFirestoreTypes.Timestamp;
   deliveredAt?: FirebaseFirestoreTypes.Timestamp;
   updatedAt: FirebaseFirestoreTypes.Timestamp;
+
+  // Refunds
+  refunds?: OrderRefundEntry[];
+  totalRefunded?: number;
+  hasActiveRefunds?: boolean;
 }
 
 export interface OrderItem {
@@ -105,4 +110,33 @@ export interface OrderItem {
     batchId: string; // Human-readable batch ID (for display)
     quantity: number;
   }[];
+}
+
+export type RefundStatus = "completed" | "pending" | "failed" | "voided";
+
+/** A refunded item as copied into the order (mirrors admin `OrderRefundItem`). */
+export interface OrderRefundItem {
+  productId: string;
+  productName: string;
+  quantity: number;
+  unitPrice: number; // price per unit after item discounts
+  subtotal: number;
+}
+
+/**
+ * A refund's copy inside the order (`ORDERS.refunds`), mirrors admin `OrderRefundEntry`.
+ * Customers cannot read `REFUNDS`, so the app shows refunds only from this copy. It never holds
+ * the reason. Entries written before 2026-10-16 were backfilled; the breakdown fields stay
+ * optional so an entry without them still shows its amount.
+ */
+export interface OrderRefundEntry {
+  refundId: string;
+  amount: number;
+  createdAt: FirebaseFirestoreTypes.Timestamp;
+  status?: RefundStatus;
+  refundedItems?: OrderRefundItem[];
+  deliveryFeeRefunded?: number;
+  orderDiscountRecovered?: number;
+  onlineDiscountRecovered?: number;
+  customAdjustment?: number;
 }
