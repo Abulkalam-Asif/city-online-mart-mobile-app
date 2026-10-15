@@ -11,7 +11,12 @@ type OrderItemProps = {
   price: number;
   status: OrderStatus;
   orderId: string;
+  /** Only when the order has an active refund: price after refunds and "Refunded" / "Partly refunded". */
+  refund?: { adjustedPrice: number; label: string };
 };
+
+// Non-breaking space: keeps the refund label on one line when the row is narrow
+const NBSP = String.fromCharCode(160);
 
 const OrderItem = ({
   date,
@@ -19,6 +24,7 @@ const OrderItem = ({
   price,
   status,
   orderId,
+  refund,
 }: OrderItemProps) => {
   const getStatusColor = () => {
     switch (status) {
@@ -120,10 +126,21 @@ const OrderItem = ({
 
       <View style={styles.contentContainer}>
         <Text style={styles.dateText}>{date}</Text>
-        <Text style={styles.orderIdText}>#{orderId}</Text>
+        <Text style={styles.orderIdText}>
+          #{orderId}
+          {/* On the order-number line so refunded rows keep the same height */}
+          {refund ? <Text style={styles.refundLabelText}>{` ·${NBSP}${refund.label.split(" ").join(NBSP)}`}</Text> : null}
+        </Text>
         <View style={styles.detailsRow}>
           <Text style={styles.itemCountText}>{itemCount} items</Text>
-          <Text style={styles.priceText}>Rs.{price}</Text>
+          {refund ? (
+            <>
+              <Text style={styles.originalPriceText}>Rs.{price}</Text>
+              <Text style={styles.priceText}>Rs.{refund.adjustedPrice}</Text>
+            </>
+          ) : (
+            <Text style={styles.priceText}>Rs.{price}</Text>
+          )}
         </View>
       </View>
 
@@ -185,7 +202,9 @@ const styles = StyleSheet.create({
   detailsRow: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 12,
+    flexWrap: "wrap", // long refunded amounts wrap instead of running into the status column
+    columnGap: 12,
+    rowGap: 2,
   },
   itemCountText: {
     fontSize: 12,
@@ -214,5 +233,14 @@ const styles = StyleSheet.create({
   statusText: {
     fontSize: 8,
     fontFamily: theme.fonts.semibold,
+  },
+  originalPriceText: {
+    fontSize: 11,
+    fontFamily: theme.fonts.regular,
+    color: theme.colors.text_secondary,
+    textDecorationLine: "line-through",
+  },
+  refundLabelText: {
+    color: theme.colors.error,
   },
 });
