@@ -24,7 +24,6 @@ import { OrderStatus } from "@/src/types";
 import { convertTimestamp } from "@/src/utils/firestoreUtils";
 import ErrorBanner from "@/src/components/common/ErrorBanner";
 import ConfirmationModal from "@/src/components/common/ConfirmationModal";
-import PaymentProofModal from "./PaymentProofModal";
 import OrderItemsList, { DisplayItem } from "@/src/components/common/OrderItemsList";
 import {
   getPaymentMethodDisplayName,
@@ -50,7 +49,6 @@ const OrderDetailsContent = ({ orderId }: OrderDetailsContentProps) => {
   const viewShotRef = useRef<ViewShot>(null);
   const [errorMessage, setErrorMessage] = useState("");
   const [showDownloadSuccess, setShowDownloadSuccess] = useState(false);
-  const [isProofModalVisible, setIsProofModalVisible] = useState(false);
 
   const {
     data: orderData,
@@ -525,56 +523,9 @@ const OrderDetailsContent = ({ orderId }: OrderDetailsContentProps) => {
         />
       ) : null}
 
-      <PaymentProofModal
-        visible={isProofModalVisible}
-        orderId={orderId}
-        onClose={() => setIsProofModalVisible(false)}
-        onSuccess={() => {
-          setIsProofModalVisible(false);
-        }}
-      />
-
-      {/* Bottom Action Buttons */}
-      <View style={styles.bottomButtonContainer}>
-        {orderData.status === "pending" &&
-          orderData.paymentMethod.type !== "cash_on_delivery" &&
-          orderData.paymentStatus === "pending" && (
-            <Pressable
-              style={({ pressed }) => [
-                styles.reviewButton,
-                pressed && styles.buttonPressed,
-              ]}
-              onPress={() => setIsProofModalVisible(true)}>
-              <Text style={styles.reviewButtonText}>Upload Payment Proof</Text>
-            </Pressable>
-          )}
-
-        {/* TODO: Phase 6 - Implement COD Edit/Cancel Actions
-        orderData.status === "pending" &&
-          orderData.paymentMethod.type === "cash_on_delivery" && (
-            <>
-              <Pressable
-                disabled
-                style={({ pressed }) => [
-                  styles.cancelButton,
-                  pressed && styles.buttonPressed,
-                  styles.buttonDisabled,
-                ]}>
-                <Text style={styles.cancelButtonText}>Cancel Order</Text>
-              </Pressable>
-              <Pressable
-                disabled
-                style={({ pressed }) => [
-                  styles.editButton,
-                  pressed && styles.buttonPressed,
-                  styles.buttonDisabled,
-                ]}>
-                <Text style={styles.editButtonText}>Edit Order</Text>
-              </Pressable>
-            </>
-          )
-        */}
-        {orderData.status === "delivered" && (
+      {/* Bottom Action Buttons. Payment proof is sent on WhatsApp (no in-app upload). */}
+      {orderData.status === "delivered" && (
+        <View style={styles.bottomButtonContainer}>
           <Pressable
             disabled
             style={({ pressed }) => [
@@ -584,8 +535,8 @@ const OrderDetailsContent = ({ orderId }: OrderDetailsContentProps) => {
             ]}>
             <Text style={styles.reviewButtonText}>Add a Review</Text>
           </Pressable>
-        )}
-      </View>
+        </View>
+      )}
     </View>
   );
 };
@@ -829,32 +780,6 @@ const styles = StyleSheet.create({
     gap: 12,
     borderTopWidth: 1,
     borderTopColor: theme.colors.background,
-  },
-  cancelButton: {
-    flex: 1,
-    backgroundColor: theme.colors.error_light,
-    paddingVertical: 12,
-    borderRadius: 30,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  cancelButtonText: {
-    fontSize: 14,
-    fontFamily: theme.fonts.semibold,
-    color: theme.colors.error,
-  },
-  editButton: {
-    flex: 1,
-    backgroundColor: theme.colors.success_light,
-    paddingVertical: 12,
-    borderRadius: 30,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  editButtonText: {
-    fontSize: 14,
-    fontFamily: theme.fonts.semibold,
-    color: theme.colors.success,
   },
   reviewButton: {
     flex: 1,
