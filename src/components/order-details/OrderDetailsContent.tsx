@@ -526,32 +526,6 @@ const OrderDetailsContent = ({ orderId }: OrderDetailsContentProps) => {
       {/* Bottom Action Buttons. Payment proof is sent on WhatsApp (no in-app upload). */}
       {orderData.status === "delivered" && (
         <View style={styles.bottomButtonContainer}>
-          {/* TODO: Phase 6 - Implement COD Edit/Cancel Actions (the bar above is shown only for delivered
-              orders now; widen that condition when these buttons come back)
-          orderData.status === "pending" &&
-            orderData.paymentMethod.type === "cash_on_delivery" && (
-              <>
-                <Pressable
-                  disabled
-                  style={({ pressed }) => [
-                    styles.cancelButton,
-                    pressed && styles.buttonPressed,
-                    styles.buttonDisabled,
-                  ]}>
-                  <Text style={styles.cancelButtonText}>Cancel Order</Text>
-                </Pressable>
-                <Pressable
-                  disabled
-                  style={({ pressed }) => [
-                    styles.editButton,
-                    pressed && styles.buttonPressed,
-                    styles.buttonDisabled,
-                  ]}>
-                  <Text style={styles.editButtonText}>Edit Order</Text>
-                </Pressable>
-              </>
-            )
-          */}
           <Pressable
             disabled
             style={({ pressed }) => [
@@ -806,32 +780,6 @@ const styles = StyleSheet.create({
     gap: 12,
     borderTopWidth: 1,
     borderTopColor: theme.colors.background,
-  },
-  cancelButton: {
-    flex: 1,
-    backgroundColor: theme.colors.error_light,
-    paddingVertical: 12,
-    borderRadius: 30,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  cancelButtonText: {
-    fontSize: 14,
-    fontFamily: theme.fonts.semibold,
-    color: theme.colors.error,
-  },
-  editButton: {
-    flex: 1,
-    backgroundColor: theme.colors.success_light,
-    paddingVertical: 12,
-    borderRadius: 30,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  editButtonText: {
-    fontSize: 14,
-    fontFamily: theme.fonts.semibold,
-    color: theme.colors.success,
   },
   reviewButton: {
     flex: 1,
