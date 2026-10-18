@@ -1,11 +1,5 @@
 import React, { useMemo, useCallback, useState } from "react";
-import {
-  View,
-  Text,
-  StyleSheet,
-  ActivityIndicator,
-  Pressable,
-} from "react-native";
+import { View, Text, StyleSheet, Pressable } from "react-native";
 import { ScrollView } from "react-native-gesture-handler";
 import { Image } from "expo-image";
 import { router } from "expo-router";
@@ -17,6 +11,8 @@ import { useCart, useAddToCart, useUpdateCartItem } from "@/src/hooks/useCart";
 import { FontAwesome6 } from "@expo/vector-icons";
 import { useOrderSettings } from "@/src/hooks/useSettings";
 import ErrorBanner from "@/src/components/common/ErrorBanner";
+import EmptyState from "@/src/components/common/EmptyState";
+import { SkeletonBox, SkeletonPulse } from "@/src/components/common/Skeleton";
 
 type SearchDropdownProps = {
   searchTerm: string;
@@ -181,8 +177,24 @@ const SearchDropdownItem = ({ product, canPress }: { product: Product, canPress:
   );
 };
 
+/** Placeholder rows while the search runs: same size as SearchDropdownItem. */
+export const SearchResultsSkeleton = () => (
+  <SkeletonPulse style={styles.listContainer}>
+    {[0, 1, 2].map((row) => (
+      <View key={row} style={styles.resultItem}>
+        <SkeletonBox width={40} height={40} radius={8} style={styles.skeletonImage} />
+        <View style={styles.productInfo}>
+          <SkeletonBox width="80%" height={10} radius={5} />
+          <SkeletonBox width="35%" height={10} radius={5} style={styles.skeletonPrice} />
+        </View>
+        <SkeletonBox width={32} height={32} radius={16} />
+      </View>
+    ))}
+  </SkeletonPulse>
+);
+
 const SearchDropdown: React.FC<SearchDropdownProps> = ({ searchTerm }) => {
-  const { data: products, isLoading } = useProductSearch(searchTerm);
+  const { data: products, isLoading, isError, refetch } = useProductSearch(searchTerm);
   const canPress = useSinglePress();
 
   if (!searchTerm.trim()) return null;
@@ -196,14 +208,23 @@ const SearchDropdown: React.FC<SearchDropdownProps> = ({ searchTerm }) => {
           </Text>
         </View>
       ) : isLoading ? (
-        <View style={styles.centerContainer}>
-          <ActivityIndicator size="small" color={theme.colors.primary} />
-          <Text style={styles.loadingText}>Searching...</Text>
-        </View>
+        <SearchResultsSkeleton />
+      ) : isError ? (
+        <EmptyState
+          compact
+          tone="error"
+          title="Search failed"
+          message="Please check your connection and try again."
+          actionText="Retry"
+          onAction={() => refetch()}
+        />
       ) : products?.length === 0 ? (
-        <View style={styles.centerContainer}>
-          <Text style={styles.emptyText}>{`No products found for "${searchTerm}"`}</Text>
-        </View>
+        <EmptyState
+          compact
+          icon="search-outline"
+          title="No products found"
+          message={`Nothing matches "${searchTerm}". Try a different word.`}
+        />
       ) : (
         <ScrollView
           keyboardShouldPersistTaps="handled"
@@ -243,11 +264,11 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
   },
-  loadingText: {
+  skeletonImage: {
+    marginRight: 12,
+  },
+  skeletonPrice: {
     marginTop: 8,
-    color: theme.colors.text_secondary,
-    fontFamily: theme.fonts.medium,
-    fontSize: 12,
   },
   emptyText: {
     color: theme.colors.text_secondary,

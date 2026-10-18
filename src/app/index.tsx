@@ -1,18 +1,14 @@
 import { Redirect } from "expo-router";
 import { useCityContext } from "@/src/contexts/CityContext";
-import { View, ActivityIndicator } from "react-native";
-import { theme } from "@/src/constants/theme";
+import AppStartScreen from "@/src/components/common/AppStartScreen";
 
 export default function Index() {
   const { isCityReady, citiesLoading } = useCityContext();
 
-  // Wait until city status is resolved (AsyncStorage + Hub fetch)
+  // Wait until city status is resolved (AsyncStorage + Hub fetch). The native splash normally
+  // covers this (SplashGate); this is the fallback if it takes very long.
   if (citiesLoading) {
-    return (
-      <View style={{ flex: 1, alignItems: "center", justifyContent: "center" }}>
-        <ActivityIndicator size="large" color={theme.colors.primary} />
-      </View>
-    );
+    return <AppStartScreen />;
   }
 
   // No city selected → city selection screen

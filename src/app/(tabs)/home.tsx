@@ -5,10 +5,14 @@ import CategoriesSection from "@/src/components/tabs/home/categories-section/Cat
 import HomeTopBg from "@/src/components/tabs/home/HomeTopBg";
 import Sidebar from "@/src/components/tabs/home/Sidebar";
 import ProductsSection from "@/src/components/tabs/home/ProductsSection";
-import { useGetSpecialCategories } from "@/src/hooks/useCategories";
+import {
+  useGetCategoriesForHomepage,
+  useGetSpecialCategories,
+} from "@/src/hooks/useCategories";
+import EmptyState from "@/src/components/common/EmptyState";
 import { queryClient, queryKeys } from "@/src/lib/react-query";
 import { theme } from "@/src/constants/theme";
-import Loading from "@/src/components/common/Loading";
+import { ProductsSectionSkeleton } from "@/src/components/tabs/home/HomeSkeletons";
 import { Category } from "@/src/types";
 import BannersCarousel from "@/src/components/tabs/home/BannersCarousel";
 import PopupBanner from "@/src/components/tabs/home/PopupBanner";
@@ -19,10 +23,14 @@ const HomeScreen = () => {
     data: specialCategories,
     isLoading: loadingSpecialCategories,
     error: errorGettingSpecialCategories,
+    refetch: refetchSpecialCategories,
   } = useGetSpecialCategories({
     productsCountGreaterThanZero: true,
   });
 
+  // Same query as the Categories section (shared cache): used to tell "nothing in this store yet"
+  const { data: homepageCategories, isLoading: loadingHomepageCategories } =
+    useGetCategoriesForHomepage();
 
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
 
@@ -110,9 +118,19 @@ const HomeScreen = () => {
         {/* <BestPricesSection /> */}
         <CategoriesSection />
         {loadingSpecialCategories ? (
-          <Loading />
-        ) : errorGettingSpecialCategories ? null : specialCategories && // Show nothing or an error message
-          specialCategories.length > 0 ? (
+          <>
+            <ProductsSectionSkeleton colorIndex={0} />
+            <ProductsSectionSkeleton colorIndex={1} />
+          </>
+        ) : errorGettingSpecialCategories ? (
+          <EmptyState
+            tone="error"
+            title="Couldn't load products"
+            message="Please check your internet connection and try again."
+            actionText="Retry"
+            onAction={() => refetchSpecialCategories()}
+          />
+        ) : specialCategories && specialCategories.length > 0 ? (
           specialCategories.map((category, index) => (
             <ProductsSection
               key={category.id}
@@ -124,6 +142,12 @@ const HomeScreen = () => {
               }
             />
           ))
+        ) : !loadingHomepageCategories && !homepageCategories?.length ? (
+          <EmptyState
+            icon="storefront-outline"
+            title="Products are coming soon"
+            message="We are adding products to your city's store. Please check back shortly."
+          />
         ) : null}
       </ScrollView>
 

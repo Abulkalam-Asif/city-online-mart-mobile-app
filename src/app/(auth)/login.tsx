@@ -10,7 +10,7 @@ import {
 import React, { useState } from "react";
 import { theme } from "@/src/constants/theme";
 import { Image } from "expo-image";
-import { useRouter } from "expo-router";
+import { useLocalSearchParams, useRouter } from "expo-router";
 import LoginContentBg from "@/src/components/auth/login/LoginContentBg";
 import { useSendOTP, useSignInWithoutOTP } from "@/src/hooks/useAuthUser";
 import { useAuthSettings } from "@/src/hooks/useSettings";
@@ -20,6 +20,7 @@ import { getFriendlyErrorMessage } from "@/src/utils/errorUtils";
 
 const LoginScreen = () => {
   const router = useRouter();
+  const { redirect } = useLocalSearchParams<{ redirect?: string }>();
   const [phoneNumber, setPhoneNumber] = useState("");
   const [loading, setLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
@@ -34,9 +35,13 @@ const LoginScreen = () => {
   const signInWithoutOTPMutation = useSignInWithoutOTP();
 
   const handleSendOTP = async () => {
-    if (phoneNumber.length !== 11) {
+    if (loading || settingsLoading) return;
+
+    if (!/^03\d{9}$/.test(phoneNumber)) {
       setErrorTitle("Invalid Number");
-      setErrorMessage("Please enter a valid 11-digit mobile number.");
+      setErrorMessage(
+        "Please enter your 11-digit mobile number, starting with 03 (for example 03001234567)."
+      );
       return;
     }
 
@@ -48,12 +53,12 @@ const LoginScreen = () => {
         // Navigate to OTP screen with verification ID and phone
         router.push({
           pathname: "/verify-otp",
-          params: { phoneNumber },
+          params: { phoneNumber, ...(redirect ? { redirect } : {}) },
         });
       } else {
         await signInWithoutOTPMutation.mutateAsync(phoneNumber);
-        // Navigate home on success
-        router.replace("/home");
+        // Go back to where the customer came from (e.g. the cart), otherwise home
+        router.replace((redirect ?? "/home") as any);
       }
     } catch (error: any) {
       setErrorTitle("Login Failed");
@@ -90,7 +95,7 @@ const LoginScreen = () => {
         <LoginContentBg />
         <View style={styles.welcomeContainer}>
           <Text style={styles.welcomeTitleText}>
-            Welcome to Apna Online Store
+            Welcome to City Online Mart
           </Text>
           <Text style={styles.welcomeSubtitle}>Login or Create Account</Text>
         </View>
@@ -104,9 +109,13 @@ const LoginScreen = () => {
               style={styles.textInput}
               placeholder="03000000000"
               value={phoneNumber}
-              onChangeText={setPhoneNumber}
-              keyboardType="phone-pad"
+              onChangeText={(text) => setPhoneNumber(text.replace(/[^0-9]/g, ""))}
+              keyboardType="number-pad"
               maxLength={11}
+              returnKeyType="done"
+              onSubmitEditing={handleSendOTP}
+              autoComplete="tel"
+              textContentType="telephoneNumber"
               placeholderTextColor={theme.colors.placeholder}
               editable={!loading}
             />
@@ -120,7 +129,7 @@ const LoginScreen = () => {
               loading && { backgroundColor: theme.colors.text_secondary },
             ]}
             onPress={handleSendOTP}
-            disabled={loading}>
+            disabled={loading || settingsLoading}>
             {loading || settingsLoading ? (
               <ActivityIndicator color="#fff" />
             ) : (
@@ -225,6 +234,7 @@ const styles = StyleSheet.create({
   sendOTPButton: {
     backgroundColor: theme.colors.primary,
     paddingVertical: 10,
+    minHeight: 48, // keeps the height the same while the spinner shows
     borderRadius: 30,
     alignItems: "center",
     justifyContent: "center",

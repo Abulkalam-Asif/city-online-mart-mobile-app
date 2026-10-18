@@ -10,7 +10,7 @@ import React from "react";
 import CategoryCard from "./CategoryCard";
 import { theme } from "@/src/constants/theme";
 import { useGetCategoriesForHomepage } from "@/src/hooks/useCategories";
-import Loading from "@/src/components/common/Loading";
+import { CategoriesSkeleton } from "../HomeSkeletons";
 import { router } from "expo-router";
 import { getResponsiveValue } from "@/src/utils/getResponsiveValue";
 
@@ -30,7 +30,7 @@ const CategoriesSection = () => {
 
   // Show loading state
   if (loadingCategories) {
-    return <Loading />;
+    return <CategoriesSkeleton />;
   }
 
   // If no categories, don't render the section

@@ -105,8 +105,9 @@ export class AuthService {
         await this.syncUserProfile(userCredential.user);
       }
     } catch (error: any) {
+      // Keep the original error (with its code) so the screen can show a friendly message
       logger.error("signInWithoutOTP", error);
-      throw new Error(`Login Error: ${error.code} - ${error.message}`);
+      throw error;
     }
   }
 

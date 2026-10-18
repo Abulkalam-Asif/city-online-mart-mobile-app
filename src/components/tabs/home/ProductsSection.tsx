@@ -4,7 +4,7 @@ import { theme } from "@/src/constants/theme";
 import ProductCard from "./ProductCard";
 import { Category } from "@/src/types";
 import { useGetProductsBySpecialCategory } from "@/src/hooks/useProducts";
-import Loading from "../../common/Loading";
+import { ProductsHeaderSkeleton, ProductsRowSkeleton } from "./HomeSkeletons";
 import RetryButton from "../../common/RetryButton";
 import { queryClient, queryKeys } from "@/src/lib/react-query";
 import { useCart } from "@/src/hooks/useCart";
@@ -40,12 +40,16 @@ const ProductsSection = ({
 
   return (
     <View style={styles.container}>
-      <View style={styles.headerRow}>
-        <Text style={styles.titleText}>{category.name}</Text>
-        <TouchableOpacity onPress={handleViewAll} activeOpacity={0.8}>
-          <Text style={styles.viewAllText}>View All</Text>
-        </TouchableOpacity>
-      </View>
+      {loadingProducts ? (
+        <ProductsHeaderSkeleton />
+      ) : (
+        <View style={styles.headerRow}>
+          <Text style={styles.titleText}>{category.name}</Text>
+          <TouchableOpacity onPress={handleViewAll} activeOpacity={0.8}>
+            <Text style={styles.viewAllText}>View All</Text>
+          </TouchableOpacity>
+        </View>
+      )}
       <ScrollView
         horizontal
         showsHorizontalScrollIndicator={false}
@@ -54,7 +58,7 @@ const ProductsSection = ({
           { backgroundColor: sectionBackgroundColor },
         ]}>
         {loadingProducts ? (
-          <Loading />
+          <ProductsRowSkeleton cardWidth={productCardWidth} />
         ) : errorGettingProducts ? (
           <RetryButton
             onPress={async () => {

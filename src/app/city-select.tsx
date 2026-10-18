@@ -41,7 +41,7 @@ export default function CitySelectScreen() {
         {/* Header */}
         <View style={styles.headerContainer}>
           <Image
-            source={require("@/src/assets/logo.png")}
+            source={require("@/src/assets/logo-on-light.png")}
             style={styles.logo}
             contentFit="contain"
           />

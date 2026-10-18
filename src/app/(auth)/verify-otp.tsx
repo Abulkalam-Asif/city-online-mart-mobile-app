@@ -11,7 +11,7 @@ import {
 import React, { useState, useEffect, useRef } from "react";
 import { theme } from "@/src/constants/theme";
 import { useRouter, useLocalSearchParams } from "expo-router";
-import { useVerifyOTP } from "@/src/hooks/useAuthUser";
+import { useSendOTP, useVerifyOTP } from "@/src/hooks/useAuthUser";
 import { FontAwesome6 } from "@expo/vector-icons";
 import { authService } from "@/src/services";
 import { Image } from "expo-image";
@@ -19,26 +19,60 @@ import LoginContentBg from "@/src/components/auth/login/LoginContentBg";
 import ErrorBanner from "@/src/components/common/ErrorBanner";
 import { getFriendlyErrorMessage } from "@/src/utils/errorUtils";
 
+const RESEND_SECONDS = 30;
+
 const VerifyOTPScreen = () => {
   const router = useRouter();
-  const { phoneNumber } = useLocalSearchParams<{ phoneNumber: string }>();
+  const { phoneNumber, redirect } = useLocalSearchParams<{
+    phoneNumber: string;
+    redirect?: string;
+  }>();
   const [otpCode, setOtpCode] = useState("");
   const [loading, setLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [errorTitle, setErrorTitle] = useState<string>("Verification Failed");
-  const [onDismissAction, setOnDismissAction] = useState<(() => void) | undefined>(undefined);
+  const [sessionExpired, setSessionExpired] = useState(false);
+
+  const [resendIn, setResendIn] = useState(RESEND_SECONDS);
+  const [resending, setResending] = useState(false);
 
   const verifyOTPMutation = useVerifyOTP();
+  const sendOTPMutation = useSendOTP();
   const inputRef = useRef<TextInput>(null);
+
+  // Resend countdown
+  useEffect(() => {
+    if (resendIn <= 0) return;
+    const timer = setTimeout(() => setResendIn((s) => s - 1), 1000);
+    return () => clearTimeout(timer);
+  }, [resendIn]);
+
+  const handleResend = async () => {
+    if (resendIn > 0 || resending || !phoneNumber) return;
+    setResending(true);
+    try {
+      await sendOTPMutation.mutateAsync(phoneNumber);
+      setOtpCode("");
+      setResendIn(RESEND_SECONDS);
+      inputRef.current?.focus();
+    } catch (error: any) {
+      setErrorTitle("Could Not Resend");
+      setErrorMessage(
+        getFriendlyErrorMessage(error, "Unable to send a new code. Please try again.")
+      );
+    } finally {
+      setResending(false);
+    }
+  };
 
   // Check for valid session on mount
   useEffect(() => {
     if (!authService.pendingConfirmation) {
       setErrorTitle("Session Expired");
       setErrorMessage("Your verification session has expired. Please log in again.");
-      setOnDismissAction(() => () => router.replace("/login"));
+      setSessionExpired(true);
     }
-  }, [router]);
+  }, []);
 
   const handleVerify = async (code: string = otpCode) => {
     if (code.length !== 6) {
@@ -48,14 +82,13 @@ const VerifyOTPScreen = () => {
     setLoading(true);
     try {
       await verifyOTPMutation.mutateAsync(code);
-      // Navigate home or to previous screen on success
-      router.replace("/home");
+      // Go back to where the customer came from (e.g. the cart), otherwise home
+      router.replace((redirect ?? "/home") as any);
     } catch (error: any) {
       setErrorTitle("Verification Failed");
       setErrorMessage(
         getFriendlyErrorMessage(error, "The verification code entered is incorrect. Please try again.")
       );
-      setOnDismissAction(undefined);
       setOtpCode(""); // Clear on failure
     } finally {
       setLoading(false);
@@ -132,6 +165,22 @@ const VerifyOTPScreen = () => {
               <Text style={styles.verifyButtonText}>Verify</Text>
             )}
           </Pressable>
+
+          <View style={styles.helperRow}>
+            {resendIn > 0 ? (
+              <Text style={styles.helperText}>Resend code in {resendIn}s</Text>
+            ) : (
+              <Pressable onPress={handleResend} disabled={resending} hitSlop={8}>
+                <Text style={styles.linkText}>
+                  {resending ? "Sending..." : "Resend code"}
+                </Text>
+              </Pressable>
+            )}
+            <Text style={styles.helperText}>{"  ·  "}</Text>
+            <Pressable onPress={() => router.back()} hitSlop={8}>
+              <Text style={styles.linkText}>Change number</Text>
+            </Pressable>
+          </View>
         </View>
       </View>
 
@@ -142,8 +191,12 @@ const VerifyOTPScreen = () => {
           buttonText="OK"
           onDismiss={() => {
             setErrorMessage(null);
-            if (onDismissAction) {
-              onDismissAction();
+            // An expired session cannot be recovered here: send the customer back to login
+            if (sessionExpired) {
+              router.replace({
+                pathname: "/login",
+                params: redirect ? { redirect } : {},
+              });
             }
           }}
         />
@@ -232,6 +285,7 @@ const styles = StyleSheet.create({
     backgroundColor: theme.colors.primary,
     width: "100%",
     paddingVertical: 10,
+    minHeight: 48, // keeps the height the same while the spinner shows
     borderRadius: 30,
     alignItems: "center",
     justifyContent: "center",
@@ -239,6 +293,21 @@ const styles = StyleSheet.create({
   },
   verifyButtonDisabled: {
     opacity: 0.6,
+  },
+  helperRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  helperText: {
+    fontSize: 13,
+    fontFamily: theme.fonts.regular,
+    color: theme.colors.text_secondary,
+  },
+  linkText: {
+    fontSize: 13,
+    fontFamily: theme.fonts.semibold,
+    color: theme.colors.primary,
   },
   verifyButtonText: {
     fontSize: 16,

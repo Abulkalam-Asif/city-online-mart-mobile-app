@@ -36,7 +36,7 @@ const Sidebar = ({ isOpen, closeSidebarHandler }: SidebarProps) => {
       title: "Share My App",
       onPress: () => {
         Share.share({
-          title: "Apna Store",
+          title: "City Online Mart",
           message: "Check out this awesome app: [App Link Here]",
         });
       },

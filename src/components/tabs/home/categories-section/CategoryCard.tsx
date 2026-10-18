@@ -63,7 +63,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "flex-start",
     gap: 8,
-    height: getResponsiveValue<number>(120, 150),
+    height: getResponsiveValue<number>(125, 150),
   },
   cardPressed: {
     opacity: 0.7,

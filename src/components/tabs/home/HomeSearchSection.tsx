@@ -1,7 +1,7 @@
 import { Pressable, StyleSheet, TextInput, View, Dimensions, Keyboard } from "react-native";
 import React, { useState, useEffect } from "react";
 import { theme } from "@/src/constants/theme";
-import { FontAwesome6 } from "@expo/vector-icons";
+import { FontAwesome6, Ionicons } from "@expo/vector-icons";
 import SearchDropdown from "./SearchDropdown";
 
 const { height: screenHeight } = Dimensions.get("window");
@@ -39,18 +39,28 @@ const HomeSearchSection: React.FC<HomeSearchSectionProps> = ({
           onPress={openSidebarHandler}>
           <FontAwesome6 name="bars" size={20} color={"#fff"} />
         </Pressable>
-        <TextInput
-          placeholder="Search your product"
-          style={styles.textInput}
-          placeholderTextColor={theme.colors.placeholder}
-          value={inputText}
-          onChangeText={setInputText}
-          returnKeyType="search"
-          autoCorrect={false}
-          spellCheck={false}
-          autoComplete="off"
-          autoCapitalize="none"
-        />
+        <View style={styles.inputWrapper}>
+          <TextInput
+            placeholder="Search your product"
+            style={styles.textInput}
+            placeholderTextColor={theme.colors.placeholder}
+            value={inputText}
+            onChangeText={setInputText}
+            returnKeyType="search"
+            autoCorrect={false}
+            spellCheck={false}
+            autoComplete="off"
+            autoCapitalize="none"
+          />
+          {inputText.length > 0 && (
+            <Pressable
+              style={styles.clearButton}
+              onPress={handleDismiss}
+              hitSlop={8}>
+              <Ionicons name="close-circle" size={20} color={theme.colors.placeholder} />
+            </Pressable>
+          )}
+        </View>
         <Pressable
           style={({ pressed }) => [styles.icon, pressed && styles.iconPressed]}>
           <FontAwesome6 name="bell" size={20} color={"#fff"} />
@@ -83,15 +93,23 @@ const styles = StyleSheet.create({
     alignItems: "center",
     gap: 6,
   },
+  inputWrapper: {
+    flex: 1,
+    justifyContent: "center",
+  },
   textInput: {
     backgroundColor: theme.colors.background_3,
     borderRadius: 24,
-    paddingHorizontal: 20,
+    paddingLeft: 20,
+    paddingRight: 44, // room for the clear button
     paddingVertical: 8,
     fontFamily: theme.fonts.regular,
     fontSize: 14,
     color: theme.colors.text,
-    flex: 1,
+  },
+  clearButton: {
+    position: "absolute",
+    right: 14,
   },
   icon: {
     width: 48,
