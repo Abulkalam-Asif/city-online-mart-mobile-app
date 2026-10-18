@@ -15,7 +15,9 @@ Part of City Online Mart. Read the root `../CLAUDE.md` first (hard rules, docs i
 ```powershell
 npm run start                       # Metro
 npm run lint ; npx tsc --noEmit     # run both before finishing a change
-powershell ./install-all.ps1        # build debug APK and install on all connected devices
+./debug-apk.sh                      # Git Bash: clean debug build only (--fast skips the clean step)
+./run-debug.sh                      # Git Bash: install that APK on the phone, open the app, start Metro
+./release-apk.sh                    # Git Bash: build a release APK (not installed), signed with the debug key
 ```
 
 No automated tests exist in this repo. Real-device setup: `../docs/ANDROID_WIRELESS_DEBUGGING.md`.
