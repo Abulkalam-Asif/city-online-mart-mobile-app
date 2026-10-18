@@ -201,7 +201,7 @@ export default function CartScreen() {
 
 
   const handleProceed = useCallback(() => {
-    if (!isLoggedIn) { router.push("/login"); return; }
+    if (!isLoggedIn) { router.push({ pathname: "/login", params: { redirect: "/cart" } }); return; }
     if (!canProceedToCheckout) { setShowMinOrderError(true); return; }
     if (!selectedSlot) { setShowSlotError(true); return; }
 
