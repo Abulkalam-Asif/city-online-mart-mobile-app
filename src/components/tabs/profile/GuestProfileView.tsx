@@ -14,7 +14,7 @@ const GuestProfileView = () => {
     <View style={styles.container}>
       <View style={styles.imageContainer}>
         <Image
-          source={require("@/src/assets/logo.png")}
+          source={require("@/src/assets/logo-on-light.png")}
           style={styles.image}
           contentFit="contain"
         />
