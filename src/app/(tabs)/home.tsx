@@ -8,7 +8,7 @@ import ProductsSection from "@/src/components/tabs/home/ProductsSection";
 import { useGetSpecialCategories } from "@/src/hooks/useCategories";
 import { queryClient, queryKeys } from "@/src/lib/react-query";
 import { theme } from "@/src/constants/theme";
-import Loading from "@/src/components/common/Loading";
+import { ProductsSectionSkeleton } from "@/src/components/tabs/home/HomeSkeletons";
 import { Category } from "@/src/types";
 import BannersCarousel from "@/src/components/tabs/home/BannersCarousel";
 import PopupBanner from "@/src/components/tabs/home/PopupBanner";
@@ -110,7 +110,10 @@ const HomeScreen = () => {
         {/* <BestPricesSection /> */}
         <CategoriesSection />
         {loadingSpecialCategories ? (
-          <Loading />
+          <>
+            <ProductsSectionSkeleton colorIndex={0} />
+            <ProductsSectionSkeleton colorIndex={1} />
+          </>
         ) : errorGettingSpecialCategories ? null : specialCategories && // Show nothing or an error message
           specialCategories.length > 0 ? (
           specialCategories.map((category, index) => (

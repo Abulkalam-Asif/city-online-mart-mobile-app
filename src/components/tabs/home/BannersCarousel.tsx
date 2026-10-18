@@ -7,7 +7,7 @@ import CarouselAnimatedDots from "../../general/CarouselAnimatedDots";
 import { useGetHomepageBanners } from "@/src/hooks/useBanners";
 import { router } from "expo-router";
 import { useSharedValue } from "react-native-reanimated";
-import Loading from "../../common/Loading";
+import { BannersSkeleton } from "./HomeSkeletons";
 import React from "react";
 
 const width = Dimensions.get("window").width;
@@ -22,7 +22,7 @@ const BannersCarousel = () => {
   const progressValue = useSharedValue<number>(0);
 
   if (loadingBannersData) {
-    return <Loading color={"white"} style={{ paddingVertical: 12 }} />;
+    return <BannersSkeleton />;
   }
 
   // Return null on error OR when no banners exist
