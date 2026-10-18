@@ -3,18 +3,13 @@ import React from "react";
 import CustomTabBar from "@/src/components/navigation/CustomTabBar";
 import { ModalPortal } from "@/src/components/common/ModalPortal";
 import { useCityContext } from "@/src/contexts/CityContext";
-import Loading from "@/src/components/common/Loading";
+import AppStartScreen from "@/src/components/common/AppStartScreen";
 
 export default function TabsLayout() {
   const { isCityReady, citiesLoading } = useCityContext();
 
   if (citiesLoading) {
-    return (
-      <Loading
-        text="Loading..."
-        style={{ flex: 1, backgroundColor: "#fff" }}
-      />
-    );
+    return <AppStartScreen />;
   }
 
   if (!isCityReady) {

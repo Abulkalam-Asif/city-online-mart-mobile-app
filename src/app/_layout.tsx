@@ -14,20 +14,18 @@ import { CityProvider } from "../contexts/CityContext";
 import { ModalPortal } from "../components/common/ModalPortal";
 import PushNotificationHandler from "../components/notifications/PushNotificationHandler";
 
+import SplashGate from "../components/common/SplashGate";
 import * as SplashScreen from "expo-splash-screen";
 
-// Prevent splash screen from auto-hiding
+// Keep the native splash up until <SplashGate /> has its start screen on screen, then fade it out
 SplashScreen.preventAutoHideAsync().catch(() => { });
+SplashScreen.setOptions({ duration: 300, fade: true });
 
 export default function RootLayout() {
   const fontsLoaded = useMyFonts();
 
-  React.useEffect(() => {
-    if (fontsLoaded) {
-      SplashScreen.hideAsync().catch(() => { });
-    }
-  }, [fontsLoaded]);
-
+  // The native splash is hidden by <SplashGate />, which then shows the start screen until the
+  // saved city and the city list are known
   if (!fontsLoaded) {
     return null;
   }
@@ -60,6 +58,8 @@ export default function RootLayout() {
             </CartProvider>
           </AuthProvider>
         </QueryClientProvider>
+        {/* Last, so the start screen paints over the whole app until the city is known */}
+        <SplashGate />
       </CityProvider>
     </GestureHandlerRootView>
   );
