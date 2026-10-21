@@ -1,7 +1,7 @@
 import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 import React, { useEffect, useState } from "react";
 import { theme } from "@/src/constants/theme";
-import { SubCategory } from "@/src/types";
+import { ProductSortType, SubCategory } from "@/src/types";
 import SortButton from "./SortButton";
 import { SubCategoryChipsSkeleton } from "./CategoriesSkeletons";
 import ErrorBanner from "../../common/ErrorBanner";
@@ -15,7 +15,7 @@ type SubCategoriesNavProps = {
   currentSubCategoryId: string;
   setCurrentSubCategoryId: (id: string) => void;
   setBottomSheetType: (type: "sort" | "brands" | null) => void;
-  selectedSort: string;
+  selectedSort: ProductSortType;
 };
 
 const SubCategoriesNav = ({

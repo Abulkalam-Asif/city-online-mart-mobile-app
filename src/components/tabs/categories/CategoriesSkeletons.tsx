@@ -72,7 +72,7 @@ export const CategoriesScreenSkeleton = () => (
   <View style={styles.screen}>
     <CategoryChipsSkeleton />
     <View style={styles.subCategoryRow}>
-      <SkeletonBox width={33} height={33} radius={8} />
+      <SkeletonBox width={64} height={33} radius={8} />
       <SubCategoryChipsSkeleton />
     </View>
     <ProductGridSkeleton />
