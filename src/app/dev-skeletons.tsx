@@ -66,6 +66,28 @@ const DevSkeletonsScreen = () => {
         actionText="Retry"
         onAction={() => {}}
       />
+      <Text style={styles.sectionLabel}>Categories tab: no products</Text>
+      <EmptyState
+        icon="basket-outline"
+        title="No products here yet"
+        message="Products in this category will show up soon. Try another category."
+      />
+      <Text style={styles.sectionLabel}>Categories tab: products failed</Text>
+      <EmptyState
+        tone="error"
+        title="Couldn't load products"
+        message="Please check your internet connection and try again."
+        actionText="Retry"
+        onAction={() => {}}
+      />
+      <Text style={styles.sectionLabel}>Categories tab: categories failed</Text>
+      <EmptyState
+        tone="error"
+        title="Couldn't load categories"
+        message="Please check your internet connection and try again."
+        actionText="Retry"
+        onAction={() => {}}
+      />
       <Text style={styles.sectionLabel}>Home: store is empty</Text>
       <EmptyState
         icon="storefront-outline"

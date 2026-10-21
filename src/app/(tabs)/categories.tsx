@@ -2,7 +2,6 @@ import {
   FlatList,
   StyleSheet,
   View,
-  Text,
   RefreshControl,
   ActivityIndicator,
 } from "react-native";
@@ -24,7 +23,7 @@ import {
 } from "@/src/components/tabs/categories/CategoriesSkeletons";
 import { useLocalSearchParams } from "expo-router";
 import { queryClient, queryKeys } from "@/src/lib/react-query";
-import ErrorBanner from "@/src/components/common/ErrorBanner";
+import EmptyState from "@/src/components/common/EmptyState";
 import {
   useGetInfiniteProductsBySpecialCategory,
   useGetInfiniteProductsBySubCategory,
@@ -32,7 +31,6 @@ import {
 import { Product, ProductSortType } from "@/src/types";
 import ProductCard from "@/src/components/tabs/home/ProductCard";
 import { getResponsiveValue } from "@/src/utils/getResponsiveValue";
-import RetryButton from "@/src/components/common/RetryButton";
 import { useCart } from "@/src/hooks/useCart";
 import { CONSTANTS } from "@/src/constants/constants";
 
@@ -267,21 +265,22 @@ const CategoriesScreen = () => {
       {/* Products Loading/Error States */}
       {isLoadingProducts && <ProductGridSkeleton />}
       {productsQuery.error && !productsQuery.isLoading && (
-        <View style={styles.productsLoading}>
-          <Text style={styles.errorText}>Error loading products</Text>
-          <RetryButton
-            onPress={() => productsQuery.refetch()}
-            text="Retry"
-            style={styles.retryButton}
-          />
-        </View>
+        <EmptyState
+          tone="error"
+          title="Couldn't load products"
+          message="Please check your internet connection and try again."
+          actionText="Retry"
+          onAction={() => productsQuery.refetch()}
+        />
       )}
       {!isLoadingProducts &&
         !productsQuery.error &&
         products.length === 0 && (
-          <View style={styles.productsLoading}>
-            <Text style={styles.emptyText}>No products available</Text>
-          </View>
+          <EmptyState
+            icon="basket-outline"
+            title="No products here yet"
+            message="Products in this category will show up soon. Try another category."
+          />
         )}
     </>
   );
@@ -306,27 +305,41 @@ const CategoriesScreen = () => {
   // Error state
   if (errorGettingCategoriesForNavbar) {
     return (
-      <ErrorBanner
-        title="Unable to Load"
-        message="Error loading categories. Please try again."
-        onRetry={async () => {
-          // Invalidate the query to refetch categories for navbar (useGetCategoriesForNavbar)
-          await queryClient.invalidateQueries({
-            queryKey: queryKeys.categories.list({
-              isActive: true,
-              showOnNavbar: true,
-            }),
-          });
-        }}
-      />
+      <View style={styles.container}>
+        <CategoriesHeader currentCategoryName="" />
+        <View style={styles.centered}>
+          <EmptyState
+            tone="error"
+            title="Couldn't load categories"
+            message="Please check your internet connection and try again."
+            actionText="Retry"
+            onAction={async () => {
+              // Invalidate the query to refetch categories for navbar (useGetCategoriesForNavbar)
+              await queryClient.invalidateQueries({
+                queryKey: queryKeys.categories.list({
+                  isActive: true,
+                  showOnNavbar: true,
+                }),
+              });
+            }}
+          />
+        </View>
+      </View>
     );
   }
 
   // Empty state
   if (!categories || categories.length === 0) {
     return (
-      <View style={[styles.container, styles.centered]}>
-        <Text style={styles.emptyText}>No categories available</Text>
+      <View style={styles.container}>
+        <CategoriesHeader currentCategoryName="" />
+        <View style={styles.centered}>
+          <EmptyState
+            icon="storefront-outline"
+            title="Categories are coming soon"
+            message="We are adding products to your city's store. Please check back shortly."
+          />
+        </View>
       </View>
     );
   }
@@ -403,32 +416,9 @@ const styles = StyleSheet.create({
     zIndex: 2,
   },
   centered: {
+    flex: 1,
     justifyContent: "center",
     alignItems: "center",
-  },
-  productsLoading: {
-    justifyContent: "center",
-    alignItems: "center",
-    paddingVertical: 40,
-  },
-  loadingText: {
-    marginTop: 16,
-    fontSize: 16,
-    color: "#666",
-  },
-  errorText: {
-    fontSize: 18,
-    fontWeight: "600",
-    color: "#DC2626",
-    marginBottom: 8,
-  },
-  retryButton: {
-    marginTop: 16,
-    paddingHorizontal: 32,
-  },
-  emptyText: {
-    fontSize: 16,
-    color: "#666",
   },
   productItem: {
     flex: 1,
