@@ -194,8 +194,8 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     borderRadius: 8,
-    borderWidth: 1,
-    borderColor: theme.colors.background,
+    borderWidth: 2,
+    borderColor: theme.colors.primary,
   },
   quantityButton: {
     width: 30,
