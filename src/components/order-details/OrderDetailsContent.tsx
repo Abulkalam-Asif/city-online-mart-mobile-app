@@ -1,3 +1,4 @@
+import { formatPrice } from "@/src/utils/formatPrice";
 import {
   Pressable,
   ScrollView,
@@ -346,7 +347,7 @@ const OrderDetailsContent = ({ orderId }: OrderDetailsContentProps) => {
           <View style={styles.paymentCard}>
             <View style={styles.paymentRow}>
               <Text style={styles.totalAmountText}>Total Amount</Text>
-              <Text style={styles.paymentAmountText}>Rs. {totalAmount}</Text>
+              <Text style={styles.paymentAmountText}>Rs. {formatPrice(totalAmount)}</Text>
             </View>
             <View style={styles.paymentRow}>
               <View style={styles.paymentMethodRow}>
@@ -411,7 +412,7 @@ const OrderDetailsContent = ({ orderId }: OrderDetailsContentProps) => {
                 <View style={styles.leftSection}>
                   <Text style={styles.billingLabelText}>Items Subtotal</Text>
                 </View>
-                <Text style={styles.billingAmountText}>Rs. {subtotal}</Text>
+                <Text style={styles.billingAmountText}>Rs. {formatPrice(subtotal)}</Text>
               </View>
 
               {orderData?.appliedOrderDiscount && (
@@ -423,13 +424,13 @@ const OrderDetailsContent = ({ orderId }: OrderDetailsContentProps) => {
                         <Text style={styles.savingsText}>{orderData.appliedOrderDiscount.percentage}% off</Text>
                       </View>
                     </View>
-                    <Text style={styles.billingAmountText}>-Rs. {orderData.appliedOrderDiscount.amount}</Text>
+                    <Text style={styles.billingAmountText}>-Rs. {formatPrice(orderData.appliedOrderDiscount.amount)}</Text>
                   </View>
                   <View style={styles.billingRow}>
                     <View style={styles.leftSection}>
                       <Text style={[styles.billingLabelText, { fontFamily: theme.fonts.semibold, color: theme.colors.text }]}>Order Subtotal</Text>
                     </View>
-                    <Text style={[styles.billingAmountText, { fontFamily: theme.fonts.bold }]}>Rs. {subtotal - orderData.appliedOrderDiscount.amount}</Text>
+                    <Text style={[styles.billingAmountText, { fontFamily: theme.fonts.bold }]}>Rs. {formatPrice(subtotal - orderData.appliedOrderDiscount.amount)}</Text>
                   </View>
                 </>
               )}
@@ -442,7 +443,7 @@ const OrderDetailsContent = ({ orderId }: OrderDetailsContentProps) => {
                       <Text style={styles.savingsText}>{orderData.appliedOnlinePaymentDiscount.percentage}% off</Text>
                     </View>
                   </View>
-                  <Text style={styles.billingAmountText}>-Rs. {orderData.appliedOnlinePaymentDiscount.amount}</Text>
+                  <Text style={styles.billingAmountText}>-Rs. {formatPrice(orderData.appliedOnlinePaymentDiscount.amount)}</Text>
                 </View>
               )}
 
@@ -453,7 +454,7 @@ const OrderDetailsContent = ({ orderId }: OrderDetailsContentProps) => {
                 <View style={styles.rightSection}>
                   {deliveryFee > 0 && (
                     <Text style={styles.billingAmountText}>
-                      Rs. {deliveryFee}
+                      Rs. {formatPrice(deliveryFee)}
                     </Text>
                   )}
                 </View>
@@ -463,7 +464,7 @@ const OrderDetailsContent = ({ orderId }: OrderDetailsContentProps) => {
 
               <View style={styles.totalRow}>
                 <Text style={styles.totalAmountText}>Total Amount</Text>
-                <Text style={styles.totalAmountText}>Rs. {totalAmount}</Text>
+                <Text style={styles.totalAmountText}>Rs. {formatPrice(totalAmount)}</Text>
               </View>
 
               {/* Active refunds only, never the reason */}
@@ -471,11 +472,11 @@ const OrderDetailsContent = ({ orderId }: OrderDetailsContentProps) => {
                 <>
                   <View style={styles.refundRow}>
                     <Text style={styles.billingLabelText}>Refunded</Text>
-                    <Text style={styles.refundAmountText}>-Rs. {refundSummary.totalRefunded}</Text>
+                    <Text style={styles.refundAmountText}>-Rs. {formatPrice(refundSummary.totalRefunded)}</Text>
                   </View>
                   <View style={styles.refundRow}>
                     <Text style={styles.adjustedTotalText}>Adjusted Total</Text>
-                    <Text style={styles.adjustedTotalText}>Rs. {refundSummary.adjustedTotal}</Text>
+                    <Text style={styles.adjustedTotalText}>Rs. {formatPrice(refundSummary.adjustedTotal)}</Text>
                   </View>
                 </>
               )}

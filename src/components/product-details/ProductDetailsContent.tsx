@@ -1,3 +1,4 @@
+import { formatPrice } from "@/src/utils/formatPrice";
 import { ScrollView, StyleSheet, Text, View } from "react-native";
 import React, { useMemo } from "react";
 import { theme } from "@/src/constants/theme";
@@ -113,11 +114,11 @@ const ProductDetailsContent = ({
       <View style={styles.topContentContainer}>
         {/* Price Section */}
         <View style={styles.priceSection}>
-          <Text style={styles.currentPriceText}>Rs. {discountedPrice}</Text>
+          <Text style={styles.currentPriceText}>Rs. {formatPrice(discountedPrice)}</Text>
           {
             hasDiscount && (
               <>
-                <Text style={styles.oldPriceText}>Rs. {originalPrice}</Text>
+                <Text style={styles.oldPriceText}>Rs. {formatPrice(originalPrice)}</Text>
                 <Text style={styles.discountTag}>
                   {highestDiscount}% off
                 </Text>

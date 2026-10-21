@@ -1,3 +1,4 @@
+import { formatPrice } from "@/src/utils/formatPrice";
 import { StyleSheet, Text, View, Pressable } from "react-native";
 import React, { useCallback, useState } from "react";
 import { Image } from "expo-image";
@@ -75,9 +76,9 @@ const CartItem = ({ item, onQuantityChange, onRemove, availableStock, maxCartQua
         </Text>
 
         <View style={styles.priceRow}>
-          <Text style={styles.discountedUnitPriceText}>Rs. {item.discountedUnitPrice * item.quantity}</Text>
+          <Text style={styles.discountedUnitPriceText}>Rs. {formatPrice(item.discountedUnitPrice * item.quantity)}</Text>
           {item.discountPercentage > 0 && (
-            <Text style={styles.unitPriceText}>Rs. {item.unitPrice * item.quantity}</Text>
+            <Text style={styles.unitPriceText}>Rs. {formatPrice(item.unitPrice * item.quantity)}</Text>
           )}
           {item.discountPercentage > 0 && (
             <Text style={styles.discountTag}>{`${item.discountPercentage}% off`}</Text>

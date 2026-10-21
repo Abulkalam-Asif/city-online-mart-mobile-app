@@ -1,3 +1,4 @@
+import { formatPrice } from "@/src/utils/formatPrice";
 import { Pressable, StyleSheet, Text, View } from "react-native";
 import React, { useCallback, useMemo, useState } from "react";
 import { Image } from "expo-image";
@@ -169,9 +170,9 @@ const ProductCard = ({
           {product.info.name}
         </Text>
         <View style={styles.priceContainer}>
-          <Text style={styles.priceText}>Rs. {discountedPrice}</Text>
+          <Text style={styles.priceText}>Rs. {formatPrice(discountedPrice)}</Text>
           {hasDiscount ? (
-            <Text style={styles.oldPriceText}>Rs. {originalPrice}</Text>
+            <Text style={styles.oldPriceText}>Rs. {formatPrice(originalPrice)}</Text>
           ) : null}
         </View>
       </Pressable>

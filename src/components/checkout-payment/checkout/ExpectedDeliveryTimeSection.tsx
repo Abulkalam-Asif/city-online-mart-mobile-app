@@ -13,6 +13,7 @@ interface ExpectedDeliveryTimeSectionProps {
     name: string;
     startTime: string;
     endTime: string;
+    expressDurationMinutes?: number;
   } | null;
 }
 
@@ -49,7 +50,7 @@ export default ExpectedDeliveryTimeSection;
 
 const styles = StyleSheet.create({
   container: {
-    marginTop: 20,
+    marginTop: 16,
     padding: 16,
     backgroundColor: theme.colors.background_3,
     borderRadius: 8,
@@ -62,8 +63,7 @@ const styles = StyleSheet.create({
     fontFamily: theme.fonts.semibold,
   },
   timeDateContainer: {
-    flexDirection: "row",
-    gap: 12,
+    gap: 2,
     marginTop: 4,
   },
   timeText: {

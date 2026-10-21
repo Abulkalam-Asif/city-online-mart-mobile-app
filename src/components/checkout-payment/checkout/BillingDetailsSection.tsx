@@ -1,3 +1,4 @@
+import { formatPrice } from "@/src/utils/formatPrice";
 import { StyleSheet, Text, View } from "react-native";
 import React from "react";
 import { theme } from "@/src/constants/theme";
@@ -41,13 +42,13 @@ const BillingDetailsSection: React.FC<BillingDetailsSectionProps> = ({ isOnlineP
 
   return (
     <>
-      <Text style={styles.titleText}>Billing Details</Text>
       <View style={styles.container}>
+        <Text style={styles.titleText}>Billing Details</Text>
         <View style={styles.billingRow}>
           <View style={styles.leftSection}>
             <Text style={styles.labelText}>Items Subtotal</Text>
           </View>
-          <Text style={styles.amount}>Rs. {itemsSubtotal}</Text>
+          <Text style={styles.amount}>Rs. {formatPrice(itemsSubtotal)}</Text>
         </View>
 
         {orderDiscount > 0 && (
@@ -58,13 +59,13 @@ const BillingDetailsSection: React.FC<BillingDetailsSectionProps> = ({ isOnlineP
                 <Text style={styles.discountText}>{orderDiscountPercentage}% off</Text>
               </View>
             </View>
-            <Text style={styles.discountAmount}>-Rs. {orderDiscount}</Text>
+            <Text style={styles.discountAmount}>-Rs. {formatPrice(orderDiscount)}</Text>
           </View>
         )}
 
         <View style={styles.billingRow}>
           <Text style={styles.labelText}>Order Subtotal</Text>
-          <Text style={styles.amount}>Rs. {orderSubTotal}</Text>
+          <Text style={styles.amount}>Rs. {formatPrice(orderSubTotal)}</Text>
         </View>
 
         {onlineDiscountAmount > 0 && (
@@ -75,7 +76,7 @@ const BillingDetailsSection: React.FC<BillingDetailsSectionProps> = ({ isOnlineP
                 <Text style={styles.discountText}>{onlineDiscountPercentage}% off</Text>
               </View>
             </View>
-            <Text style={styles.discountAmount}>-Rs. {onlineDiscountAmount}</Text>
+            <Text style={styles.discountAmount}>-Rs. {formatPrice(onlineDiscountAmount)}</Text>
           </View>
         )}
 
@@ -89,7 +90,7 @@ const BillingDetailsSection: React.FC<BillingDetailsSectionProps> = ({ isOnlineP
             }
           </View>
           <View style={styles.rightSection}>
-            <Text style={styles.amount}>Rs. {deliveryFee}</Text>
+            <Text style={styles.amount}>Rs. {formatPrice(deliveryFee)}</Text>
           </View>
         </View>
 
@@ -97,7 +98,7 @@ const BillingDetailsSection: React.FC<BillingDetailsSectionProps> = ({ isOnlineP
 
         <View style={styles.totalRow}>
           <Text style={styles.totalLabelText}>Total Amount</Text>
-          <Text style={styles.finalBill}>Rs. {finalBill}</Text>
+          <Text style={styles.finalBill}>Rs. {formatPrice(finalBill)}</Text>
         </View>
       </View>
     </>
@@ -110,10 +111,10 @@ const styles = StyleSheet.create({
   titleText: {
     fontSize: 14,
     fontFamily: theme.fonts.semibold,
-    marginTop: 20,
+    marginBottom: 12,
   },
   container: {
-    marginTop: 10,
+    marginTop: 16,
     padding: 16,
     backgroundColor: theme.colors.background_3,
     borderRadius: 8,

@@ -599,7 +599,6 @@ const styles = StyleSheet.create({
   },
   paymentSection: {
     marginVertical: 16,
-    paddingHorizontal: 16,
     gap: 8,
   },
   inputLabel: {

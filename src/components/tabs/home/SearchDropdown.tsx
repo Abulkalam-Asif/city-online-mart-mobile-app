@@ -1,3 +1,4 @@
+import { formatPrice } from "@/src/utils/formatPrice";
 import React, { useMemo, useCallback, useState } from "react";
 import { View, Text, StyleSheet, Pressable } from "react-native";
 import { ScrollView } from "react-native-gesture-handler";
@@ -123,9 +124,9 @@ const SearchDropdownItem = ({ product, canPress }: { product: Product, canPress:
           {product.info.name}
         </Text>
         <View style={styles.priceContainer}>
-          <Text style={styles.priceText}>Rs. {discountedPrice}</Text>
+          <Text style={styles.priceText}>Rs. {formatPrice(discountedPrice)}</Text>
           {highestDiscount > 0 && (
-            <Text style={styles.oldPriceText}>Rs. {product.price}</Text>
+            <Text style={styles.oldPriceText}>Rs. {formatPrice(product.price)}</Text>
           )}
         </View>
         {availableStock < 1 && (
