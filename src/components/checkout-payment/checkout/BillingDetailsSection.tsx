@@ -126,9 +126,12 @@ const styles = StyleSheet.create({
   },
   container: {
     marginTop: 16,
-    padding: 16,
+    padding: 14, // 14 + the 2 px outline = 16, so the text lines up with the other cards
     backgroundColor: theme.colors.background_3,
     borderRadius: 8,
+    // the last thing the customer checks before ordering, so it stands out (same green as the cart buttons)
+    borderWidth: 2,
+    borderColor: theme.colors.primary,
   },
   billingRow: {
     flexDirection: "row",

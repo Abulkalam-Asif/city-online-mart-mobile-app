@@ -709,9 +709,12 @@ const styles = StyleSheet.create({
   },
   billingCard: {
     backgroundColor: theme.colors.background_3,
-    padding: 12,
+    padding: 10, // 10 + the 2 px outline = 12, same inner spacing as before
     borderRadius: 8,
     marginTop: 8,
+    // same outline as the checkout billing card
+    borderWidth: 2,
+    borderColor: theme.colors.primary,
   },
   billingRow: {
     flexDirection: "row",
