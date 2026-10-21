@@ -21,17 +21,23 @@ import {
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { AuthUser, User, UserRole } from "../types/auth.types";
 import { logger } from "../utils/logger";
+import type { AuditLogService } from "./AuditLogService";
 
 export class AuthService {
   private static readonly USERS_COLLECTION = "USERS";
   private _confirmationResult: FirebaseAuthTypes.ConfirmationResult | null =
     null;
+  private _auditLog?: AuditLogService;
 
   constructor(
     private auth: FirebaseAuthTypes.Module,
     private db: FirebaseFirestoreTypes.Module,
     private functions: Functions,
   ) { }
+
+  set auditLog(auditLog: AuditLogService) {
+    this._auditLog = auditLog;
+  }
 
   public get authInstance(): FirebaseAuthTypes.Module {
     return this.auth;
@@ -70,8 +76,9 @@ export class AuthService {
     try {
       const userCredential = await confirmationResult.confirm(otpCode);
       if (userCredential?.user) {
-        await this.syncUserProfile(userCredential.user);
+        const name = await this.syncUserProfile(userCredential.user);
         this._confirmationResult = null;
+        this.logSignIn(userCredential.user.uid, name);
       }
     } catch (error: any) {
       logger.error("verifyOTP", error);
@@ -116,7 +123,7 @@ export class AuthService {
    */
   private async syncUserProfile(
     firebaseUser: FirebaseAuthTypes.User,
-  ): Promise<void> {
+  ): Promise<string> {
     const userRef = doc(
       this.db,
       AuthService.USERS_COLLECTION,
@@ -128,6 +135,7 @@ export class AuthService {
       await updateDoc(userRef, {
         lastLoginAt: serverTimestamp(),
       });
+      return userDoc.data()?.displayName || userDoc.data()?.phoneNumber || firebaseUser.uid;
     } else {
       const newUser: User = {
         phoneNumber: this.convertToLocal(firebaseUser.phoneNumber || ""),
@@ -137,7 +145,26 @@ export class AuthService {
         lastLoginAt: serverTimestamp() as Timestamp,
       };
       await setDoc(userRef, newUser);
+      return newUser.phoneNumber || firebaseUser.uid;
     }
+  }
+
+  /**
+   * Audit entry for an OTP sign-in. Not awaited and never throws: a failed audit write must not
+   * block the sign-in. (The no-OTP sign-in is logged by the mobileGenerateCustomToken function.)
+   */
+  private logSignIn(uid: string, name: string): void {
+    if (!this._auditLog) return;
+    this._auditLog
+      .write({
+        action: "CUSTOMER_SIGNED_IN",
+        actor: { uid, name, role: "user" },
+        target: { type: "customer", id: uid, label: name },
+        refs: [`customer:${uid}`],
+        summary: `${name} signed in (OTP)`,
+        context: { method: "otp" },
+      })
+      .catch((error) => logger.warn("logSignIn", error));
   }
 
   /**

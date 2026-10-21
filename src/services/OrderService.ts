@@ -25,6 +25,8 @@ import { OrderSettings, DeliverySettings } from "../types/settings.types";
 import { sanitizeForFirestore } from "../utils/firestoreUtils";
 import { logger } from "../utils/logger";
 import type { DiscountService } from "./DiscountService";
+import type { AuditLogService } from "./AuditLogService";
+import { customerActor, fieldChange, orderAuditRefs, orderAuditTarget, summariseItems } from "../utils/auditHelpers";
 import { PaginatedResult } from "../types/common.types";
 
 export class OrderService {
@@ -35,6 +37,7 @@ export class OrderService {
   private static readonly CUSTOMERS_COLLECTION = "USERS";
 
   private _discountService!: DiscountService;
+  private _auditLog?: AuditLogService;
 
   constructor(
     private db: FirebaseFirestoreTypes.Module,
@@ -47,6 +50,16 @@ export class OrderService {
 
   get discountService() {
     return this._discountService;
+  }
+
+  set auditLog(auditLog: AuditLogService) {
+    this._auditLog = auditLog;
+  }
+
+  /** The audit service; a missing one is a wiring bug (see createServices), so fail loudly. */
+  private get audit(): AuditLogService {
+    if (!this._auditLog) throw new Error("OrderService.auditLog is not set (see createServices)");
+    return this._auditLog;
   }
 
   // ─────────────────────────────────────────────────────────────────────────────
@@ -435,6 +448,21 @@ export class OrderService {
         // Update user's latest address
         const userRef = doc(this.db, OrderService.CUSTOMERS_COLLECTION, orderData.customerId);
         transaction.update(userRef, { address: orderData.deliveryAddress });
+
+        const actor = customerActor(newOrder);
+        this.audit.addToTransaction(transaction, {
+          action: "ORDER_CREATED",
+          actor,
+          target: orderAuditTarget(orderId),
+          refs: orderAuditRefs(orderId, newOrder),
+          summary: `Order #${orderId} created by ${actor.name} (${actor.role}): Rs ${newOrder.total}`,
+          context: {
+            total: newOrder.total,
+            paymentMethod: newOrder.paymentMethod.type,
+            deliverySlot: newOrder.deliverySlot ? { id: newOrder.deliverySlot.id, date: newOrder.deliverySlot.date } : null,
+            items: summariseItems(newOrder.items),
+          },
+        });
       });
 
       // 8. Notify admin (non-blocking)
@@ -584,6 +612,17 @@ export class OrderService {
           cancelledBy: "user",
           updatedAt: Timestamp.now(),
           logs: [...(order.logs || []), newLog],
+        });
+
+        const actor = customerActor(order);
+        this.audit.addToTransaction(transaction, {
+          action: "ORDER_CANCELLED",
+          actor,
+          target: orderAuditTarget(orderId),
+          refs: orderAuditRefs(orderId, order),
+          summary: `Order #${orderId} cancelled by ${actor.name} (${actor.role})`,
+          changes: { status: fieldChange(order.status, "cancelled") },
+          context: { cancelledBy: "user", paymentMethod: order.paymentMethod.type },
         });
 
         // Decrement delivery slot currentOrders
@@ -744,6 +783,26 @@ export class OrderService {
         updateFields.logs = [...(order.logs || []), newLog];
 
         transaction.update(orderRef, updateFields);
+
+        const changes: Record<string, { from: unknown; to: unknown }> = {};
+        if (updateFields.deliveryAddress !== undefined && updateFields.deliveryAddress !== order.deliveryAddress) {
+          changes.deliveryAddress = fieldChange(order.deliveryAddress, updateFields.deliveryAddress);
+        }
+        if (updateFields.paymentMethod !== undefined && updateFields.paymentMethod.type !== order.paymentMethod.type) {
+          changes.paymentMethod = fieldChange(order.paymentMethod.type, updateFields.paymentMethod.type);
+        }
+        if (updateFields.total !== undefined && updateFields.total !== order.total) {
+          changes.total = fieldChange(order.total, updateFields.total);
+        }
+        const actor = customerActor(order);
+        this.audit.addToTransaction(transaction, {
+          action: "ORDER_DETAILS_UPDATED",
+          actor,
+          target: orderAuditTarget(orderId),
+          refs: orderAuditRefs(orderId, order),
+          summary: `Order #${orderId} details updated by ${actor.name} (${actor.role})`,
+          changes,
+        });
 
         if (updates.deliveryAddress) {
           const userRef = doc(this.db, OrderService.CUSTOMERS_COLLECTION, order.customerId);
