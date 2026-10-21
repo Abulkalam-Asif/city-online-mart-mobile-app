@@ -22,7 +22,14 @@ const BillingDetailsSection: React.FC<BillingDetailsSectionProps> = ({ isOnlineP
   );
 
   // Calculate totals from cart data
+  // cart.itemsSubtotal is already after product discounts; the screen shows the price before
+  // them, then the product discounts as their own line, so the customer sees what is saved.
   const itemsSubtotal = cart?.itemsSubtotal || 0;
+  const itemsOriginalSubtotal = (cart?.items || []).reduce(
+    (sum, item) => sum + item.unitPrice * item.quantity,
+    0
+  );
+  const itemDiscount = itemsOriginalSubtotal - itemsSubtotal;
   const orderDiscount = cart?.appliedOrderDiscount?.amount || 0;
   const orderSubTotal = itemsSubtotal - orderDiscount;
   const orderDiscountPercentage = cart?.appliedOrderDiscount?.percentage || 0;
@@ -48,8 +55,17 @@ const BillingDetailsSection: React.FC<BillingDetailsSectionProps> = ({ isOnlineP
           <View style={styles.leftSection}>
             <Text style={styles.labelText}>Items Subtotal</Text>
           </View>
-          <Text style={styles.amount}>Rs. {formatPrice(itemsSubtotal)}</Text>
+          <Text style={styles.amount}>Rs. {formatPrice(itemsOriginalSubtotal)}</Text>
         </View>
+
+        {itemDiscount > 0 && (
+          <View style={styles.billingRow}>
+            <View style={styles.leftSection}>
+              <Text style={styles.labelText}>Item Discount</Text>
+            </View>
+            <Text style={styles.discountAmount}>-Rs. {formatPrice(itemDiscount)}</Text>
+          </View>
+        )}
 
         {orderDiscount > 0 && (
           <View style={styles.billingRow}>
@@ -62,11 +78,6 @@ const BillingDetailsSection: React.FC<BillingDetailsSectionProps> = ({ isOnlineP
             <Text style={styles.discountAmount}>-Rs. {formatPrice(orderDiscount)}</Text>
           </View>
         )}
-
-        <View style={styles.billingRow}>
-          <Text style={styles.labelText}>Order Subtotal</Text>
-          <Text style={styles.amount}>Rs. {formatPrice(orderSubTotal)}</Text>
-        </View>
 
         {onlineDiscountAmount > 0 && (
           <View style={styles.billingRow}>
