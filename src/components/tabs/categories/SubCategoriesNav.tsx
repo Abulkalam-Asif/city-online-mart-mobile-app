@@ -72,7 +72,9 @@ const SubCategoriesNav = ({
         {loadingSubCategories ? (
           <SubCategoryChipsSkeleton />
         ) : (
+          // A single sub-category is selected automatically, so its chip would only be noise.
           subCategories &&
+          subCategories.length > 1 &&
           subCategories.map((subCategory) => (
             <View
               key={subCategory.id}
