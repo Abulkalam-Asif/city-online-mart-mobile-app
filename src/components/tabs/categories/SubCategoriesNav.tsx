@@ -3,7 +3,7 @@ import React, { useEffect, useState } from "react";
 import { theme } from "@/src/constants/theme";
 import { SubCategory } from "@/src/types";
 import SortButton from "./SortButton";
-import Loading from "../../common/Loading";
+import { SubCategoryChipsSkeleton } from "./CategoriesSkeletons";
 import ErrorBanner from "../../common/ErrorBanner";
 import { queryClient, queryKeys } from "@/src/lib/react-query";
 
@@ -70,9 +70,7 @@ const SubCategoriesNav = ({
         horizontal
         showsHorizontalScrollIndicator={false}>
         {loadingSubCategories ? (
-          <View style={styles.subCategoriesLoadingContainer}>
-            <Loading size={"small"} />
-          </View>
+          <SubCategoryChipsSkeleton />
         ) : (
           subCategories &&
           subCategories.map((subCategory) => (
@@ -118,10 +116,6 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     gap: 8,
     paddingVertical: 2,
-  },
-  subCategoriesLoadingContainer: {
-    width: "100%",
-    justifyContent: "center",
   },
   subCategoriesErrorContainer: {
     flexDirection: "row",

@@ -18,7 +18,10 @@ import {
   useGetSubCategoriesByCategoryIdForNavbar,
 } from "@/src/hooks/useCategories";
 import { theme } from "@/src/constants/theme";
-import Loading from "@/src/components/common/Loading";
+import {
+  CategoriesScreenSkeleton,
+  ProductGridSkeleton,
+} from "@/src/components/tabs/categories/CategoriesSkeletons";
 import { useLocalSearchParams } from "expo-router";
 import { queryClient, queryKeys } from "@/src/lib/react-query";
 import ErrorBanner from "@/src/components/common/ErrorBanner";
@@ -249,7 +252,9 @@ const CategoriesScreen = () => {
         />
         <SubCategoriesNav
           subCategories={subCategoriesForNavbarData}
-          loadingSubCategories={loadingSubCategoriesForNavbar}
+          loadingSubCategories={
+            loadingSubCategoriesForNavbar || !currentCategoryId
+          }
           errorGettingSubCategories={errorGettingSubCategoriesForNavbar}
           parentCategoryId={currentCategoryId}
           currentSubCategoryId={currentSubCategoryId}
@@ -260,11 +265,7 @@ const CategoriesScreen = () => {
       </View>
 
       {/* Products Loading/Error States */}
-      {isLoadingProducts && (
-        <View style={styles.productsLoading}>
-          <Loading text="Loading products..." />
-        </View>
-      )}
+      {isLoadingProducts && <ProductGridSkeleton />}
       {productsQuery.error && !productsQuery.isLoading && (
         <View style={styles.productsLoading}>
           <Text style={styles.errorText}>Error loading products</Text>
@@ -295,8 +296,9 @@ const CategoriesScreen = () => {
   // Loading state
   if (loadingCategoriesForNavbar) {
     return (
-      <View style={[styles.container, styles.centered]}>
-        <Loading />
+      <View style={styles.container}>
+        <CategoriesHeader currentCategoryName="" />
+        <CategoriesScreenSkeleton />
       </View>
     );
   }
