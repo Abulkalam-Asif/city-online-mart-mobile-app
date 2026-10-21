@@ -1,3 +1,4 @@
+import { formatPrice } from "@/src/utils/formatPrice";
 import { StyleSheet, Text, View, Pressable } from "react-native";
 import React, { useCallback, useState } from "react";
 import { Image } from "expo-image";
@@ -75,9 +76,9 @@ const CartItem = ({ item, onQuantityChange, onRemove, availableStock, maxCartQua
         </Text>
 
         <View style={styles.priceRow}>
-          <Text style={styles.discountedUnitPriceText}>Rs. {item.discountedUnitPrice * item.quantity}</Text>
+          <Text style={styles.discountedUnitPriceText}>Rs. {formatPrice(item.discountedUnitPrice * item.quantity)}</Text>
           {item.discountPercentage > 0 && (
-            <Text style={styles.unitPriceText}>Rs. {item.unitPrice * item.quantity}</Text>
+            <Text style={styles.unitPriceText}>Rs. {formatPrice(item.unitPrice * item.quantity)}</Text>
           )}
           {item.discountPercentage > 0 && (
             <Text style={styles.discountTag}>{`${item.discountPercentage}% off`}</Text>
@@ -135,18 +136,18 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
   imageContainer: {
-    width: 50,
-    height: 50,
+    width: 64,
+    height: 64,
     borderRadius: 8,
     borderWidth: 1,
     borderColor: theme.colors.background,
     justifyContent: "center",
     alignItems: "center",
-    marginRight: 8,
+    marginRight: 12,
   },
   productImage: {
-    width: 40,
-    height: 40,
+    width: 54,
+    height: 54,
   },
   detailsContainer: {
     flex: 1,
@@ -193,8 +194,8 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     borderRadius: 8,
-    borderWidth: 1,
-    borderColor: theme.colors.background,
+    borderWidth: 2,
+    borderColor: theme.colors.primary,
   },
   quantityButton: {
     width: 30,

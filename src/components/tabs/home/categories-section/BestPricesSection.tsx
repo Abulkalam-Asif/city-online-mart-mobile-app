@@ -1,3 +1,4 @@
+import { formatPrice } from "@/src/utils/formatPrice";
 import { theme } from "@/src/constants/theme";
 import { useBestPriceProducts } from "@/src/hooks/useBestPriceProducts";
 import { IProduct } from "@/src/types";
@@ -74,7 +75,7 @@ const BestPricesSection = () => {
                 {discountPercentage}% off
               </Text>
               <Text style={styles.discountText}>
-                Save Rs. {Math.round(savings)}
+                Save Rs. {formatPrice(Math.round(savings))}
               </Text>
             </Pressable>
           );

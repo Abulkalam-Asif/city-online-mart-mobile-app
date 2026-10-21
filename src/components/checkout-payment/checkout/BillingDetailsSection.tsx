@@ -1,3 +1,4 @@
+import { formatPrice } from "@/src/utils/formatPrice";
 import { StyleSheet, Text, View } from "react-native";
 import React from "react";
 import { theme } from "@/src/constants/theme";
@@ -21,7 +22,14 @@ const BillingDetailsSection: React.FC<BillingDetailsSectionProps> = ({ isOnlineP
   );
 
   // Calculate totals from cart data
+  // cart.itemsSubtotal is already after product discounts; the screen shows the price before
+  // them, then the product discounts as their own line, so the customer sees what is saved.
   const itemsSubtotal = cart?.itemsSubtotal || 0;
+  const itemsOriginalSubtotal = (cart?.items || []).reduce(
+    (sum, item) => sum + item.unitPrice * item.quantity,
+    0
+  );
+  const itemDiscount = itemsOriginalSubtotal - itemsSubtotal;
   const orderDiscount = cart?.appliedOrderDiscount?.amount || 0;
   const orderSubTotal = itemsSubtotal - orderDiscount;
   const orderDiscountPercentage = cart?.appliedOrderDiscount?.percentage || 0;
@@ -41,14 +49,23 @@ const BillingDetailsSection: React.FC<BillingDetailsSectionProps> = ({ isOnlineP
 
   return (
     <>
-      <Text style={styles.titleText}>Billing Details</Text>
       <View style={styles.container}>
+        <Text style={styles.titleText}>Billing Details</Text>
         <View style={styles.billingRow}>
           <View style={styles.leftSection}>
             <Text style={styles.labelText}>Items Subtotal</Text>
           </View>
-          <Text style={styles.amount}>Rs. {itemsSubtotal}</Text>
+          <Text style={styles.amount}>Rs. {formatPrice(itemsOriginalSubtotal)}</Text>
         </View>
+
+        {itemDiscount > 0 && (
+          <View style={styles.billingRow}>
+            <View style={styles.leftSection}>
+              <Text style={styles.labelText}>Item Discount</Text>
+            </View>
+            <Text style={styles.discountAmount}>-Rs. {formatPrice(itemDiscount)}</Text>
+          </View>
+        )}
 
         {orderDiscount > 0 && (
           <View style={styles.billingRow}>
@@ -58,14 +75,9 @@ const BillingDetailsSection: React.FC<BillingDetailsSectionProps> = ({ isOnlineP
                 <Text style={styles.discountText}>{orderDiscountPercentage}% off</Text>
               </View>
             </View>
-            <Text style={styles.discountAmount}>-Rs. {orderDiscount}</Text>
+            <Text style={styles.discountAmount}>-Rs. {formatPrice(orderDiscount)}</Text>
           </View>
         )}
-
-        <View style={styles.billingRow}>
-          <Text style={styles.labelText}>Order Subtotal</Text>
-          <Text style={styles.amount}>Rs. {orderSubTotal}</Text>
-        </View>
 
         {onlineDiscountAmount > 0 && (
           <View style={styles.billingRow}>
@@ -75,7 +87,7 @@ const BillingDetailsSection: React.FC<BillingDetailsSectionProps> = ({ isOnlineP
                 <Text style={styles.discountText}>{onlineDiscountPercentage}% off</Text>
               </View>
             </View>
-            <Text style={styles.discountAmount}>-Rs. {onlineDiscountAmount}</Text>
+            <Text style={styles.discountAmount}>-Rs. {formatPrice(onlineDiscountAmount)}</Text>
           </View>
         )}
 
@@ -89,7 +101,7 @@ const BillingDetailsSection: React.FC<BillingDetailsSectionProps> = ({ isOnlineP
             }
           </View>
           <View style={styles.rightSection}>
-            <Text style={styles.amount}>Rs. {deliveryFee}</Text>
+            <Text style={styles.amount}>Rs. {formatPrice(deliveryFee)}</Text>
           </View>
         </View>
 
@@ -97,7 +109,7 @@ const BillingDetailsSection: React.FC<BillingDetailsSectionProps> = ({ isOnlineP
 
         <View style={styles.totalRow}>
           <Text style={styles.totalLabelText}>Total Amount</Text>
-          <Text style={styles.finalBill}>Rs. {finalBill}</Text>
+          <Text style={styles.finalBill}>Rs. {formatPrice(finalBill)}</Text>
         </View>
       </View>
     </>
@@ -110,13 +122,16 @@ const styles = StyleSheet.create({
   titleText: {
     fontSize: 14,
     fontFamily: theme.fonts.semibold,
-    marginTop: 20,
+    marginBottom: 12,
   },
   container: {
-    marginTop: 10,
-    padding: 16,
+    marginTop: 16,
+    padding: 14, // 14 + the 2 px outline = 16, so the text lines up with the other cards
     backgroundColor: theme.colors.background_3,
     borderRadius: 8,
+    // the last thing the customer checks before ordering, so it stands out (same green as the cart buttons)
+    borderWidth: 2,
+    borderColor: theme.colors.primary,
   },
   billingRow: {
     flexDirection: "row",

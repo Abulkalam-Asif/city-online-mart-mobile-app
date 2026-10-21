@@ -1,3 +1,4 @@
+import { formatPrice } from "@/src/utils/formatPrice";
 import {
   Pressable,
   ScrollView,
@@ -171,7 +172,14 @@ const OrderDetailsContent = ({ orderId }: OrderDetailsContentProps) => {
     : "";
 
   // Calculate billing details from real order data
+  // order.subtotal is already after product discounts; the screen shows the price before them
+  // and the product discounts as their own line (same as the checkout billing).
   const subtotal = orderData?.subtotal || 0;
+  const itemsOriginalSubtotal = (orderData?.items || []).reduce(
+    (sum, item) => sum + item.unitPrice * item.quantity,
+    0,
+  );
+  const itemDiscount = itemsOriginalSubtotal - subtotal;
   const deliveryFee = orderData?.deliveryFee || 0;
   const totalAmount = orderData?.total || 0;
 
@@ -346,7 +354,7 @@ const OrderDetailsContent = ({ orderId }: OrderDetailsContentProps) => {
           <View style={styles.paymentCard}>
             <View style={styles.paymentRow}>
               <Text style={styles.totalAmountText}>Total Amount</Text>
-              <Text style={styles.paymentAmountText}>Rs. {totalAmount}</Text>
+              <Text style={styles.paymentAmountText}>Rs. {formatPrice(totalAmount)}</Text>
             </View>
             <View style={styles.paymentRow}>
               <View style={styles.paymentMethodRow}>
@@ -411,27 +419,28 @@ const OrderDetailsContent = ({ orderId }: OrderDetailsContentProps) => {
                 <View style={styles.leftSection}>
                   <Text style={styles.billingLabelText}>Items Subtotal</Text>
                 </View>
-                <Text style={styles.billingAmountText}>Rs. {subtotal}</Text>
+                <Text style={styles.billingAmountText}>Rs. {formatPrice(itemsOriginalSubtotal)}</Text>
               </View>
 
+              {itemDiscount > 0 && (
+                <View style={styles.billingRow}>
+                  <View style={styles.leftSection}>
+                    <Text style={styles.billingLabelText}>Item Discount</Text>
+                  </View>
+                  <Text style={styles.billingAmountText}>-Rs. {formatPrice(itemDiscount)}</Text>
+                </View>
+              )}
+
               {orderData?.appliedOrderDiscount && (
-                <>
-                  <View style={styles.billingRow}>
-                    <View style={styles.leftSection}>
-                      <Text style={styles.billingLabelText}>Order Discount</Text>
-                      <View style={styles.savingsTag}>
-                        <Text style={styles.savingsText}>{orderData.appliedOrderDiscount.percentage}% off</Text>
-                      </View>
+                <View style={styles.billingRow}>
+                  <View style={styles.leftSection}>
+                    <Text style={styles.billingLabelText}>Order Discount</Text>
+                    <View style={styles.savingsTag}>
+                      <Text style={styles.savingsText}>{orderData.appliedOrderDiscount.percentage}% off</Text>
                     </View>
-                    <Text style={styles.billingAmountText}>-Rs. {orderData.appliedOrderDiscount.amount}</Text>
                   </View>
-                  <View style={styles.billingRow}>
-                    <View style={styles.leftSection}>
-                      <Text style={[styles.billingLabelText, { fontFamily: theme.fonts.semibold, color: theme.colors.text }]}>Order Subtotal</Text>
-                    </View>
-                    <Text style={[styles.billingAmountText, { fontFamily: theme.fonts.bold }]}>Rs. {subtotal - orderData.appliedOrderDiscount.amount}</Text>
-                  </View>
-                </>
+                  <Text style={styles.billingAmountText}>-Rs. {formatPrice(orderData.appliedOrderDiscount.amount)}</Text>
+                </View>
               )}
 
               {orderData?.appliedOnlinePaymentDiscount && (
@@ -442,7 +451,7 @@ const OrderDetailsContent = ({ orderId }: OrderDetailsContentProps) => {
                       <Text style={styles.savingsText}>{orderData.appliedOnlinePaymentDiscount.percentage}% off</Text>
                     </View>
                   </View>
-                  <Text style={styles.billingAmountText}>-Rs. {orderData.appliedOnlinePaymentDiscount.amount}</Text>
+                  <Text style={styles.billingAmountText}>-Rs. {formatPrice(orderData.appliedOnlinePaymentDiscount.amount)}</Text>
                 </View>
               )}
 
@@ -453,7 +462,7 @@ const OrderDetailsContent = ({ orderId }: OrderDetailsContentProps) => {
                 <View style={styles.rightSection}>
                   {deliveryFee > 0 && (
                     <Text style={styles.billingAmountText}>
-                      Rs. {deliveryFee}
+                      Rs. {formatPrice(deliveryFee)}
                     </Text>
                   )}
                 </View>
@@ -463,7 +472,7 @@ const OrderDetailsContent = ({ orderId }: OrderDetailsContentProps) => {
 
               <View style={styles.totalRow}>
                 <Text style={styles.totalAmountText}>Total Amount</Text>
-                <Text style={styles.totalAmountText}>Rs. {totalAmount}</Text>
+                <Text style={styles.totalAmountText}>Rs. {formatPrice(totalAmount)}</Text>
               </View>
 
               {/* Active refunds only, never the reason */}
@@ -471,11 +480,11 @@ const OrderDetailsContent = ({ orderId }: OrderDetailsContentProps) => {
                 <>
                   <View style={styles.refundRow}>
                     <Text style={styles.billingLabelText}>Refunded</Text>
-                    <Text style={styles.refundAmountText}>-Rs. {refundSummary.totalRefunded}</Text>
+                    <Text style={styles.refundAmountText}>-Rs. {formatPrice(refundSummary.totalRefunded)}</Text>
                   </View>
                   <View style={styles.refundRow}>
                     <Text style={styles.adjustedTotalText}>Adjusted Total</Text>
-                    <Text style={styles.adjustedTotalText}>Rs. {refundSummary.adjustedTotal}</Text>
+                    <Text style={styles.adjustedTotalText}>Rs. {formatPrice(refundSummary.adjustedTotal)}</Text>
                   </View>
                 </>
               )}
@@ -700,9 +709,12 @@ const styles = StyleSheet.create({
   },
   billingCard: {
     backgroundColor: theme.colors.background_3,
-    padding: 12,
+    padding: 10, // 10 + the 2 px outline = 12, same inner spacing as before
     borderRadius: 8,
     marginTop: 8,
+    // same outline as the checkout billing card
+    borderWidth: 2,
+    borderColor: theme.colors.primary,
   },
   billingRow: {
     flexDirection: "row",
