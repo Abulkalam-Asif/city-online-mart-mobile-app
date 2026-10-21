@@ -235,7 +235,7 @@ export const AnimatedPromoBanner: React.FC<AnimatedPromoBannerProps> = ({
 
 const styles = StyleSheet.create({
   promoBanner: {
-    backgroundColor: theme.colors.confirmed,
+    backgroundColor: theme.colors.promo,
     padding: 12,
     borderRadius: 8,
     flexDirection: "row",

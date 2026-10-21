@@ -2,7 +2,6 @@ import {
   FlatList,
   StyleSheet,
   View,
-  Text,
   RefreshControl,
   ActivityIndicator,
 } from "react-native";
@@ -18,10 +17,13 @@ import {
   useGetSubCategoriesByCategoryIdForNavbar,
 } from "@/src/hooks/useCategories";
 import { theme } from "@/src/constants/theme";
-import Loading from "@/src/components/common/Loading";
+import {
+  CategoriesScreenSkeleton,
+  ProductGridSkeleton,
+} from "@/src/components/tabs/categories/CategoriesSkeletons";
 import { useLocalSearchParams } from "expo-router";
 import { queryClient, queryKeys } from "@/src/lib/react-query";
-import ErrorBanner from "@/src/components/common/ErrorBanner";
+import EmptyState from "@/src/components/common/EmptyState";
 import {
   useGetInfiniteProductsBySpecialCategory,
   useGetInfiniteProductsBySubCategory,
@@ -29,7 +31,6 @@ import {
 import { Product, ProductSortType } from "@/src/types";
 import ProductCard from "@/src/components/tabs/home/ProductCard";
 import { getResponsiveValue } from "@/src/utils/getResponsiveValue";
-import RetryButton from "@/src/components/common/RetryButton";
 import { useCart } from "@/src/hooks/useCart";
 import { CONSTANTS } from "@/src/constants/constants";
 
@@ -152,6 +153,18 @@ const CategoriesScreen = () => {
     [productsQuery.data]
   );
 
+  // The products query stays disabled until a sub-category is selected, so its
+  // own isLoading is false while the sub-categories are still loading. Treat
+  // that wait as loading, otherwise "No products available" flashes.
+  const isWaitingForSubCategories =
+    !currentCategoryId ||
+    (!!hasSubCategories &&
+      !errorGettingSubCategoriesForNavbar &&
+      (loadingSubCategoriesForNavbar ||
+        (!!subCategoriesForNavbarData?.length && !currentSubCategoryId)));
+  const isLoadingProducts =
+    productsQuery.isLoading || isWaitingForSubCategories;
+
   // Pull to refresh state
   const [isRefreshing, setIsRefreshing] = useState(false);
 
@@ -237,7 +250,9 @@ const CategoriesScreen = () => {
         />
         <SubCategoriesNav
           subCategories={subCategoriesForNavbarData}
-          loadingSubCategories={loadingSubCategoriesForNavbar}
+          loadingSubCategories={
+            loadingSubCategoriesForNavbar || !currentCategoryId
+          }
           errorGettingSubCategories={errorGettingSubCategoriesForNavbar}
           parentCategoryId={currentCategoryId}
           currentSubCategoryId={currentSubCategoryId}
@@ -248,27 +263,24 @@ const CategoriesScreen = () => {
       </View>
 
       {/* Products Loading/Error States */}
-      {productsQuery.isLoading && (
-        <View style={styles.productsLoading}>
-          <Loading text="Loading products..." />
-        </View>
-      )}
+      {isLoadingProducts && <ProductGridSkeleton />}
       {productsQuery.error && !productsQuery.isLoading && (
-        <View style={styles.productsLoading}>
-          <Text style={styles.errorText}>Error loading products</Text>
-          <RetryButton
-            onPress={() => productsQuery.refetch()}
-            text="Retry"
-            style={styles.retryButton}
-          />
-        </View>
+        <EmptyState
+          tone="error"
+          title="Couldn't load products"
+          message="Please check your internet connection and try again."
+          actionText="Retry"
+          onAction={() => productsQuery.refetch()}
+        />
       )}
-      {!productsQuery.isLoading &&
+      {!isLoadingProducts &&
         !productsQuery.error &&
         products.length === 0 && (
-          <View style={styles.productsLoading}>
-            <Text style={styles.emptyText}>No products available</Text>
-          </View>
+          <EmptyState
+            icon="basket-outline"
+            title="No products here yet"
+            message="Products in this category will show up soon. Try another category."
+          />
         )}
     </>
   );
@@ -283,8 +295,9 @@ const CategoriesScreen = () => {
   // Loading state
   if (loadingCategoriesForNavbar) {
     return (
-      <View style={[styles.container, styles.centered]}>
-        <Loading />
+      <View style={styles.container}>
+        <CategoriesHeader currentCategoryName="" />
+        <CategoriesScreenSkeleton />
       </View>
     );
   }
@@ -292,27 +305,41 @@ const CategoriesScreen = () => {
   // Error state
   if (errorGettingCategoriesForNavbar) {
     return (
-      <ErrorBanner
-        title="Unable to Load"
-        message="Error loading categories. Please try again."
-        onRetry={async () => {
-          // Invalidate the query to refetch categories for navbar (useGetCategoriesForNavbar)
-          await queryClient.invalidateQueries({
-            queryKey: queryKeys.categories.list({
-              isActive: true,
-              showOnNavbar: true,
-            }),
-          });
-        }}
-      />
+      <View style={styles.container}>
+        <CategoriesHeader currentCategoryName="" />
+        <View style={styles.centered}>
+          <EmptyState
+            tone="error"
+            title="Couldn't load categories"
+            message="Please check your internet connection and try again."
+            actionText="Retry"
+            onAction={async () => {
+              // Invalidate the query to refetch categories for navbar (useGetCategoriesForNavbar)
+              await queryClient.invalidateQueries({
+                queryKey: queryKeys.categories.list({
+                  isActive: true,
+                  showOnNavbar: true,
+                }),
+              });
+            }}
+          />
+        </View>
+      </View>
     );
   }
 
   // Empty state
   if (!categories || categories.length === 0) {
     return (
-      <View style={[styles.container, styles.centered]}>
-        <Text style={styles.emptyText}>No categories available</Text>
+      <View style={styles.container}>
+        <CategoriesHeader currentCategoryName="" />
+        <View style={styles.centered}>
+          <EmptyState
+            icon="storefront-outline"
+            title="Categories are coming soon"
+            message="We are adding products to your city's store. Please check back shortly."
+          />
+        </View>
       </View>
     );
   }
@@ -384,34 +411,14 @@ const styles = StyleSheet.create({
   stickyHeader: {
     backgroundColor: "#fff",
     elevation: 2,
+    // the search dropdown hangs below this block, so it must be drawn above the
+    // empty / error / skeleton block that follows it in the list header
+    zIndex: 2,
   },
   centered: {
+    flex: 1,
     justifyContent: "center",
     alignItems: "center",
-  },
-  productsLoading: {
-    justifyContent: "center",
-    alignItems: "center",
-    paddingVertical: 40,
-  },
-  loadingText: {
-    marginTop: 16,
-    fontSize: 16,
-    color: "#666",
-  },
-  errorText: {
-    fontSize: 18,
-    fontWeight: "600",
-    color: "#DC2626",
-    marginBottom: 8,
-  },
-  retryButton: {
-    marginTop: 16,
-    paddingHorizontal: 32,
-  },
-  emptyText: {
-    fontSize: 16,
-    color: "#666",
   },
   productItem: {
     flex: 1,

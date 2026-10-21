@@ -1,3 +1,4 @@
+import { formatPrice } from "@/src/utils/formatPrice";
 import { Pressable, StyleSheet, Text, View } from "react-native";
 import React, { useCallback, useState } from "react";
 import { theme } from "@/src/constants/theme";
@@ -118,7 +119,7 @@ const AddToCartContainer = ({
         <View style={styles.amountContainer}>
           <Text style={styles.amountText}>Amount</Text>
           <Text style={styles.amountValueText}>
-            Rs. {discountedPrice * quantityInCart}
+            Rs. {formatPrice(discountedPrice * quantityInCart)}
           </Text>
         </View>
       )}

@@ -1,3 +1,4 @@
+import { formatPrice } from "@/src/utils/formatPrice";
 import { Pressable, StyleSheet, Text, View } from "react-native";
 import React from "react";
 import { theme } from "@/src/constants/theme";
@@ -135,11 +136,11 @@ const OrderItem = ({
           <Text style={styles.itemCountText}>{itemCount} items</Text>
           {refund ? (
             <>
-              <Text style={styles.originalPriceText}>Rs.{price}</Text>
-              <Text style={styles.priceText}>Rs.{refund.adjustedPrice}</Text>
+              <Text style={styles.originalPriceText}>Rs.{formatPrice(price)}</Text>
+              <Text style={styles.priceText}>Rs.{formatPrice(refund.adjustedPrice)}</Text>
             </>
           ) : (
-            <Text style={styles.priceText}>Rs.{price}</Text>
+            <Text style={styles.priceText}>Rs.{formatPrice(price)}</Text>
           )}
         </View>
       </View>

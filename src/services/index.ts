@@ -7,6 +7,7 @@ import { SettingsService } from "./SettingsService";
 import { DeliverySlotService } from "./DeliverySlotService";
 import { OrderService } from "./OrderService";
 import { ProductService } from "./ProductService";
+import { AuditLogService } from "./AuditLogService";
 
 function createServices() {
   const db = getCityDb();
@@ -21,8 +22,11 @@ function createServices() {
   const orderService = new OrderService(db, storage);
   const productService = new ProductService(db);
   const deliverySlotService = new DeliverySlotService(db);
+  const auditLogService = new AuditLogService(db);
 
   orderService.discountService = discountService;
+  orderService.auditLog = auditLogService;
+  authService.auditLog = auditLogService;
 
   return {
     authService, settingsService, discountService, paymentMethodService, orderService, productService, deliverySlotService

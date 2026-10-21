@@ -1,9 +1,9 @@
 import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 import React, { useEffect, useState } from "react";
 import { theme } from "@/src/constants/theme";
-import { SubCategory } from "@/src/types";
+import { ProductSortType, SubCategory } from "@/src/types";
 import SortButton from "./SortButton";
-import Loading from "../../common/Loading";
+import { SubCategoryChipsSkeleton } from "./CategoriesSkeletons";
 import ErrorBanner from "../../common/ErrorBanner";
 import { queryClient, queryKeys } from "@/src/lib/react-query";
 
@@ -15,7 +15,7 @@ type SubCategoriesNavProps = {
   currentSubCategoryId: string;
   setCurrentSubCategoryId: (id: string) => void;
   setBottomSheetType: (type: "sort" | "brands" | null) => void;
-  selectedSort: string;
+  selectedSort: ProductSortType;
 };
 
 const SubCategoriesNav = ({
@@ -70,11 +70,11 @@ const SubCategoriesNav = ({
         horizontal
         showsHorizontalScrollIndicator={false}>
         {loadingSubCategories ? (
-          <View style={styles.subCategoriesLoadingContainer}>
-            <Loading size={"small"} />
-          </View>
+          <SubCategoryChipsSkeleton />
         ) : (
+          // A single sub-category is selected automatically, so its chip would only be noise.
           subCategories &&
+          subCategories.length > 1 &&
           subCategories.map((subCategory) => (
             <View
               key={subCategory.id}
@@ -118,10 +118,6 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     gap: 8,
     paddingVertical: 2,
-  },
-  subCategoriesLoadingContainer: {
-    width: "100%",
-    justifyContent: "center",
   },
   subCategoriesErrorContainer: {
     flexDirection: "row",

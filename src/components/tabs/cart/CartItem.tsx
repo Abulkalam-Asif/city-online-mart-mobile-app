@@ -1,3 +1,4 @@
+import { formatPrice } from "@/src/utils/formatPrice";
 import { StyleSheet, Text, View, Pressable } from "react-native";
 import React, { useCallback, useState } from "react";
 import { Image } from "expo-image";
@@ -75,9 +76,9 @@ const CartItem = ({ item, onQuantityChange, onRemove, availableStock, maxCartQua
         </Text>
 
         <View style={styles.priceRow}>
-          <Text style={styles.discountedUnitPriceText}>Rs. {item.discountedUnitPrice * item.quantity}</Text>
+          <Text style={styles.discountedUnitPriceText}>Rs. {formatPrice(item.discountedUnitPrice * item.quantity)}</Text>
           {item.discountPercentage > 0 && (
-            <Text style={styles.unitPriceText}>Rs. {item.unitPrice * item.quantity}</Text>
+            <Text style={styles.unitPriceText}>Rs. {formatPrice(item.unitPrice * item.quantity)}</Text>
           )}
           {item.discountPercentage > 0 && (
             <Text style={styles.discountTag}>{`${item.discountPercentage}% off`}</Text>
@@ -93,11 +94,8 @@ const CartItem = ({ item, onQuantityChange, onRemove, availableStock, maxCartQua
             pressed && styles.quantityButtonPressed,
           ]}
           onPress={item.quantity > 1 ? handleDecrement : handleRemove}>
-          {item.quantity > 1 ? (
-            <FontAwesome6 name="minus" size={14} color={theme.colors.text} />
-          ) : (
-            <FontAwesome6 name="trash" size={14} color={theme.colors.text} />
-          )}
+          {/* minus at quantity 1 removes the item, same as on the product cards */}
+          <FontAwesome6 name="minus" size={10} color="#FFFFFF" />
         </Pressable>
 
         <Text style={styles.quantityText}>{item.quantity}</Text>
@@ -108,7 +106,7 @@ const CartItem = ({ item, onQuantityChange, onRemove, availableStock, maxCartQua
             pressed && styles.quantityButtonPressed,
           ]}
           onPress={handleIncrement}>
-          <FontAwesome6 name="plus" size={14} color={theme.colors.text} />
+          <FontAwesome6 name="plus" size={10} color="#FFFFFF" />
         </Pressable>
       </View>
 
@@ -135,18 +133,18 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
   imageContainer: {
-    width: 50,
-    height: 50,
+    width: 64,
+    height: 64,
     borderRadius: 8,
     borderWidth: 1,
     borderColor: theme.colors.background,
     justifyContent: "center",
     alignItems: "center",
-    marginRight: 8,
+    marginRight: 12,
   },
   productImage: {
-    width: 40,
-    height: 40,
+    width: 54,
+    height: 54,
   },
   detailsContainer: {
     flex: 1,
@@ -189,29 +187,34 @@ const styles = StyleSheet.create({
     borderRadius: 10,
     color: "black",
   },
+  // Same look as the +/- on the product cards: green pill, solid green buttons with white icons,
+  // white middle with the number.
   quantityContainer: {
     flexDirection: "row",
-    alignItems: "center",
-    borderRadius: 8,
+    alignItems: "stretch",
+    borderRadius: 20,
     borderWidth: 1,
-    borderColor: theme.colors.background,
+    borderColor: theme.colors.primary,
+    height: 28, // same height as the +/- on the product cards
+    overflow: "hidden",
   },
   quantityButton: {
-    width: 30,
-    height: 30,
+    width: 34,
+    backgroundColor: theme.colors.primary,
     justifyContent: "center",
     alignItems: "center",
-    borderRadius: 6,
   },
   quantityButtonPressed: {
-    backgroundColor: theme.colors.background,
+    opacity: 0.8,
   },
   quantityText: {
-    fontSize: 14,
-    fontFamily: theme.fonts.semibold,
-    color: "#333",
-    minWidth: 24,
+    fontSize: 12,
+    fontFamily: theme.fonts.bold,
+    color: theme.colors.text,
+    minWidth: 32,
     textAlign: "center",
-    paddingHorizontal: 6,
+    textAlignVertical: "center",
+    backgroundColor: "#FFFFFF",
+    paddingHorizontal: 4,
   },
 });

@@ -8,10 +8,11 @@ type SortMenuProps = {
   selectedSort: ProductSortType;
 };
 
-const sortOptions = [
+// "price-asc" orders by price ascending, i.e. lowest price first (ProductService).
+export const sortOptions: { id: ProductSortType; label: string }[] = [
   { id: "default", label: "Recommended (default)" },
-  { id: "price-asc", label: "Price : High to Low" },
-  { id: "price-desc", label: "Price : Low to High" },
+  { id: "price-asc", label: "Price: Low to High" },
+  { id: "price-desc", label: "Price: High to Low" },
 ];
 
 const SortMenu = ({ onApply, selectedSort }: SortMenuProps) => {
@@ -31,7 +32,7 @@ const SortMenu = ({ onApply, selectedSort }: SortMenuProps) => {
               styles.option,
               localSelected === option.id && styles.selectedOption,
             ]}
-            onPress={() => setLocalSelected(option.id as ProductSortType)}>
+            onPress={() => setLocalSelected(option.id)}>
             <Text
               style={[
                 styles.optionText,

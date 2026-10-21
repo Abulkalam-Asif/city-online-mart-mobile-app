@@ -1,3 +1,4 @@
+import { formatPrice } from "@/src/utils/formatPrice";
 import React, { useCallback, useEffect, useMemo, useState } from "react";
 import {
   FlatList,
@@ -268,23 +269,23 @@ export default function CartScreen() {
             <View style={styles.summaryContainer}>
               <View style={[styles.amountRow, styles.totalRow]}>
                 <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-                  <Text style={styles.totalLabel}>Total: <Text style={styles.totalValue}>Rs. {finalSubtotal}</Text></Text>
+                  <Text style={styles.totalLabel}>Total: <Text style={styles.totalValue}>Rs. {formatPrice(finalSubtotal)}</Text></Text>
                   {selectedSlot?.id === "fast-delivery" && (
                     <View style={styles.expressTag}>
-                      <Text style={styles.expressTagText}>+⚡ Rs. {deliverySettings?.expressDeliveryFee ?? 250}</Text>
+                      <Text style={styles.expressTagText}>+⚡ Rs. {formatPrice(deliverySettings?.expressDeliveryFee ?? 250)}</Text>
                     </View>
                   )}
                 </View>
                 {(totalProductDiscounts + orderDiscountAmount > 0) && (
                   <View style={styles.bachatBadge}>
-                    <Text style={styles.bachatText}>Discount Rs. {totalProductDiscounts + orderDiscountAmount}</Text>
+                    <Text style={styles.bachatText}>Discount Rs. {formatPrice(totalProductDiscounts + orderDiscountAmount)}</Text>
                   </View>
                 )}
               </View>
 
               {!canProceedToCheckout && (
                 <View style={styles.minimumOrderRow}>
-                  <Text style={styles.minimumOrderText}>Add Rs. {minimumOrderAmount - finalSubtotal} more to meet minimum order</Text>
+                  <Text style={styles.minimumOrderText}>Add Rs. {formatPrice(minimumOrderAmount - finalSubtotal)} more to meet minimum order</Text>
                 </View>
               )}
 
@@ -313,7 +314,7 @@ export default function CartScreen() {
       {showMinOrderError && (
         <ErrorBanner
           title="Minimum Order Required"
-          message={`Please add Rs. ${minimumOrderAmount - finalSubtotal} more worth of items to place your order.`}
+          message={`Please add Rs. ${formatPrice(minimumOrderAmount - finalSubtotal)} more worth of items to place your order.`}
           onDismiss={() => setShowMinOrderError(false)}
         />
       )}

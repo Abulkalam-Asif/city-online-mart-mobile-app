@@ -1,5 +1,5 @@
 import React, { useEffect } from "react";
-import { Pressable, StyleSheet, Text, View } from "react-native";
+import { BackHandler, Pressable, StyleSheet, Text, View } from "react-native";
 import Animated, {
   useSharedValue,
   useAnimatedStyle,
@@ -85,6 +85,17 @@ export const PortalBottomSheet = ({
   children,
 }: PortalBottomSheetProps) => {
   const { showModal, hideModal } = useModal();
+
+  // The sheet is drawn by ModalContext, not by a native Modal, so Android Back
+  // would go to the previous screen and leave the sheet open. Close it first.
+  useEffect(() => {
+    if (!isVisible) return;
+    const subscription = BackHandler.addEventListener("hardwareBackPress", () => {
+      onClose();
+      return true;
+    });
+    return () => subscription.remove();
+  }, [isVisible, onClose]);
 
   useEffect(() => {
     if (isVisible) {

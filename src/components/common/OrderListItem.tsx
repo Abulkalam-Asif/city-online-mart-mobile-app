@@ -1,3 +1,4 @@
+import { formatPrice } from "@/src/utils/formatPrice";
 import { StyleSheet, Text, View } from "react-native";
 import React from "react";
 import { Image } from "expo-image";
@@ -27,14 +28,14 @@ const OrderListItem = ({ item }: OrderListItemProps) => {
 
         <View style={styles.priceRow}>
           <Text style={styles.mathText}>
-            {item.quantity} x Rs. {item.discountPercentage && item.discountPercentage > 0 ? item.originalPrice : item.unitPrice} =
+            {item.quantity} x Rs. {formatPrice(item.discountPercentage && item.discountPercentage > 0 ? item.originalPrice : item.unitPrice)} =
           </Text>
 
           {item.discountPercentage && item.discountPercentage > 0 ? (
-            <Text style={styles.unitPriceText}>Rs. {(item.originalPrice || 0) * item.quantity}</Text>
+            <Text style={styles.unitPriceText}>Rs. {formatPrice((item.originalPrice || 0) * item.quantity)}</Text>
           ) : null}
 
-          <Text style={styles.discountedUnitPriceText}>Rs. {item.totalPrice}</Text>
+          <Text style={styles.discountedUnitPriceText}>Rs. {formatPrice(item.totalPrice)}</Text>
 
           {item.discountPercentage && item.discountPercentage > 0 ? (
             <Text style={styles.discountTag}>{`${item.discountPercentage}% off`}</Text>
