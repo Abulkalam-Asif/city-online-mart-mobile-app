@@ -398,6 +398,9 @@ const styles = StyleSheet.create({
   stickyHeader: {
     backgroundColor: "#fff",
     elevation: 2,
+    // the search dropdown hangs below this block, so it must be drawn above the
+    // empty / error / skeleton block that follows it in the list header
+    zIndex: 2,
   },
   centered: {
     justifyContent: "center",
