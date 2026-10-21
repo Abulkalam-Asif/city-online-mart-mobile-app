@@ -152,6 +152,18 @@ const CategoriesScreen = () => {
     [productsQuery.data]
   );
 
+  // The products query stays disabled until a sub-category is selected, so its
+  // own isLoading is false while the sub-categories are still loading. Treat
+  // that wait as loading, otherwise "No products available" flashes.
+  const isWaitingForSubCategories =
+    !currentCategoryId ||
+    (!!hasSubCategories &&
+      !errorGettingSubCategoriesForNavbar &&
+      (loadingSubCategoriesForNavbar ||
+        (!!subCategoriesForNavbarData?.length && !currentSubCategoryId)));
+  const isLoadingProducts =
+    productsQuery.isLoading || isWaitingForSubCategories;
+
   // Pull to refresh state
   const [isRefreshing, setIsRefreshing] = useState(false);
 
@@ -248,7 +260,7 @@ const CategoriesScreen = () => {
       </View>
 
       {/* Products Loading/Error States */}
-      {productsQuery.isLoading && (
+      {isLoadingProducts && (
         <View style={styles.productsLoading}>
           <Loading text="Loading products..." />
         </View>
@@ -263,7 +275,7 @@ const CategoriesScreen = () => {
           />
         </View>
       )}
-      {!productsQuery.isLoading &&
+      {!isLoadingProducts &&
         !productsQuery.error &&
         products.length === 0 && (
           <View style={styles.productsLoading}>
