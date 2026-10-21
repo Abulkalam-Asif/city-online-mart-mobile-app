@@ -136,18 +136,18 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
   imageContainer: {
-    width: 50,
-    height: 50,
+    width: 64,
+    height: 64,
     borderRadius: 8,
     borderWidth: 1,
     borderColor: theme.colors.background,
     justifyContent: "center",
     alignItems: "center",
-    marginRight: 8,
+    marginRight: 12,
   },
   productImage: {
-    width: 40,
-    height: 40,
+    width: 54,
+    height: 54,
   },
   detailsContainer: {
     flex: 1,
