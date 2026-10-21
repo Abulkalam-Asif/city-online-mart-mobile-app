@@ -69,7 +69,7 @@ export const CategoriesSkeleton = () => {
 };
 
 /** One product card: image, two name lines, price, "Add to cart" pill. */
-const ProductCardSkeleton = ({ cardWidth }: { cardWidth: number }) => (
+export const ProductCardSkeleton = ({ cardWidth }: { cardWidth: number }) => (
   <View style={[styles.productCard, { width: cardWidth }]}>
     <SkeletonBox width="100%" height={150} radius={14} />
     <View style={styles.productTextLines}>

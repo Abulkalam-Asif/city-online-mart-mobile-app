@@ -6,6 +6,7 @@ import { SearchResultsSkeleton } from "@/src/components/tabs/home/SearchDropdown
 import { theme } from "@/src/constants/theme";
 import HomeTopBg from "@/src/components/tabs/home/HomeTopBg";
 import HomeSearchSection from "@/src/components/tabs/home/HomeSearchSection";
+import { CategoriesScreenSkeleton } from "@/src/components/tabs/categories/CategoriesSkeletons";
 import {
   BannersSkeleton,
   CategoriesSkeleton,
@@ -31,6 +32,8 @@ const DevSkeletonsScreen = () => {
       <CategoriesSkeleton />
       <ProductsSectionSkeleton colorIndex={0} />
       <ProductsSectionSkeleton colorIndex={1} />
+      <Text style={styles.sectionLabel}>Categories tab (loading)</Text>
+      <CategoriesScreenSkeleton />
       <Text style={styles.sectionLabel}>Search results (loading)</Text>
       <View style={styles.card}>
         <SearchResultsSkeleton />
@@ -59,6 +62,28 @@ const DevSkeletonsScreen = () => {
       <EmptyState
         tone="error"
         title="Couldn't load products"
+        message="Please check your internet connection and try again."
+        actionText="Retry"
+        onAction={() => {}}
+      />
+      <Text style={styles.sectionLabel}>Categories tab: no products</Text>
+      <EmptyState
+        icon="basket-outline"
+        title="No products here yet"
+        message="Products in this category will show up soon. Try another category."
+      />
+      <Text style={styles.sectionLabel}>Categories tab: products failed</Text>
+      <EmptyState
+        tone="error"
+        title="Couldn't load products"
+        message="Please check your internet connection and try again."
+        actionText="Retry"
+        onAction={() => {}}
+      />
+      <Text style={styles.sectionLabel}>Categories tab: categories failed</Text>
+      <EmptyState
+        tone="error"
+        title="Couldn't load categories"
         message="Please check your internet connection and try again."
         actionText="Retry"
         onAction={() => {}}

@@ -8,6 +8,7 @@ import { router, useLocalSearchParams } from "expo-router";
 import AddressInfoSection from "@/src/components/checkout-payment/checkout/AddressInfoSection";
 import ErrorBanner from "@/src/components/common/ErrorBanner";
 import ConfirmationModal from "@/src/components/common/ConfirmationModal";
+import PlacingOrderModal from "@/src/components/checkout-payment/checkout/PlacingOrderModal";
 import OrderSuccessModal from "@/src/components/checkout-payment/payments/OrderSuccessModal";
 import { CONSTANTS } from "@/src/constants/constants";
 import { useGetAllPaymentMethods } from "@/src/hooks/usePaymentMethods";
@@ -515,6 +516,12 @@ export default function CheckoutScreen() {
           executeOrder();
         }}
         onCancel={() => setShowConfirmModal(false)}
+      />
+
+      {/* Loading modal while the order is being sent */}
+      <PlacingOrderModal
+        visible={placeOrderMutation.isPending || updateOrderMutation.isPending}
+        title={existingOrderId ? "Updating your order..." : "Placing your order..."}
       />
 
       {/* Leave Warning Modal (checkout → cart when order exists) */}
