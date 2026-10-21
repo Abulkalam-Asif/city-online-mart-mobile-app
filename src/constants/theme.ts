@@ -11,6 +11,7 @@ export const theme = {
     background_2: "#FFF1D3",
     background_3: "#f8f7f7ff",
     red: "#E53935",
+    promo: "#4F46E5", // Indigo - online payment offer banner (client's pick, 2026-10-21)
 
     success: "#537D2B",
     success_light: "#EAFCD9",

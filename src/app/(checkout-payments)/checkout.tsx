@@ -1,6 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useState } from "react";
-import { BackHandler, FlatList, Modal, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
-import { Ionicons } from "@expo/vector-icons";
+import { BackHandler, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 import GeneralTopBar from "@/src/components/general/GeneralTopBar";
 import { theme } from "@/src/constants/theme";
 import ExpectedDeliveryTimeSection from "@/src/components/checkout-payment/checkout/ExpectedDeliveryTimeSection";
@@ -18,16 +17,15 @@ import { useAuth } from "@/src/contexts/AuthContext";
 import { useModal } from "@/src/contexts/ModalContext";
 import { PaymentMethod, PaymentMethodType } from "@/src/types/payment_method.types";
 import Loading from "@/src/components/common/Loading";
-import { Image } from "expo-image";
-import { getPaymentMethodDisplayName, getPaymentMethodImage } from "@/src/utils/paymentMethodUtils";
 import { queryClient, queryKeys } from "@/src/lib/react-query";
 import OrderItemsList, { DisplayItem } from "@/src/components/common/OrderItemsList";
 import { SlotUnavailableModal, SlotInfo } from "@/src/components/checkout-payment/checkout/SlotUnavailableModal";
 import { deliverySlotService } from "@/src/services";
 import { OrderSettings } from "@/src/types";
 import { AnimatedPromoBanner } from "@/src/components/checkout-payment/checkout/AnimatedPromoBanner";
+import PaymentMethodOptions from "@/src/components/checkout-payment/checkout/PaymentMethodOptions";
 
-// The 4 fixed top-level types shown in dropdown
+// The 4 fixed top-level types shown as buttons
 const PAYMENT_METHOD_TYPES: { type: PaymentMethodType; label: string }[] = [
   { type: "cash_on_delivery", label: "Cash on Delivery" },
   { type: "jazzcash", label: "JazzCash" },
@@ -73,10 +71,6 @@ export default function CheckoutScreen() {
   const [selectedBankMethodId, setSelectedBankMethodId] = useState<string>(
     paymentMethodIdParam || ""
   );
-
-  // Dropdown visibility
-  const [showTypeDropdown, setShowTypeDropdown] = useState(false);
-  const [showBankDropdown, setShowBankDropdown] = useState(false);
 
   const [showConfirmModal, setShowConfirmModal] = useState(false);
   const [showLeaveWarning, setShowLeaveWarning] = useState(false);
@@ -380,7 +374,6 @@ export default function CheckoutScreen() {
     if (type !== "bank_transfer") {
       setSelectedBankMethodId("");
     }
-    setShowTypeDropdown(false);
   }, []);
 
   // Create or update order
@@ -480,54 +473,14 @@ export default function CheckoutScreen() {
               isSelectedOnline={!!selectedMethodType && selectedMethodType !== "cash_on_delivery"}
             />
             <Text style={styles.inputLabel}>Payment Method</Text>
-            <Pressable
-              style={styles.dropdownButton}
-              onPress={() => setShowTypeDropdown(true)}
-            >
-              <View style={styles.dropdownItemContent}>
-                {selectedMethodType && (
-                  <Image
-                    source={getPaymentMethodImage(selectedMethodType)}
-                    style={styles.paymentIcon}
-                  />
-                )}
-                <Text
-                  style={[
-                    styles.dropdownText,
-                    !selectedMethodType && styles.dropdownPlaceholder,
-                  ]}
-                >
-                  {selectedMethodType
-                    ? getPaymentMethodDisplayName(selectedMethodType)
-                    : "Select payment method"}
-                </Text>
-              </View>
-              <Ionicons name="chevron-down" size={18} color={theme.colors.text_secondary} />
-            </Pressable>
-
-            {/* Bank Account Sub-Dropdown (only shown when bank_transfer selected) */}
-            {isBankTransfer && (
-              <>
-                <Text style={[styles.inputLabel, styles.subLabel]}>Bank Account</Text>
-                <Pressable
-                  style={styles.dropdownButton}
-                  onPress={() => setShowBankDropdown(true)}
-                >
-                  <Text
-                    style={[
-                      styles.dropdownText,
-                      !selectedBankMethodId && styles.dropdownPlaceholder,
-                    ]}
-                  >
-                    {selectedBankMethodId
-                      ? bankAccounts.find((b: PaymentMethod) => b.id === selectedBankMethodId)
-                        ?.accountDetails?.bankName || "Selected Account"
-                      : "Select bank account"}
-                  </Text>
-                  <Ionicons name="chevron-down" size={18} color={theme.colors.text_secondary} />
-                </Pressable>
-              </>
-            )}
+            <PaymentMethodOptions
+              types={availablePaymentMethodTypes}
+              selectedType={selectedMethodType}
+              onSelectType={handleSelectType}
+              bankAccounts={bankAccounts}
+              selectedBankId={selectedBankMethodId}
+              onSelectBank={setSelectedBankMethodId}
+            />
           </View>
 
           {/* Expected Delivery Time Summary */}
@@ -549,109 +502,6 @@ export default function CheckoutScreen() {
           </Pressable>
         </View>
       </View>
-
-      {/* Payment Method Type Selection Modal */}
-      <Modal
-        visible={showTypeDropdown}
-        transparent
-        animationType="fade"
-        onRequestClose={() => setShowTypeDropdown(false)}
-      >
-        <Pressable
-          style={styles.dropdownBackdrop}
-          onPress={() => setShowTypeDropdown(false)}
-        >
-          <View style={styles.dropdownModal}>
-            <Text style={styles.dropdownModalTitle}>Select Payment Method</Text>
-            {loadingPaymentMethods ? (
-              <Loading />
-            ) : availablePaymentMethodTypes.length === 0 ? (
-              <Text style={{ padding: 20, textAlign: "center", color: theme.colors.text_secondary }}>
-                No active payment methods available.
-              </Text>
-            ) : (
-              <FlatList
-                data={availablePaymentMethodTypes}
-                keyExtractor={(item) => item.type}
-                renderItem={({ item }) => (
-                  <Pressable
-                    style={({ pressed }) => [
-                      styles.dropdownItem,
-                      item.type === selectedMethodType && styles.dropdownItemSelected,
-                      pressed && styles.dropdownItemPressed,
-                    ]}
-                    onPress={() => handleSelectType(item.type)}
-                  >
-                    <View style={styles.dropdownItemContent}>
-                      <Image
-                        source={getPaymentMethodImage(item.type)}
-                        style={styles.paymentIcon}
-                      />
-                      <Text
-                        style={[
-                          styles.dropdownItemText,
-                          item.type === selectedMethodType && styles.dropdownItemTextSelected,
-                        ]}
-                      >
-                        {item.label}
-                      </Text>
-                    </View>
-                    {item.type === selectedMethodType && (
-                      <Ionicons name="checkmark" size={20} color={theme.colors.primary} />
-                    )}
-                  </Pressable>
-                )}
-              />
-            )}
-          </View>
-        </Pressable>
-      </Modal>
-
-      {/* Bank Account Selection Modal */}
-      <Modal
-        visible={showBankDropdown}
-        transparent
-        animationType="fade"
-        onRequestClose={() => setShowBankDropdown(false)}
-      >
-        <Pressable
-          style={styles.dropdownBackdrop}
-          onPress={() => setShowBankDropdown(false)}
-        >
-          <View style={styles.dropdownModal}>
-            <Text style={styles.dropdownModalTitle}>Select Bank Account</Text>
-            <FlatList
-              data={bankAccounts}
-              keyExtractor={(item: PaymentMethod) => item.id}
-              renderItem={({ item }: { item: PaymentMethod }) => (
-                <Pressable
-                  style={({ pressed }) => [
-                    styles.dropdownItem,
-                    item.id === selectedBankMethodId && styles.dropdownItemSelected,
-                    pressed && styles.dropdownItemPressed,
-                  ]}
-                  onPress={() => {
-                    setSelectedBankMethodId(item.id);
-                    setShowBankDropdown(false);
-                  }}
-                >
-                  <Text
-                    style={[
-                      styles.dropdownItemText,
-                      item.id === selectedBankMethodId && styles.dropdownItemTextSelected,
-                    ]}
-                  >
-                    {item.accountDetails?.bankName || "Unknown Bank"}
-                  </Text>
-                  {item.id === selectedBankMethodId && (
-                    <Ionicons name="checkmark" size={20} color={theme.colors.primary} />
-                  )}
-                </Pressable>
-              )}
-            />
-          </View>
-        </Pressable>
-      </Modal>
 
       {/* COD Confirmation Modal */}
       <ConfirmationModal
@@ -739,7 +589,8 @@ const styles = StyleSheet.create({
   },
   infoText: {
     fontFamily: theme.fonts.regular,
-    fontSize: 10,
+    fontSize: 14,
+    lineHeight: 20,
     color: "#fff",
     backgroundColor: theme.colors.primary,
     paddingHorizontal: 20,
@@ -751,107 +602,10 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     gap: 8,
   },
-  promoBanner: {
-    backgroundColor: theme.colors.confirmed,
-    padding: 12,
-    borderRadius: 8,
-    flexDirection: "row",
-    alignItems: "center",
-    marginBottom: 12,
-    gap: 8,
-  },
-  promoBannerSuccess: {
-    backgroundColor: theme.colors.secondary,
-  },
-  promoText: {
-    color: "#fff",
-    fontFamily: theme.fonts.medium,
-    fontSize: 12,
-    flex: 1,
-  },
   inputLabel: {
     fontSize: 12,
     fontFamily: theme.fonts.medium,
     color: theme.colors.text,
-  },
-  subLabel: {
-    marginTop: 8,
-  },
-  dropdownButton: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    borderWidth: 1,
-    borderColor: theme.colors.background,
-    borderRadius: 8,
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    backgroundColor: "#fff",
-  },
-  paymentIcon: {
-    width: 24,
-    height: 24,
-    marginRight: 12,
-  },
-  dropdownText: {
-    fontSize: 14,
-    fontFamily: theme.fonts.regular,
-    color: theme.colors.text,
-  },
-  dropdownPlaceholder: {
-    color: theme.colors.placeholder,
-  },
-  // Dropdown modal styles
-  dropdownBackdrop: {
-    flex: 1,
-    backgroundColor: "rgba(0, 0, 0, 0.5)",
-    justifyContent: "center",
-    alignItems: "center",
-    padding: 24,
-  },
-  dropdownModal: {
-    backgroundColor: "#fff",
-    borderRadius: 16,
-    padding: 20,
-    width: "100%",
-    maxWidth: 320,
-    maxHeight: 400,
-  },
-  dropdownModalTitle: {
-    fontSize: 16,
-    fontFamily: theme.fonts.semibold,
-    color: theme.colors.text,
-    marginBottom: 16,
-    textAlign: "center",
-  },
-  dropdownItem: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    paddingVertical: 14,
-    paddingHorizontal: 16,
-    borderRadius: 10,
-    marginBottom: 4,
-  },
-  dropdownItemSelected: {
-    backgroundColor: theme.colors.primary_light,
-  },
-  dropdownItemPressed: {
-    backgroundColor: "#F3F4F6",
-  },
-  dropdownItemContent: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 8,
-  },
-  dropdownItemText: {
-    fontSize: 12,
-    fontFamily: theme.fonts.medium,
-    color: theme.colors.text,
-  },
-  dropdownItemTextSelected: {
-    color: theme.colors.primary,
-    fontFamily: theme.fonts.semibold,
   },
   proceedButtonContainer: {
     paddingHorizontal: 20,
