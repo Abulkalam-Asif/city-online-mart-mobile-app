@@ -2,12 +2,13 @@ import { formatPrice } from "@/src/utils/formatPrice";
 import React, { useCallback, useEffect, useMemo, useState } from "react";
 import {
   FlatList,
-  Pressable,
   StyleSheet,
   Text,
   View,
 } from "react-native";
 import GeneralTopBar from "@/src/components/general/GeneralTopBar";
+import PrimaryButton from "@/src/components/general/PrimaryButton";
+import ScreenFooter from "@/src/components/general/ScreenFooter";
 import CartItem from "@/src/components/tabs/cart/CartItem";
 import EmptyCart from "@/src/components/tabs/cart/EmptyCart";
 import { theme } from "@/src/constants/theme";
@@ -266,7 +267,7 @@ export default function CartScreen() {
                 />
               </View>
             </View>
-            <View style={styles.summaryContainer}>
+            <ScreenFooter>
               <View style={[styles.amountRow, styles.totalRow]}>
                 <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
                   <Text style={styles.totalLabel}>Total: <Text style={styles.totalValue}>Rs. {formatPrice(finalSubtotal)}</Text></Text>
@@ -289,23 +290,15 @@ export default function CartScreen() {
                 </View>
               )}
 
-              <Pressable
-                style={({ pressed }) => [
-                  styles.proceedButton,
-                  pressed && styles.proceedButtonPressed,
-                  (!canProceedToCheckout || !selectedSlot) && isLoggedIn && styles.proceedButtonDisabled
-                ]}
-                disabled={isCartPending || (isLoggedIn && !canProceedToCheckout)}
-                onPress={handleProceed}
-              >
-                <Text
-                  style={styles.proceedButtonText}>
-                  {isLoggedIn
-                    ? "Proceed to Checkout"
-                    : "Login / Create Account"}
-                </Text>
-              </Pressable>
-            </View>
+              <PrimaryButton
+                label={isLoggedIn ? "Proceed to Checkout" : "Login / Create Account"}
+                onPress={() => {
+                  if (!isCartPending) handleProceed();
+                }}
+                disabled={isLoggedIn && !canProceedToCheckout}
+                dimmed={isLoggedIn && !selectedSlot}
+              />
+            </ScreenFooter>
           </>
         )}
       </View>
@@ -415,14 +408,6 @@ const styles = StyleSheet.create({
     paddingBottom: 20,
   },
 
-  summaryContainer: {
-    backgroundColor: "#fff",
-    paddingHorizontal: 20,
-    paddingVertical: 12,
-    borderTopWidth: 1,
-    borderTopColor: "#f0f0f0",
-    gap: 4,
-  },
   minimumOrderRow: {
     flexDirection: "row",
     alignItems: "center",
@@ -502,24 +487,6 @@ const styles = StyleSheet.create({
     fontSize: 11,
     fontFamily: theme.fonts.semibold,
     color: theme.colors.red,
-  },
-  proceedButton: {
-    backgroundColor: theme.colors.primary,
-    paddingVertical: 10,
-    borderRadius: 30,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  proceedButtonDisabled: {
-    opacity: 0.5,
-  },
-  proceedButtonText: {
-    fontSize: 16,
-    fontFamily: theme.fonts.semibold,
-    color: "#fff",
-  },
-  proceedButtonPressed: {
-    opacity: 0.8,
   },
 
   centeringContainer: {

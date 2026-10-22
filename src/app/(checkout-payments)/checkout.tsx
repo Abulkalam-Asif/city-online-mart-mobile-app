@@ -1,6 +1,8 @@
 import React, { useCallback, useEffect, useMemo, useState } from "react";
-import { BackHandler, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
+import { BackHandler, ScrollView, StyleSheet, Text, View } from "react-native";
 import GeneralTopBar from "@/src/components/general/GeneralTopBar";
+import PrimaryButton from "@/src/components/general/PrimaryButton";
+import ScreenFooter from "@/src/components/general/ScreenFooter";
 import { theme } from "@/src/constants/theme";
 import ExpectedDeliveryTimeSection from "@/src/components/checkout-payment/checkout/ExpectedDeliveryTimeSection";
 import BillingDetailsSection from "@/src/components/checkout-payment/checkout/BillingDetailsSection";
@@ -490,18 +492,13 @@ export default function CheckoutScreen() {
           <BillingDetailsSection isOnlinePayment={!!selectedMethodType && !isCOD} isExpress={currentSlot?.id === "fast-delivery"} />
         </ScrollView>
 
-        <View style={styles.proceedButtonContainer}>
-          <Pressable
-            style={({ pressed }) => [
-              styles.proceedButton,
-              pressed && styles.proceedButtonPressed,
-              isProceedDisabled && styles.proceedButtonDisabled,
-            ]}
+        <ScreenFooter>
+          <PrimaryButton
+            label={buttonText}
             onPress={handleProceed}
-            disabled={isProceedDisabled}>
-            <Text style={styles.proceedButtonText}>{buttonText}</Text>
-          </Pressable>
-        </View>
+            disabled={isProceedDisabled}
+          />
+        </ScreenFooter>
       </View>
 
       {/* COD Confirmation Modal */}
@@ -612,29 +609,5 @@ const styles = StyleSheet.create({
     fontSize: 12,
     fontFamily: theme.fonts.medium,
     color: theme.colors.text,
-  },
-  proceedButtonContainer: {
-    paddingHorizontal: 20,
-    paddingVertical: 10,
-    borderTopColor: theme.colors.background,
-    borderTopWidth: 1,
-  },
-  proceedButton: {
-    backgroundColor: theme.colors.primary,
-    paddingVertical: 10,
-    borderRadius: 30,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  proceedButtonPressed: {
-    opacity: 0.8,
-  },
-  proceedButtonDisabled: {
-    backgroundColor: theme.colors.background,
-  },
-  proceedButtonText: {
-    fontSize: 16,
-    fontFamily: theme.fonts.semibold,
-    color: "#fff",
   },
 });

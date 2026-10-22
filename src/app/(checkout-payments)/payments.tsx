@@ -1,6 +1,8 @@
 import React, { useCallback, useEffect, useMemo, useState } from "react";
-import { BackHandler, Image, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
+import { BackHandler, Image, ScrollView, StyleSheet, Text, View } from "react-native";
 import GeneralTopBar from "@/src/components/general/GeneralTopBar";
+import PrimaryButton from "@/src/components/general/PrimaryButton";
+import ScreenFooter from "@/src/components/general/ScreenFooter";
 import { theme } from "@/src/constants/theme";
 import { useModal } from "@/src/contexts/ModalContext";
 import { useCart, useClearCart } from "@/src/hooks/useCart";
@@ -197,18 +199,9 @@ export default function PaymentsScreen() {
           <OrderItemsList items={displayItems} />
         </ScrollView>
 
-        <View style={styles.proceedButtonContainer}>
-          <Pressable
-            style={({ pressed }) => [
-              styles.proceedButton,
-              pressed && styles.proceedButtonPressed,
-            ]}
-            onPress={handleConfirmPayment}>
-            <Text style={styles.proceedButtonText}>
-              Confirm Payment Sent
-            </Text>
-          </Pressable>
-        </View>
+        <ScreenFooter>
+          <PrimaryButton label="Confirm Payment Sent" onPress={handleConfirmPayment} />
+        </ScreenFooter>
       </View>
 
 
@@ -315,35 +308,5 @@ const styles = StyleSheet.create({
   },
   uploadSection: {
     marginTop: 20,
-  },
-  proceedButtonContainer: {
-    paddingHorizontal: 20,
-    paddingVertical: 14,
-    backgroundColor: "#FFFFFF",
-    borderTopColor: "#F3F4F6",
-    borderTopWidth: 1,
-  },
-  proceedButton: {
-    backgroundColor: theme.colors.primary,
-    paddingVertical: 14,
-    borderRadius: 30,
-    alignItems: "center",
-    justifyContent: "center",
-    shadowColor: theme.colors.primary,
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.22,
-    shadowRadius: 6,
-    elevation: 3,
-  },
-  proceedButtonPressed: {
-    opacity: 0.88,
-  },
-  proceedButtonDisabled: {
-    backgroundColor: theme.colors.background,
-  },
-  proceedButtonText: {
-    fontSize: 16,
-    fontFamily: theme.fonts.bold,
-    color: "#fff",
   },
 });
