@@ -372,6 +372,7 @@ const styles = StyleSheet.create({
   sectionsWrapper: {
     flex: 1,
     paddingHorizontal: 8,
+    paddingTop: 12, // keeps the delivery card's top border off the header's bottom edge
     gap: 16
   },
   deliverySection: {

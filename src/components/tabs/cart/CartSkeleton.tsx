@@ -58,6 +58,7 @@ const styles = StyleSheet.create({
   sectionsWrapper: {
     flex: 1,
     paddingHorizontal: 8,
+    paddingTop: 12,
     gap: 16,
   },
   deliveryCard: {
