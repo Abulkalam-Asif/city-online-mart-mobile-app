@@ -107,7 +107,7 @@ export default function CartScreen() {
     stockData.adjustments.forEach((adj) => {
       if (adj.maxAllowed === 0) {
         // Item is out of stock entirely or deactivated
-        messageLines.push(`â€¢ ${adj.name} is no longer available and has been removed from your cart.`);
+        messageLines.push(`• ${adj.name} is no longer available and has been removed from your cart.`);
         removeFromCart(adj.productId);
         hasChanges = true;
       } else if (adj.oldQuantity !== adj.maxAllowed) {
@@ -116,7 +116,7 @@ export default function CartScreen() {
           ? `You can only order a maximum of ${adj.maxAllowed} per order`
           : `Only ${adj.maxAllowed} left in stock`;
 
-        messageLines.push(`â€¢ ${adj.name}: ${reasonStr}. Your cart has been updated.`);
+        messageLines.push(`• ${adj.name}: ${reasonStr}. Your cart has been updated.`);
         updateCartItem({
           productId: adj.productId,
           quantity: adj.maxAllowed,
