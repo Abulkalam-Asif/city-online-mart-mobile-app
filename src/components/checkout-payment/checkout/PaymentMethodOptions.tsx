@@ -84,7 +84,7 @@ export default PaymentMethodOptions;
 
 const styles = StyleSheet.create({
   list: {
-    gap: 8,
+    gap: 6,
   },
   option: {
     flexDirection: "row",
@@ -93,7 +93,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: theme.colors.background,
     backgroundColor: "#fff",
-    paddingVertical: 12,
+    paddingVertical: 8,
     paddingHorizontal: 16,
     gap: 12,
   },
