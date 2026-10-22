@@ -17,13 +17,13 @@ type ProductDetailsContentProps = {
 const getStockStatusColor = (status: StockStatus): string => {
   switch (status) {
     case "In Stock":
-      return "green";
+      return theme.colors.success;
     case "Out of Stock":
-      return "red";
+      return theme.colors.error;
     case "Low Stock":
-      return "orange";
+      return theme.colors.warning;
     default:
-      return "gray";
+      return theme.colors.placeholder;
   }
 };
 
@@ -77,7 +77,11 @@ const ProductDetailsContent = ({
       contentContainerStyle={styles.containerContent}>
       <ProductDetailsTopBg />
 
-      <ProductDetailsTopBar productId={product.id} />
+      <ProductDetailsTopBar
+        productId={product.id}
+        productName={product.info.name}
+        price={discountedPrice}
+      />
       <ImagesCarousel images={product.multimedia.images} />
 
       <View style={styles.productNameSection}>
@@ -151,34 +155,37 @@ const ProductDetailsContent = ({
         availableStock={availableStock}
       />
 
-      <View style={styles.descriptionContainer}>
-        <Text style={styles.descriptionTitleText}>Description</Text>
-        <Text style={styles.descriptionText}>
-          {isShowMoreDescription ? (
-            <>
-              {product.info.description}
-              <Text
-                style={styles.showLessMoreText}
-                onPress={() => setIsShowMoreDescription(false)}>
-                {" Show Less"}
-              </Text>
-            </>
-          ) : (
-            <>
-              {product.info.description.length > 100
-                ? product.info.description.substring(0, 100) + "... "
-                : product.info.description}
-              {product.info.description.length > 100 && (
+      {/* No description, no heading: an empty block only leaves a gap */}
+      {!!product.info.description?.trim() && (
+        <View style={styles.descriptionContainer}>
+          <Text style={styles.descriptionTitleText}>Description</Text>
+          <Text style={styles.descriptionText}>
+            {isShowMoreDescription ? (
+              <>
+                {product.info.description}
                 <Text
                   style={styles.showLessMoreText}
-                  onPress={() => setIsShowMoreDescription(true)}>
-                  Show More
+                  onPress={() => setIsShowMoreDescription(false)}>
+                  {" Show Less"}
                 </Text>
-              )}
-            </>
-          )}
-        </Text>
-      </View>
+              </>
+            ) : (
+              <>
+                {product.info.description.length > 100
+                  ? product.info.description.substring(0, 100) + "... "
+                  : product.info.description}
+                {product.info.description.length > 100 && (
+                  <Text
+                    style={styles.showLessMoreText}
+                    onPress={() => setIsShowMoreDescription(true)}>
+                    Show More
+                  </Text>
+                )}
+              </>
+            )}
+          </Text>
+        </View>
+      )}
 
       {/* TODO: Implement bought together products fetching functionality */}
       {/* Show bought together products only when quantity in cart > 0 */}
@@ -279,6 +286,7 @@ const styles = StyleSheet.create({
   },
   stockText: {
     fontSize: 14,
+    lineHeight: 18, // same line height as the price, so both sit on one baseline
     fontFamily: theme.fonts.medium,
     flex: 1,
     textAlign: "right",

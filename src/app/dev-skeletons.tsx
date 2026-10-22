@@ -7,6 +7,7 @@ import { theme } from "@/src/constants/theme";
 import HomeTopBg from "@/src/components/tabs/home/HomeTopBg";
 import HomeSearchSection from "@/src/components/tabs/home/HomeSearchSection";
 import { CategoriesScreenSkeleton } from "@/src/components/tabs/categories/CategoriesSkeletons";
+import ProductDetailsSkeleton from "@/src/components/product-details/ProductDetailsSkeleton";
 import {
   BannersSkeleton,
   CategoriesSkeleton,
@@ -34,6 +35,18 @@ const DevSkeletonsScreen = () => {
       <ProductsSectionSkeleton colorIndex={1} />
       <Text style={styles.sectionLabel}>Categories tab (loading)</Text>
       <CategoriesScreenSkeleton />
+      <Text style={styles.sectionLabel}>Product details (loading)</Text>
+      <View style={styles.productPreview}>
+        <ProductDetailsSkeleton />
+      </View>
+      <Text style={styles.sectionLabel}>Product details: could not load</Text>
+      <EmptyState
+        tone="error"
+        title="Couldn't load this product"
+        message="Check your connection and try again."
+        actionText="Retry"
+        onAction={() => {}}
+      />
       <Text style={styles.sectionLabel}>Search results (loading)</Text>
       <View style={styles.card}>
         <SearchResultsSkeleton />
@@ -108,6 +121,10 @@ const styles = StyleSheet.create({
   },
   content: {
     paddingBottom: 100,
+  },
+  // the product skeleton fills its parent, so give it a phone-sized box
+  productPreview: {
+    height: 700,
   },
   sectionLabel: {
     fontFamily: theme.fonts.semibold,

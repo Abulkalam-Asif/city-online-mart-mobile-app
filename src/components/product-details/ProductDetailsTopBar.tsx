@@ -2,15 +2,18 @@ import { Pressable, Share, StyleSheet, Text, View } from "react-native";
 import React from "react";
 import { Entypo, Feather, FontAwesome6 } from "@expo/vector-icons";
 import { theme } from "@/src/constants/theme";
+import { formatPrice } from "@/src/utils/formatPrice";
 import IconButton from "../general/IconButton";
 import { router } from "expo-router";
 import { useFavourites } from "@/src/hooks/useFavourites";
 
 type Props = {
   productId: string;
+  productName: string;
+  price: number; // price the customer pays now (after the best discount)
 };
 
-const ProductDetailsTopBar = ({ productId }: Props) => {
+const ProductDetailsTopBar = ({ productId, productName, price }: Props) => {
   const { isFavourite, toggleFavourite } = useFavourites();
   const isFav = isFavourite(productId);
 
@@ -41,8 +44,9 @@ const ProductDetailsTopBar = ({ productId }: Props) => {
         <IconButton
           icon={<Feather name="share-2" size={22} />}
           onPress={() => {
+            // No app link yet (B-047): add it here once there is a store page to point to
             Share.share({
-              message: `Check out this product.`,
+              message: `Check out ${productName} for Rs. ${formatPrice(price)} on City Online Mart.`,
             });
           }}
         />
