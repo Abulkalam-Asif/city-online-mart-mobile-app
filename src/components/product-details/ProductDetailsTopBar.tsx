@@ -1,6 +1,7 @@
-import { Share, StyleSheet, View } from "react-native";
+import { Pressable, Share, StyleSheet, Text, View } from "react-native";
 import React from "react";
 import { Entypo, Feather, FontAwesome6 } from "@expo/vector-icons";
+import { theme } from "@/src/constants/theme";
 import IconButton from "../general/IconButton";
 import { router } from "expo-router";
 import { useFavourites } from "@/src/hooks/useFavourites";
@@ -22,16 +23,21 @@ const ProductDetailsTopBar = ({ productId }: Props) => {
         }}
       />
       <View style={styles.rightSection}>
-        <IconButton
-          icon={
-            <Entypo
-              name={isFav ? "heart" : "heart-outlined"}
-              size={24}
-              color={isFav ? "red" : "black"}
-            />
-          }
-          onPress={() => toggleFavourite.mutate(productId)}
-        />
+        <Pressable
+          style={({ pressed }) => [
+            styles.favouriteButton,
+            pressed && styles.favouriteButtonPressed,
+          ]}
+          onPress={() => toggleFavourite.mutate(productId)}>
+          <Entypo
+            name={isFav ? "heart" : "heart-outlined"}
+            size={20}
+            color={isFav ? "red" : "black"}
+          />
+          <Text style={styles.favouriteText}>
+            {isFav ? "Added to favourite" : "Add to favourite"}
+          </Text>
+        </Pressable>
         <IconButton
           icon={<Feather name="share-2" size={22} />}
           onPress={() => {
@@ -56,6 +62,24 @@ const styles = StyleSheet.create({
   },
   rightSection: {
     flexDirection: "row",
+    alignItems: "center",
     gap: 8,
+  },
+  favouriteButton: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+    height: 40,
+    paddingHorizontal: 14,
+    borderRadius: 20,
+    backgroundColor: "#fff",
+  },
+  favouriteButtonPressed: {
+    opacity: 0.8,
+  },
+  favouriteText: {
+    fontSize: 13,
+    fontFamily: theme.fonts.semibold,
+    color: theme.colors.text,
   },
 });
