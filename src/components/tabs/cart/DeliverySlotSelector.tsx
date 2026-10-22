@@ -7,6 +7,7 @@ import { DeliverySlot } from "../../../types";
 import { format, parse, isToday } from "date-fns";
 import { formatSlotTimeRange, isWithinOperatingHours, formatTo12Hour } from "../../../utils/slotUtils";
 import ErrorBanner from "../../common/ErrorBanner";
+import EmptyState from "../../common/EmptyState";
 
 export interface SelectedSlotData {
   date: string;
@@ -24,7 +25,7 @@ interface DeliverySlotSelectorProps {
 }
 
 export const DeliverySlotSelector: React.FC<DeliverySlotSelectorProps> = ({ onSelectSlot, selectedSlot }) => {
-  const { data: days, isLoading, error } = useDeliverySlots();
+  const { data: days, isLoading, error, refetch } = useDeliverySlots();
   const { data: deliverySettings } = useDeliverySettings();
   const [selectedDate, setSelectedDate] = useState<string | null>(null);
   const [dropdownVisible, setDropdownVisible] = useState(false);
@@ -193,9 +194,10 @@ export const DeliverySlotSelector: React.FC<DeliverySlotSelectorProps> = ({ onSe
     );
   }
 
-  if (error || !days || days.length === 0) {
-    return null;
-  }
+  // A failed background refresh keeps the slots already loaded; only a first load that failed is an error.
+  const loadFailed = !!error && !days;
+  const noScheduledSlots = validDays.length === 0;
+  const hasExpress = !!deliverySettings?.expressDeliveryEnabled;
 
   const getSelectedSlotChipText = (slot: SelectedSlotData) => {
     if (slot.id === 'fast-delivery') {
@@ -223,8 +225,31 @@ export const DeliverySlotSelector: React.FC<DeliverySlotSelectorProps> = ({ onSe
         )}
       </View>
 
-      {/* Date Scroller (Left) & Fixed Express Delivery Card (Right) */}
+      {loadFailed ? (
+        <EmptyState
+          compact
+          tone="error"
+          icon="time-outline"
+          title="Couldn't load delivery times"
+          message="Check your connection and try again."
+          actionText="Retry"
+          onAction={() => refetch()}
+        />
+      ) : noScheduledSlots && !hasExpress ? (
+        <EmptyState
+          compact
+          icon="calendar-outline"
+          title="No delivery slots right now"
+          message="Please check again a little later."
+          actionText="Refresh"
+          onAction={() => refetch()}
+        />
+      ) : (
+      /* Date Scroller (Left) & Fixed Express Delivery Card (Right) */
       <View style={styles.scrollerAndExpressRow}>
+        {noScheduledSlots ? (
+          <Text style={styles.noSlotsInline}>No scheduled slots right now</Text>
+        ) : (
         <ScrollView
           horizontal
           showsHorizontalScrollIndicator={false}
@@ -253,6 +278,7 @@ export const DeliverySlotSelector: React.FC<DeliverySlotSelectorProps> = ({ onSe
             );
           })}
         </ScrollView>
+        )}
 
         {deliverySettings?.expressDeliveryEnabled && (
           <Pressable
@@ -292,6 +318,7 @@ export const DeliverySlotSelector: React.FC<DeliverySlotSelectorProps> = ({ onSe
           </Pressable>
         )}
       </View>
+      )}
 
       {/* Tooltip Backdrop & Content */}
       <Modal visible={dropdownVisible} transparent animationType="fade" onRequestClose={handleCloseDropdown}>
@@ -414,6 +441,12 @@ const styles = StyleSheet.create({
   },
   dateScrollView: {
     flex: 1,
+  },
+  noSlotsInline: {
+    flex: 1,
+    fontSize: 12,
+    fontFamily: theme.fonts.regular,
+    color: theme.colors.text_secondary,
   },
   dateScrollContent: {
     gap: 8,
