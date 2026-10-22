@@ -48,7 +48,7 @@ const SearchDropdownItem = ({ product, canPress }: { product: Product, canPress:
 
   const highestDiscount = bestDiscount?.percentage || 0;
   const discountedPrice = highestDiscount > 0
-    ? Math.floor(product.price * (1 - highestDiscount / 100))
+    ? Math.round(product.price - (product.price * highestDiscount) / 100)
     : product.price;
 
   const primaryImage = product.multimedia?.images?.[0] || require("@/src/assets/default-image.png");
