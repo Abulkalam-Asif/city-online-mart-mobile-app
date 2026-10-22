@@ -178,16 +178,13 @@ export default function PaymentsScreen() {
             </View>
           )}
 
-          {/* Order Items */}
-          <OrderItemsList items={displayItems} />
-
           {/* Billing Details */}
           <BillingDetailsSection
             isOnlinePayment={!!selectedPaymentMethod && selectedPaymentMethod.type !== "cash_on_delivery"}
             isExpress={isExpress}
           />
 
-          {/* WhatsApp Payment Section */}
+          {/* WhatsApp Payment Section: right after the amount, so the customer sees the next step without scrolling far */}
           <View style={styles.uploadSection}>
             <Text style={styles.sectionTitle}>Verify Payment via WhatsApp</Text>
             <WhatsAppPaymentSection
@@ -195,6 +192,9 @@ export default function PaymentsScreen() {
               setChecked={setChecked}
             />
           </View>
+
+          {/* Order Items */}
+          <OrderItemsList items={displayItems} />
         </ScrollView>
 
         <View style={styles.proceedButtonContainer}>
