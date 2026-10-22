@@ -130,7 +130,7 @@ export default ExpectedDeliveryTimeSection;
 
 const styles = StyleSheet.create({
   container: {
-    marginTop: 16,
+    marginTop: 12,
     padding: SIDE_PADDING,
     backgroundColor: theme.colors.background_3,
     borderRadius: 8,

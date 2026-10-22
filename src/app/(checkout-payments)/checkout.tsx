@@ -605,7 +605,7 @@ const styles = StyleSheet.create({
     borderRadius: 8,
   },
   paymentSection: {
-    marginVertical: 12,
+    marginTop: 12,
     gap: 8,
   },
   inputLabel: {
