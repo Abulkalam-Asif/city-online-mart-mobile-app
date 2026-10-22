@@ -8,6 +8,7 @@ import HomeTopBg from "@/src/components/tabs/home/HomeTopBg";
 import HomeSearchSection from "@/src/components/tabs/home/HomeSearchSection";
 import { CategoriesScreenSkeleton } from "@/src/components/tabs/categories/CategoriesSkeletons";
 import ProductDetailsSkeleton from "@/src/components/product-details/ProductDetailsSkeleton";
+import CartSkeleton from "@/src/components/tabs/cart/CartSkeleton";
 import {
   BannersSkeleton,
   CategoriesSkeleton,
@@ -43,6 +44,18 @@ const DevSkeletonsScreen = () => {
       <EmptyState
         tone="error"
         title="Couldn't load this product"
+        message="Check your connection and try again."
+        actionText="Retry"
+        onAction={() => {}}
+      />
+      <Text style={styles.sectionLabel}>Cart (loading)</Text>
+      <View style={styles.productPreview}>
+        <CartSkeleton />
+      </View>
+      <Text style={styles.sectionLabel}>Cart: could not load</Text>
+      <EmptyState
+        tone="error"
+        title="Couldn't load your cart"
         message="Check your connection and try again."
         actionText="Retry"
         onAction={() => {}}

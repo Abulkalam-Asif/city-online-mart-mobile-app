@@ -15,7 +15,8 @@ import { theme } from "@/src/constants/theme";
 import { router } from "expo-router";
 import { useCart, useUpdateCartItem, useRemoveFromCart } from "@/src/hooks/useCart";
 import { useCartContext } from "@/src/contexts/CartContext";
-import Loading from "@/src/components/common/Loading";
+import EmptyState from "@/src/components/common/EmptyState";
+import CartSkeleton from "@/src/components/tabs/cart/CartSkeleton";
 import { useRefreshCartItemsStock } from "@/src/hooks/useProducts";
 
 import { useAuth } from "@/src/contexts/AuthContext";
@@ -38,9 +39,9 @@ export default function CartScreen() {
   const [selectedSlot, setSelectedSlot] = useState<SelectedSlotData | null>(null);
 
   // Fetch settings data and valid order discounts
-  const { data: orderSettings, isLoading: loadingOrderSettings } = useOrderSettings();
+  const { data: orderSettings, isLoading: loadingOrderSettings, isError: orderSettingsFailed, refetch: refetchOrderSettings } = useOrderSettings();
   const { data: deliverySettings } = useDeliverySettings();
-  const { data: validOrderDiscounts, isLoading: loadingValidOrderDiscounts } = useGetValidOrderDiscounts();
+  const { data: validOrderDiscounts, isLoading: loadingValidOrderDiscounts, isError: discountsFailed, refetch: refetchDiscounts } = useGetValidOrderDiscounts();
 
   // Fetch cart data
   const { cart, loading: loadingCart, isPending: isCartPending } = useCart();
@@ -59,7 +60,7 @@ export default function CartScreen() {
     }));
   }, [cart?.items]);
 
-  const { data: stockData, isLoading: loadingStock } = useRefreshCartItemsStock(
+  const { data: stockData, isLoading: loadingStock, isError: stockFailed, refetch: refetchStock } = useRefreshCartItemsStock(
     // Only run the query and pass items when the cart screen is actively focused
     isFocused ? cartItemsForRefresh : [],
     maxCartQuantity
@@ -221,12 +222,39 @@ export default function CartScreen() {
     });
   }, [isLoggedIn, canProceedToCheckout, selectedSlot]);
 
-  if (loadingCart || loadingOrderSettings || loadingValidOrderDiscounts || loadingStock) {
+  // An empty cart needs none of the settings, discounts or stock, so it is shown right away.
+  const loadingDetails = loadingOrderSettings || loadingValidOrderDiscounts || loadingStock;
+  if (loadingCart || (!isCartEmpty && loadingDetails)) {
+    return (
+      <View style={styles.mainContainer}>
+        <GeneralTopBar text="My Cart" />
+        <CartSkeleton />
+      </View>
+    );
+  }
+
+  // Minimum order, discounts and stock limits decide what the customer sees and can order,
+  // so the cart is not shown with them missing (a total without them would be wrong).
+  const detailsFailed =
+    (orderSettingsFailed && !orderSettings) ||
+    (discountsFailed && !validOrderDiscounts) ||
+    (stockFailed && !stockData);
+  if (!isCartEmpty && detailsFailed) {
     return (
       <View style={styles.mainContainer}>
         <GeneralTopBar text="My Cart" />
         <View style={styles.centeringContainer}>
-          <Loading text="Loading cart..." />
+          <EmptyState
+            tone="error"
+            title="Couldn't load your cart"
+            message="Check your connection and try again."
+            actionText="Retry"
+            onAction={() => {
+              if (orderSettingsFailed) refetchOrderSettings();
+              if (discountsFailed) refetchDiscounts();
+              if (stockFailed) refetchStock();
+            }}
+          />
         </View>
       </View>
     );
