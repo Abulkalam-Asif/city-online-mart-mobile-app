@@ -112,7 +112,7 @@ const styles = StyleSheet.create({
     // each item row adds 10 of its own padding, so the bottom is 6 + 10 = 16 like the top
     paddingTop: 16,
     paddingBottom: 6,
-    marginTop: 16,
+    marginTop: 12,
   },
   title: {
     fontSize: 14,

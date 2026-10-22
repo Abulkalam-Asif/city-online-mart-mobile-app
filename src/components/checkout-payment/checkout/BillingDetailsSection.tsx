@@ -125,7 +125,7 @@ const styles = StyleSheet.create({
     marginBottom: 12,
   },
   container: {
-    marginTop: 16,
+    marginTop: 12,
     padding: 14, // 14 + the 2 px outline = 16, so the text lines up with the other cards
     backgroundColor: theme.colors.background_3,
     borderRadius: 8,

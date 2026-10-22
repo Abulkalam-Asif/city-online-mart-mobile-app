@@ -8,6 +8,7 @@ import {
 import React, { useCallback } from "react";
 import { theme } from "@/src/constants/theme";
 import ProductCard from "../tabs/home/ProductCard";
+import { ProductsRowSkeleton } from "../tabs/home/HomeSkeletons";
 import { Product } from "@/src/types";
 import { useGetInfiniteProductsBySubCategory } from "@/src/hooks/useProducts";
 import { CONSTANTS } from "@/src/constants/constants";
@@ -29,17 +30,7 @@ const SimilarProductsSection = ({
   const { width: screenWidth } = useWindowDimensions();
   const productCardWidth = Math.max(150, Math.min(220, screenWidth * 0.4));
 
-  if (subCategoryProductsQuery.isLoading) {
-    return (
-      <View style={styles.container}>
-        <Text style={styles.titleText}>Similar products</Text>
-        <Loading size={"small"} />
-      </View>
-    );
-  }
-
-  if (!subCategoryProductsQuery.isLoading && products.length === 0) return null;
-
+  // Hooks must run on every render, so they sit above the early returns below.
   const renderFooter = useCallback(() => {
     if (!subCategoryProductsQuery.isFetchingNextPage) return null;
     return (
@@ -50,6 +41,19 @@ const SimilarProductsSection = ({
   }, [subCategoryProductsQuery.isFetchingNextPage]);
 
   const keyExtractor = useCallback((item: Product) => item.id, []);
+
+  if (subCategoryProductsQuery.isLoading) {
+    return (
+      <View style={styles.container}>
+        <Text style={styles.titleText}>Similar products</Text>
+        <View style={styles.skeletonRow}>
+          <ProductsRowSkeleton cardWidth={productCardWidth} />
+        </View>
+      </View>
+    );
+  }
+
+  if (!subCategoryProductsQuery.isLoading && products.length === 0) return null;
 
   return (
     <View style={styles.container}>
@@ -87,6 +91,9 @@ const styles = StyleSheet.create({
   },
   scrollContent: {
     gap: 12,
+    paddingHorizontal: 20,
+  },
+  skeletonRow: {
     paddingHorizontal: 20,
   },
   footerLoader: {

@@ -2,19 +2,21 @@ import { formatPrice } from "@/src/utils/formatPrice";
 import React, { useCallback, useEffect, useMemo, useState } from "react";
 import {
   FlatList,
-  Pressable,
   StyleSheet,
   Text,
   View,
 } from "react-native";
 import GeneralTopBar from "@/src/components/general/GeneralTopBar";
+import PrimaryButton from "@/src/components/general/PrimaryButton";
+import ScreenFooter from "@/src/components/general/ScreenFooter";
 import CartItem from "@/src/components/tabs/cart/CartItem";
 import EmptyCart from "@/src/components/tabs/cart/EmptyCart";
 import { theme } from "@/src/constants/theme";
 import { router } from "expo-router";
 import { useCart, useUpdateCartItem, useRemoveFromCart } from "@/src/hooks/useCart";
 import { useCartContext } from "@/src/contexts/CartContext";
-import Loading from "@/src/components/common/Loading";
+import EmptyState from "@/src/components/common/EmptyState";
+import CartSkeleton from "@/src/components/tabs/cart/CartSkeleton";
 import { useRefreshCartItemsStock } from "@/src/hooks/useProducts";
 
 import { useAuth } from "@/src/contexts/AuthContext";
@@ -37,9 +39,9 @@ export default function CartScreen() {
   const [selectedSlot, setSelectedSlot] = useState<SelectedSlotData | null>(null);
 
   // Fetch settings data and valid order discounts
-  const { data: orderSettings, isLoading: loadingOrderSettings } = useOrderSettings();
+  const { data: orderSettings, isLoading: loadingOrderSettings, isError: orderSettingsFailed, refetch: refetchOrderSettings } = useOrderSettings();
   const { data: deliverySettings } = useDeliverySettings();
-  const { data: validOrderDiscounts, isLoading: loadingValidOrderDiscounts } = useGetValidOrderDiscounts();
+  const { data: validOrderDiscounts, isLoading: loadingValidOrderDiscounts, isError: discountsFailed, refetch: refetchDiscounts } = useGetValidOrderDiscounts();
 
   // Fetch cart data
   const { cart, loading: loadingCart, isPending: isCartPending } = useCart();
@@ -58,7 +60,7 @@ export default function CartScreen() {
     }));
   }, [cart?.items]);
 
-  const { data: stockData, isLoading: loadingStock } = useRefreshCartItemsStock(
+  const { data: stockData, isLoading: loadingStock, isError: stockFailed, refetch: refetchStock } = useRefreshCartItemsStock(
     // Only run the query and pass items when the cart screen is actively focused
     isFocused ? cartItemsForRefresh : [],
     maxCartQuantity
@@ -106,7 +108,7 @@ export default function CartScreen() {
     stockData.adjustments.forEach((adj) => {
       if (adj.maxAllowed === 0) {
         // Item is out of stock entirely or deactivated
-        messageLines.push(`â€¢ ${adj.name} is no longer available and has been removed from your cart.`);
+        messageLines.push(`• ${adj.name} is no longer available and has been removed from your cart.`);
         removeFromCart(adj.productId);
         hasChanges = true;
       } else if (adj.oldQuantity !== adj.maxAllowed) {
@@ -115,7 +117,7 @@ export default function CartScreen() {
           ? `You can only order a maximum of ${adj.maxAllowed} per order`
           : `Only ${adj.maxAllowed} left in stock`;
 
-        messageLines.push(`â€¢ ${adj.name}: ${reasonStr}. Your cart has been updated.`);
+        messageLines.push(`• ${adj.name}: ${reasonStr}. Your cart has been updated.`);
         updateCartItem({
           productId: adj.productId,
           quantity: adj.maxAllowed,
@@ -220,12 +222,39 @@ export default function CartScreen() {
     });
   }, [isLoggedIn, canProceedToCheckout, selectedSlot]);
 
-  if (loadingCart || loadingOrderSettings || loadingValidOrderDiscounts || loadingStock) {
+  // An empty cart needs none of the settings, discounts or stock, so it is shown right away.
+  const loadingDetails = loadingOrderSettings || loadingValidOrderDiscounts || loadingStock;
+  if (loadingCart || (!isCartEmpty && loadingDetails)) {
+    return (
+      <View style={styles.mainContainer}>
+        <GeneralTopBar text="My Cart" />
+        <CartSkeleton />
+      </View>
+    );
+  }
+
+  // Minimum order, discounts and stock limits decide what the customer sees and can order,
+  // so the cart is not shown with them missing (a total without them would be wrong).
+  const detailsFailed =
+    (orderSettingsFailed && !orderSettings) ||
+    (discountsFailed && !validOrderDiscounts) ||
+    (stockFailed && !stockData);
+  if (!isCartEmpty && detailsFailed) {
     return (
       <View style={styles.mainContainer}>
         <GeneralTopBar text="My Cart" />
         <View style={styles.centeringContainer}>
-          <Loading text="Loading cart..." />
+          <EmptyState
+            tone="error"
+            title="Couldn't load your cart"
+            message="Check your connection and try again."
+            actionText="Retry"
+            onAction={() => {
+              if (orderSettingsFailed) refetchOrderSettings();
+              if (discountsFailed) refetchDiscounts();
+              if (stockFailed) refetchStock();
+            }}
+          />
         </View>
       </View>
     );
@@ -266,7 +295,7 @@ export default function CartScreen() {
                 />
               </View>
             </View>
-            <View style={styles.summaryContainer}>
+            <ScreenFooter>
               <View style={[styles.amountRow, styles.totalRow]}>
                 <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
                   <Text style={styles.totalLabel}>Total: <Text style={styles.totalValue}>Rs. {formatPrice(finalSubtotal)}</Text></Text>
@@ -289,23 +318,15 @@ export default function CartScreen() {
                 </View>
               )}
 
-              <Pressable
-                style={({ pressed }) => [
-                  styles.proceedButton,
-                  pressed && styles.proceedButtonPressed,
-                  (!canProceedToCheckout || !selectedSlot) && isLoggedIn && styles.proceedButtonDisabled
-                ]}
-                disabled={isCartPending || (isLoggedIn && !canProceedToCheckout)}
-                onPress={handleProceed}
-              >
-                <Text
-                  style={styles.proceedButtonText}>
-                  {isLoggedIn
-                    ? "Proceed to Checkout"
-                    : "Login / Create Account"}
-                </Text>
-              </Pressable>
-            </View>
+              <PrimaryButton
+                label={isLoggedIn ? "Proceed to Checkout" : "Login / Create Account"}
+                onPress={() => {
+                  if (!isCartPending) handleProceed();
+                }}
+                disabled={isLoggedIn && !canProceedToCheckout}
+                dimmed={isLoggedIn && !selectedSlot}
+              />
+            </ScreenFooter>
           </>
         )}
       </View>
@@ -351,6 +372,7 @@ const styles = StyleSheet.create({
   sectionsWrapper: {
     flex: 1,
     paddingHorizontal: 8,
+    paddingTop: 12, // keeps the delivery card's top border off the header's bottom edge
     gap: 16
   },
   deliverySection: {
@@ -415,14 +437,6 @@ const styles = StyleSheet.create({
     paddingBottom: 20,
   },
 
-  summaryContainer: {
-    backgroundColor: "#fff",
-    paddingHorizontal: 20,
-    paddingVertical: 12,
-    borderTopWidth: 1,
-    borderTopColor: "#f0f0f0",
-    gap: 4,
-  },
   minimumOrderRow: {
     flexDirection: "row",
     alignItems: "center",
@@ -502,24 +516,6 @@ const styles = StyleSheet.create({
     fontSize: 11,
     fontFamily: theme.fonts.semibold,
     color: theme.colors.red,
-  },
-  proceedButton: {
-    backgroundColor: theme.colors.primary,
-    paddingVertical: 10,
-    borderRadius: 30,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  proceedButtonDisabled: {
-    opacity: 0.5,
-  },
-  proceedButtonText: {
-    fontSize: 16,
-    fontFamily: theme.fonts.semibold,
-    color: "#fff",
-  },
-  proceedButtonPressed: {
-    opacity: 0.8,
   },
 
   centeringContainer: {

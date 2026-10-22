@@ -33,6 +33,12 @@ const styles = StyleSheet.create({
     paddingVertical: 8,
     backgroundColor: "#fff",
     paddingHorizontal: 16,
+    // bottom edge with a soft shadow: the page scrolls underneath. zIndex keeps the
+    // shadow above the scroll content, which is drawn after the header.
+    borderBottomWidth: 1,
+    borderBottomColor: "#ECECEC",
+    boxShadow: "0 2px 6px rgba(0, 0, 0, 0.06)",
+    zIndex: 1,
   },
   text: {
     fontFamily: theme.fonts.semibold,
