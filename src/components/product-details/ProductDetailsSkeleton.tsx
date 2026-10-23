@@ -6,6 +6,7 @@ import IconButton from "@/src/components/general/IconButton";
 import { SkeletonBox, SkeletonPulse } from "@/src/components/common/Skeleton";
 import { ProductCardSkeleton } from "@/src/components/tabs/home/HomeSkeletons";
 import ProductDetailsTopBg from "./ProductDetailsTopBg";
+import { getCarouselCardWidth } from "@/src/utils/carouselCardWidth";
 
 /**
  * Loading placeholder for the product page. Same order and sizes as the real page (picture,
@@ -15,7 +16,7 @@ import ProductDetailsTopBg from "./ProductDetailsTopBg";
 const ProductDetailsSkeleton = () => {
   const { width: screenWidth } = useWindowDimensions();
   // same card width as SimilarProductsSection
-  const cardWidth = Math.max(150, Math.min(220, screenWidth * 0.4));
+  const cardWidth = getCarouselCardWidth(screenWidth);
 
   return (
     <View style={styles.container}>

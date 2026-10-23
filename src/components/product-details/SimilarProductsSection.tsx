@@ -13,6 +13,7 @@ import { Product } from "@/src/types";
 import { useGetInfiniteProductsBySubCategory } from "@/src/hooks/useProducts";
 import { CONSTANTS } from "@/src/constants/constants";
 import Loading from "../common/Loading";
+import { getCarouselCardWidth } from "@/src/utils/carouselCardWidth";
 
 type SimilarProductsSectionProps = {
   productId: string;
@@ -28,7 +29,7 @@ const SimilarProductsSection = ({
   const products = subCategoryProductsQuery.data?.pages.flatMap((page) => page.items).filter((product) => product.id !== productId) || [];
 
   const { width: screenWidth } = useWindowDimensions();
-  const productCardWidth = Math.max(150, Math.min(220, screenWidth * 0.4));
+  const productCardWidth = getCarouselCardWidth(screenWidth);
 
   // Hooks must run on every render, so they sit above the early returns below.
   const renderFooter = useCallback(() => {

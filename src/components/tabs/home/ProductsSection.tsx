@@ -10,6 +10,7 @@ import { queryClient, queryKeys } from "@/src/lib/react-query";
 import { useCart } from "@/src/hooks/useCart";
 import { FontAwesome6 } from "@expo/vector-icons";
 import { router } from "expo-router";
+import { getCarouselCardWidth } from "@/src/utils/carouselCardWidth";
 import { CONSTANTS } from "@/src/constants/constants";
 
 type ProductsSectionProps = {
@@ -29,7 +30,7 @@ const ProductsSection = ({
 
   const { cart } = useCart();
   const { width: screenWidth } = useWindowDimensions();
-  const productCardWidth = Math.max(150, Math.min(200, screenWidth * 0.4));
+  const productCardWidth = getCarouselCardWidth(screenWidth);
 
   const handleViewAll = () => {
     router.push({
