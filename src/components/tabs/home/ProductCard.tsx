@@ -9,6 +9,7 @@ import { Product } from "@/src/types";
 import { useSinglePress } from "@/src/hooks/useSinglePress";
 import { useAddToCart, useUpdateCartItem, useCart } from "@/src/hooks/useCart";
 import { productUtils } from "@/src/utils/productUtils";
+import { getDiscountedPrice } from "@/src/utils/discountUtils";
 import { useOrderSettings } from "@/src/hooks/useSettings";
 import ErrorBanner from "@/src/components/common/ErrorBanner";
 
@@ -58,7 +59,7 @@ const ProductCard = ({
 
   const { highestDiscount, discountedPrice, originalPrice, hasDiscount } = useMemo(() => {
     const highestDiscount = bestDiscount?.percentage || 0;
-    const discountedPrice = highestDiscount > 0 ? Math.round(product.price - (product.price * highestDiscount) / 100) : product.price;
+    const discountedPrice = getDiscountedPrice(product.price, highestDiscount);
     const originalPrice = product.price;
     const hasDiscount = product.validApplicableDiscounts.length > 0;
     return { highestDiscount, discountedPrice, originalPrice, hasDiscount };

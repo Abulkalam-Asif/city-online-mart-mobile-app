@@ -14,7 +14,7 @@ import EmptyCart from "@/src/components/tabs/cart/EmptyCart";
 import { theme } from "@/src/constants/theme";
 import { router } from "expo-router";
 import { useCart, useUpdateCartItem, useRemoveFromCart } from "@/src/hooks/useCart";
-import { useCartContext } from "@/src/contexts/CartContext";
+import { CartItemPriceUpdate, useCartContext } from "@/src/contexts/CartContext";
 import EmptyState from "@/src/components/common/EmptyState";
 import CartSkeleton from "@/src/components/tabs/cart/CartSkeleton";
 import { useRefreshCartItemsStock } from "@/src/hooks/useProducts";
@@ -23,7 +23,8 @@ import { useAuth } from "@/src/contexts/AuthContext";
 import { useOrderSettings, useDeliverySettings } from "@/src/hooks/useSettings";
 import ErrorBanner from "@/src/components/common/ErrorBanner";
 import { useGetValidOrderDiscounts } from "@/src/hooks/useDiscounts";
-import { getBestOrderDiscount } from "@/src/utils/discountUtils";
+import { getBestOrderDiscount, getBestProductDiscount, getDiscountedPrice, getNextOrderDiscountHint } from "@/src/utils/discountUtils";
+import OrderDiscountNotice from "@/src/components/tabs/cart/OrderDiscountNotice";
 import { useIsFocused } from "@react-navigation/native";
 import { Discount, ICartItem } from "@/src/types";
 import { DeliverySlotSelector, SelectedSlotData } from "@/src/components/tabs/cart/DeliverySlotSelector";
@@ -37,6 +38,10 @@ export default function CartScreen() {
   const [stockAdjustmentMessage, setStockAdjustmentMessage] = useState<string | null>(null);
   const [bestOrderDiscount, setBestOrderDiscount] = useState<Discount | null>(null);
   const [selectedSlot, setSelectedSlot] = useState<SelectedSlotData | null>(null);
+  // Percentage of an order discount that has just started (or got higher), shown for a few seconds.
+  const [newDiscountPercentage, setNewDiscountPercentage] = useState<number | null>(null);
+  // null until the first calculation, so opening a cart that already has a discount shows no notice.
+  const lastDiscountPercentageRef = React.useRef<number | null>(null);
 
   // Fetch settings data and valid order discounts
   const { data: orderSettings, isLoading: loadingOrderSettings, isError: orderSettingsFailed, refetch: refetchOrderSettings } = useOrderSettings();
@@ -45,7 +50,7 @@ export default function CartScreen() {
 
   // Fetch cart data
   const { cart, loading: loadingCart, isPending: isCartPending } = useCart();
-  const { updateAppliedOrderDiscount } = useCartContext();
+  const { updateAppliedOrderDiscount, updateCartItemPrices } = useCartContext();
 
   // Validate and auto-adjust cart items against fresh stock data
   const maxCartQuantity = orderSettings?.maxCartQuantityPerProduct || 50;
@@ -73,6 +78,11 @@ export default function CartScreen() {
     const best = getBestOrderDiscount(validOrderDiscounts, cart.itemsSubtotal);
     setBestOrderDiscount(best);
 
+    const percentage = best?.percentage ?? 0;
+    const lastPercentage = lastDiscountPercentageRef.current;
+    if (lastPercentage !== null && percentage > lastPercentage) setNewDiscountPercentage(percentage);
+    lastDiscountPercentageRef.current = percentage;
+
     // Update context if best discount changed
     const currentApplied = cart.appliedOrderDiscount;
     if (best) {
@@ -85,6 +95,13 @@ export default function CartScreen() {
       updateAppliedOrderDiscount("", "", 0, 0);
     }
   }, [validOrderDiscounts, cart?.itemsSubtotal, loadingValidOrderDiscounts]);
+
+  // Hide the new-discount notice again after a few seconds (a higher discount restarts the time).
+  useEffect(() => {
+    if (newDiscountPercentage === null) return;
+    const timer = setTimeout(() => setNewDiscountPercentage(null), 4000);
+    return () => clearTimeout(timer);
+  }, [newDiscountPercentage]);
 
   // Cart mutations
   const updateCartItemMutation = useUpdateCartItem();
@@ -130,6 +147,56 @@ export default function CartScreen() {
       setStockAdjustmentMessage(`Some items in your cart were adjusted because of limited stock:\n\n${messageLines.join("\n")}`);
     }
   }, [stockData, removeFromCart, updateCartItem, isFocused]);
+
+  const processedPriceDataRef = React.useRef<any>(null);
+
+  // Items keep the price and discount they were added with. When the fresh products arrive, bring
+  // them up to date (a discount may have been added, changed or ended), so the cart and checkout
+  // show what the order will cost, and tell the customer about every price that changed.
+  useEffect(() => {
+    if (!isFocused || !stockData || !cart) return;
+    if (processedPriceDataRef.current === stockData) return;
+
+    processedPriceDataRef.current = stockData;
+
+    const updates: CartItemPriceUpdate[] = [];
+    const changedLines: string[] = [];
+
+    cart.items.forEach((item) => {
+      const product = stockData.freshProducts.find((p) => p.id === item.productId);
+      if (!product) return;
+
+      const bestDiscount = getBestProductDiscount(product.validApplicableDiscounts || []);
+      const percentage = bestDiscount?.percentage || 0;
+      const newPrice = getDiscountedPrice(product.price, percentage);
+      if (
+        product.price === item.unitPrice &&
+        percentage === item.discountPercentage &&
+        bestDiscount?.id === item.appliedDiscountId &&
+        newPrice === item.discountedUnitPrice
+      ) return;
+
+      updates.push({
+        productId: item.productId,
+        unitPrice: product.price,
+        discountPercentage: percentage,
+        appliedDiscountId: bestDiscount?.id,
+        appliedDiscountSource: bestDiscount?.source,
+      });
+
+      if (newPrice !== item.discountedUnitPrice) {
+        changedLines.push(`• ${item.productName}: now Rs. ${formatPrice(newPrice)} each (was Rs. ${formatPrice(item.discountedUnitPrice)})`);
+      }
+    });
+
+    if (updates.length === 0) return;
+    updateCartItemPrices(updates);
+
+    if (changedLines.length > 0) {
+      const text = `Some prices in your cart have changed:\n\n${changedLines.join("\n")}`;
+      setStockAdjustmentMessage((prev) => (prev ? `${prev}\n\n${text}` : text));
+    }
+  }, [stockData, cart, isFocused, updateCartItemPrices]);
 
   const handleQuantityChange = useCallback((productId: string, newQuantity: number) => {
     // Find the actual productId from the transformed item
@@ -177,7 +244,7 @@ export default function CartScreen() {
   const keyExtractor = useCallback((item: ICartItem) => item.productId, []);
 
 
-  const { minimumOrderAmount, orderDiscountAmount, finalSubtotal, canProceedToCheckout, isCartEmpty, totalProductDiscounts } = useMemo(() => {
+  const { minimumOrderAmount, orderDiscountAmount, finalSubtotal, nextOrderDiscount, canProceedToCheckout, isCartEmpty, totalProductDiscounts } = useMemo(() => {
     const minimumOrderAmount = orderSettings?.minimumOrderAmount || 0;
     const itemsSubtotal = cart?.itemsSubtotal || 0;
 
@@ -191,16 +258,18 @@ export default function CartScreen() {
       ? Math.round((itemsSubtotal * bestOrderDiscount.percentage) / 100)
       : 0;
     const finalSubtotal = itemsSubtotal - orderDiscountAmount;
+    const nextOrderDiscount = getNextOrderDiscountHint(validOrderDiscounts || [], itemsSubtotal, bestOrderDiscount?.percentage || 0);
     return {
       minimumOrderAmount,
       itemsSubtotal,
       orderDiscountAmount,
       finalSubtotal,
+      nextOrderDiscount,
       canProceedToCheckout: finalSubtotal >= minimumOrderAmount,
       isCartEmpty: cart?.items.length === 0,
       totalProductDiscounts: productDiscounts,
     };
-  }, [orderSettings, cart?.itemsSubtotal, cart?.items, bestOrderDiscount]);
+  }, [orderSettings, validOrderDiscounts, cart?.itemsSubtotal, cart?.items, bestOrderDiscount]);
 
 
   const handleProceed = useCallback(() => {
@@ -295,6 +364,10 @@ export default function CartScreen() {
                 />
               </View>
             </View>
+            <View>
+              {newDiscountPercentage !== null && orderDiscountAmount > 0 && (
+                <OrderDiscountNotice percentage={newDiscountPercentage} amount={orderDiscountAmount} />
+              )}
             <ScreenFooter>
               <View style={[styles.amountRow, styles.totalRow]}>
                 <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
@@ -318,6 +391,13 @@ export default function CartScreen() {
                 </View>
               )}
 
+              {/* The minimum-order hint comes first; the discount hint waits until the order can go ahead. */}
+              {canProceedToCheckout && nextOrderDiscount && (
+                <View style={styles.minimumOrderRow}>
+                  <Text style={styles.nextDiscountText}>Add Rs. {formatPrice(nextOrderDiscount.remaining)} more to get {nextOrderDiscount.percentage}% off your order</Text>
+                </View>
+              )}
+
               <PrimaryButton
                 label={isLoggedIn ? "Proceed to Checkout" : "Login / Create Account"}
                 onPress={() => {
@@ -327,6 +407,7 @@ export default function CartScreen() {
                 dimmed={isLoggedIn && !selectedSlot}
               />
             </ScreenFooter>
+            </View>
           </>
         )}
       </View>
@@ -446,6 +527,11 @@ const styles = StyleSheet.create({
     fontSize: 10,
     fontFamily: theme.fonts.medium,
     color: theme.colors.text_secondary,
+  },
+  nextDiscountText: {
+    fontSize: 11,
+    fontFamily: theme.fonts.semibold,
+    color: theme.colors.primary,
   },
   minimumOrderValueText: {
     fontFamily: theme.fonts.semibold,

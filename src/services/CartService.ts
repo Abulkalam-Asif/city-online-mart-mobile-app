@@ -1,6 +1,7 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { Cart, ICartItem } from "../types";
 import { logger } from "../utils/logger";
+import { getDiscountedPrice } from "../utils/discountUtils";
 
 
 export class CartService {
@@ -134,9 +135,7 @@ export class CartService {
         // Update quantity and discount fields (in case discount changed)
         items[existingItemIndex].quantity += quantity;
         items[existingItemIndex].discountPercentage = discountPercentage;
-        items[existingItemIndex].discountedUnitPrice = discountPercentage > 0
-          ? Math.round(unitPrice - (unitPrice * discountPercentage / 100))
-          : unitPrice;
+        items[existingItemIndex].discountedUnitPrice = getDiscountedPrice(unitPrice, discountPercentage);
         items[existingItemIndex].appliedDiscountId = appliedDiscountId;
         items[existingItemIndex].appliedDiscountSource = appliedDiscountSource;
       } else {
@@ -148,7 +147,7 @@ export class CartService {
           unitPrice,
           discountPercentage,
           imageUrl,
-          discountedUnitPrice: discountPercentage > 0 ? Math.round(unitPrice - (unitPrice * discountPercentage / 100)) : unitPrice,
+          discountedUnitPrice: getDiscountedPrice(unitPrice, discountPercentage),
           appliedDiscountId,
           appliedDiscountSource,
         }
