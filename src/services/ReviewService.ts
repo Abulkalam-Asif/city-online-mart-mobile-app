@@ -1,4 +1,5 @@
 import {
+  arrayUnion,
   average,
   collection,
   count,
@@ -40,6 +41,7 @@ export interface RatingSummary {
 export class ReviewService {
   private static readonly PRODUCTS_COLLECTION = "PRODUCTS";
   private static readonly REVIEWS_COLLECTION = "REVIEWS";
+  private static readonly USERS_COLLECTION = "USERS";
 
   constructor(private db: FirebaseFirestoreTypes.Module) { }
 
@@ -91,6 +93,35 @@ export class ReviewService {
       });
     } catch (error) {
       logger.error("Error saving review", error);
+      throw error;
+    }
+  }
+
+  /**
+   * Ids of the products the customer has reviewed, kept on their USERS document so the Orders
+   * list can tell which delivered orders still invite a review without reading any review.
+   * It is a shortcut, not the source of truth: the reviews are.
+   */
+  async getReviewedProductIds(customerId: string): Promise<string[]> {
+    try {
+      const snapshot = await getDoc(doc(this.db, ReviewService.USERS_COLLECTION, customerId));
+      return (snapshot.data()?.reviewedProductIds as string[] | undefined) ?? [];
+    } catch (error) {
+      logger.error("Error fetching reviewed product ids", error);
+      throw error;
+    }
+  }
+
+  async markProductsReviewed(customerId: string, productIds: string[]): Promise<void> {
+    if (productIds.length === 0) return;
+    try {
+      await setDoc(
+        doc(this.db, ReviewService.USERS_COLLECTION, customerId),
+        { reviewedProductIds: arrayUnion(...productIds) },
+        { merge: true },
+      );
+    } catch (error) {
+      logger.error("Error marking products as reviewed", error);
       throw error;
     }
   }

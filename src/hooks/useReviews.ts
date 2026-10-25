@@ -4,7 +4,7 @@ import {
   useQuery,
   useQueryClient,
 } from "@tanstack/react-query";
-import { useMemo } from "react";
+import { useEffect, useMemo, useRef } from "react";
 import { reviewService } from "../services";
 import type { SaveReviewInput } from "../services/ReviewService";
 import { queryKeys } from "../lib/react-query";
@@ -39,6 +39,18 @@ export function useProductReviews(productId?: string, pageSize = 10) {
 }
 
 /**
+ * Ids of the products the customer has reviewed (the Orders list uses it to stop inviting a
+ * review that was already written).
+ */
+export function useReviewedProductIds(customerId?: string) {
+  return useQuery({
+    queryKey: queryKeys.reviews.reviewed(customerId ?? ""),
+    queryFn: () => reviewService.getReviewedProductIds(customerId!),
+    enabled: !!customerId,
+  });
+}
+
+/**
  * The signed-in customer's own reviews of the given products (to prefill the rating screen).
  */
 export function useCustomerReviews(customerId?: string, productIds: string[] = []) {
@@ -63,6 +75,18 @@ export function useSaveReviews() {
         reviews.map((review) => reviewService.saveReview(review)),
       );
       const failed = results.filter((r) => r.status === "rejected").length;
+
+      // Remember which products now have a review. It only feeds the Orders list, so a failure
+      // here must not turn a saved review into an error.
+      const savedProductIds = reviews
+        .filter((_, index) => results[index].status === "fulfilled")
+        .map((review) => review.productId);
+      if (savedProductIds.length > 0) {
+        await reviewService
+          .markProductsReviewed(reviews[0].customerId, savedProductIds)
+          .catch(() => { });
+      }
+
       if (failed > 0) {
         throw new Error(
           reviews.length === 1
@@ -107,6 +131,24 @@ export function useOrderReviewItems(order: Order | null | undefined, customerId?
     customerId,
     items.map((item) => item.productId),
   );
+
+  // Reviews written before the "reviewed" list existed: add them once, so the Orders list stops
+  // inviting a review that is already there.
+  const queryClient = useQueryClient();
+  const reviewedIds = useReviewedProductIds(customerId);
+  const healed = useRef(false);
+  useEffect(() => {
+    if (healed.current || !customerId || !reviewedIds.data || !reviewsQuery.data) return;
+    const missing = Object.keys(reviewsQuery.data).filter((id) => !reviewedIds.data.includes(id));
+    if (missing.length === 0) return;
+    healed.current = true;
+    reviewService
+      .markProductsReviewed(customerId, missing)
+      .then(() =>
+        queryClient.invalidateQueries({ queryKey: queryKeys.reviews.reviewed(customerId) }),
+      )
+      .catch(() => { });
+  }, [customerId, reviewedIds.data, reviewsQuery.data, queryClient]);
 
   return {
     items,
