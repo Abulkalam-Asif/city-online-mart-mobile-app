@@ -21,6 +21,9 @@ import ViewShot from "react-native-view-shot";
 import * as MediaLibrary from "expo-media-library";
 import HiddenCaptureView from "./HiddenCaptureView";
 import { useGetOrderById } from "@/src/hooks/useOrders";
+import { useOrderReviewItems } from "@/src/hooks/useReviews";
+import { useAuth } from "@/src/contexts/AuthContext";
+import { router } from "expo-router";
 import { OrderStatus } from "@/src/types";
 import { convertTimestamp } from "@/src/utils/firestoreUtils";
 import ErrorBanner from "@/src/components/common/ErrorBanner";
@@ -59,6 +62,13 @@ const OrderDetailsContent = ({ orderId }: OrderDetailsContentProps) => {
     isRefetching,
     isStale,
   } = useGetOrderById(orderId);
+
+  // Which items of a delivered order can still be reviewed (decides the footer button)
+  const { user } = useAuth();
+  const reviewItems = useOrderReviewItems(orderData, user?.uid);
+  const allItemsReviewed =
+    reviewItems.items.length > 0 &&
+    reviewItems.items.every((item) => reviewItems.reviews[item.productId]);
 
   // Map order items to DisplayItem format
   const displayItems = useMemo<DisplayItem[]>(() => {
@@ -532,17 +542,19 @@ const OrderDetailsContent = ({ orderId }: OrderDetailsContentProps) => {
         />
       ) : null}
 
-      {/* Bottom Action Buttons. Payment proof is sent on WhatsApp (no in-app upload). */}
-      {orderData.status === "delivered" && (
+      {/* Bottom Action Buttons. Payment proof is sent on WhatsApp (no in-app upload).
+          Hidden once the items are known and none of them can be reviewed (all refunded, reviews off). */}
+      {orderData.status === "delivered" && (reviewItems.isLoading || reviewItems.items.length > 0) && (
         <View style={styles.bottomButtonContainer}>
           <Pressable
-            disabled
+            onPress={() => router.push(`/order-details/review?id=${orderData.id}` as any)}
             style={({ pressed }) => [
               styles.reviewButton,
               pressed && styles.buttonPressed,
-              styles.buttonDisabled,
             ]}>
-            <Text style={styles.reviewButtonText}>Add a Review</Text>
+            <Text style={styles.reviewButtonText}>
+              {allItemsReviewed ? "Edit your Review" : "Add a Review"}
+            </Text>
           </Pressable>
         </View>
       )}
@@ -808,9 +820,6 @@ const styles = StyleSheet.create({
   },
   buttonPressed: {
     opacity: 0.8,
-  },
-  buttonDisabled: {
-    opacity: 0.6,
   },
 
   // Loading and Error States

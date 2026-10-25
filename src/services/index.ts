@@ -8,6 +8,7 @@ import { DeliverySlotService } from "./DeliverySlotService";
 import { OrderService } from "./OrderService";
 import { ProductService } from "./ProductService";
 import { AuditLogService } from "./AuditLogService";
+import { ReviewService } from "./ReviewService";
 
 function createServices() {
   const db = getCityDb();
@@ -23,13 +24,14 @@ function createServices() {
   const productService = new ProductService(db);
   const deliverySlotService = new DeliverySlotService(db);
   const auditLogService = new AuditLogService(db);
+  const reviewService = new ReviewService(db);
 
   orderService.discountService = discountService;
   orderService.auditLog = auditLogService;
   authService.auditLog = auditLogService;
 
   return {
-    authService, settingsService, discountService, paymentMethodService, orderService, productService, deliverySlotService
+    authService, settingsService, discountService, paymentMethodService, orderService, productService, deliverySlotService, reviewService
   };
 }
 
@@ -73,3 +75,4 @@ export const paymentMethodService = createProxy("paymentMethodService");
 export const orderService = createProxy("orderService");
 export const productService = createProxy("productService");
 export const deliverySlotService = createProxy("deliverySlotService");
+export const reviewService = createProxy("reviewService");

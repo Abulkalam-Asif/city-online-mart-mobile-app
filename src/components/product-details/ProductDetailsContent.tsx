@@ -9,6 +9,7 @@ import ProductDetailsTopBg from "./ProductDetailsTopBg";
 import ProductDetailsTopBar from "./ProductDetailsTopBar";
 import { useCart } from "@/src/hooks/useCart";
 import SimilarProductsSection from "./SimilarProductsSection";
+import ProductRatingRow from "./ProductRatingRow";
 import { getDiscountedPrice } from "@/src/utils/discountUtils";
 
 type ProductDetailsContentProps = {
@@ -92,29 +93,12 @@ const ProductDetailsContent = ({
           ellipsizeMode="tail">
           {product.info.name}
         </Text>
-        {/* TODO: Implement rating and review functionality */}
-        {/* <Pressable
-          style={({ pressed }) => [
-            styles.ratingSectionButton,
-            pressed && styles.ratingSectionButtonPressed,
-          ]}
-          onPress={() => {
-            router.push({
-              pathname: "/product-details/reviews",
-              params: { id: product.id },
-            });
-          }}>
-          <Entypo name="star" size={18} color={"#FFBB22"} />
-          <Text style={styles.ratingText}>
-            5 (12 Reviews)
-          </Text>
-          <FontAwesome6
-            name="chevron-right"
-            size={16}
-            color={theme.colors.text_secondary}
-          />
-        </Pressable> */}
       </View>
+
+      {/* Hidden when the shop switched reviews off for this product (a missing setting counts as on) */}
+      {product.info.allowCustomerReviews !== false && (
+        <ProductRatingRow productId={product.id} />
+      )}
 
       <View style={styles.topContentContainer}>
         {/* Price Section */}
@@ -236,22 +220,6 @@ const styles = StyleSheet.create({
     color: theme.colors.text,
     fontFamily: theme.fonts.semibold,
     flex: 1,
-  },
-  ratingSectionButton: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 6,
-    height: 28,
-    paddingHorizontal: 10,
-  },
-  ratingSectionButtonPressed: {
-    backgroundColor: "rgba(0, 0, 0, 0.05)",
-    borderRadius: 14,
-  },
-  ratingText: {
-    color: theme.colors.text,
-    fontFamily: theme.fonts.medium,
-    fontSize: 12,
   },
 
   topContentContainer: {
