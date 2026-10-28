@@ -42,6 +42,13 @@ export interface Order {
     percentage: number;
     amount: number;
   };
+  // Set instead of appliedOrderDiscount when a free delivery offer won (deliveryFee is then 0)
+  appliedFreeDelivery?: {
+    id: string;
+    name: string;
+    minPurchaseAmount: number;
+    waivedAmount: number; // the standard fee that was waived
+  };
   appliedOnlinePaymentDiscount?: {
     percentage: number;
     amount: number;

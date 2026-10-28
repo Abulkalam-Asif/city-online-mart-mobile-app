@@ -23,6 +23,8 @@ type HiddenCaptureViewProps = {
   orderId: string;
   subtotal: number;
   deliveryFee: number;
+  /** Free delivery was applied (the fee on the order is 0); the receipt says so. */
+  isFreeDelivery?: boolean;
   totalAmount: number;
   appliedOrderDiscount?: { percentage: number; amount: number };
   appliedOnlinePaymentDiscount?: { percentage: number; amount: number };
@@ -53,6 +55,7 @@ const HiddenCaptureView = ({
   orderId,
   subtotal,
   deliveryFee,
+  isFreeDelivery,
   totalAmount,
   appliedOrderDiscount,
   appliedOnlinePaymentDiscount,
@@ -127,7 +130,7 @@ const HiddenCaptureView = ({
                 <Text style={styles.posText}>{subtotal}</Text>
               </View>
               <View style={styles.summaryRow}>
-                <Text style={styles.posText}>{deliverySlot?.id === "fast-delivery" ? "Express Delivery Fee:" : "Delivery Fee:"}</Text>
+                <Text style={styles.posText}>{deliverySlot?.id === "fast-delivery" ? "Express Delivery Fee:" : isFreeDelivery ? "Delivery Fee (FREE):" : "Delivery Fee:"}</Text>
                 <Text style={styles.posText}>{deliveryFee}</Text>
               </View>
               {appliedOrderDiscount && (

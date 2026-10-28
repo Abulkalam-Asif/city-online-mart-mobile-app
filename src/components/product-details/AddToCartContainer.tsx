@@ -44,6 +44,8 @@ const AddToCartContainer = ({
   const { data: orderSettings } = useOrderSettings();
   const maxCartQuantity = orderSettings?.maxCartQuantityPerProduct || 50;
 
+  // Nothing in the cart and nothing left to add: the button says so instead of failing on tap
+  const isOutOfStock = quantityInCart === 0 && availableStock < 1;
 
   // Event handlers
   const handleDecrement = useCallback(() => {
@@ -153,11 +155,13 @@ const AddToCartContainer = ({
           style={({ pressed }) => [
             styles.addToCartButton,
             pressed && styles.addToCartButtonPressed,
+            isOutOfStock && styles.addToCartButtonDisabled,
           ]}
           onPress={handleAddOrViewCart}
+          disabled={isOutOfStock}
         >
           <Text style={styles.addToCartText}>
-            {quantityInCart === 0 ? "Add to Cart" : `View cart`}
+            {isOutOfStock ? "Out of Stock" : quantityInCart === 0 ? "Add to Cart" : `View cart`}
           </Text>
         </Pressable>
       </View>
@@ -243,6 +247,9 @@ const styles = StyleSheet.create({
   },
   addToCartButtonPressed: {
     opacity: 0.8,
+  },
+  addToCartButtonDisabled: {
+    opacity: 0.5,
   },
   addToCartText: {
     color: "#fff",

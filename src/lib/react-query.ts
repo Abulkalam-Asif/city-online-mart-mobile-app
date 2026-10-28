@@ -118,6 +118,22 @@ export const queryKeys = {
   },
 
   // ========================================
+  // REVIEWS
+  // ========================================
+  reviews: {
+    // Base key - invalidates ALL review queries
+    all: ["reviews"] as const,
+
+    summary: (productId: string) => [...queryKeys.reviews.all, "summary", productId] as const,
+    list: (productId: string) => [...queryKeys.reviews.all, "list", productId] as const,
+    // Product ids the signed-in customer has reviewed (kept on their USERS document)
+    reviewed: (customerId: string) => [...queryKeys.reviews.all, "reviewed", customerId] as const,
+    // The signed-in customer's own reviews of the given products
+    mine: (customerId: string, productIds: string[]) =>
+      [...queryKeys.reviews.all, "mine", customerId, productIds] as const,
+  },
+
+  // ========================================
   // BANNERS
   // ========================================
   banners: {

@@ -11,6 +11,7 @@ import { useSinglePress } from "@/src/hooks/useSinglePress";
 import { useCart, useAddToCart, useUpdateCartItem } from "@/src/hooks/useCart";
 import { FontAwesome6 } from "@expo/vector-icons";
 import { useOrderSettings } from "@/src/hooks/useSettings";
+import { getDiscountedPrice } from "@/src/utils/discountUtils";
 import ErrorBanner from "@/src/components/common/ErrorBanner";
 import EmptyState from "@/src/components/common/EmptyState";
 import { SkeletonBox, SkeletonPulse } from "@/src/components/common/Skeleton";
@@ -47,9 +48,7 @@ const SearchDropdownItem = ({ product, canPress }: { product: Product, canPress:
   );
 
   const highestDiscount = bestDiscount?.percentage || 0;
-  const discountedPrice = highestDiscount > 0
-    ? Math.floor(product.price * (1 - highestDiscount / 100))
-    : product.price;
+  const discountedPrice = getDiscountedPrice(product.price, highestDiscount);
 
   const primaryImage = product.multimedia?.images?.[0] || require("@/src/assets/default-image.png");
 

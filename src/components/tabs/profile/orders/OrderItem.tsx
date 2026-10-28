@@ -12,6 +12,8 @@ type OrderItemProps = {
   price: number;
   status: OrderStatus;
   orderId: string;
+  /** Shows "Leave your Review": a delivered order with an item that has no review yet. */
+  invitesReview?: boolean;
   /** Only when the order has an active refund: price after refunds and "Refunded" / "Partly refunded". */
   refund?: { adjustedPrice: number; label: string };
 };
@@ -25,6 +27,7 @@ const OrderItem = ({
   price,
   status,
   orderId,
+  invitesReview = false,
   refund,
 }: OrderItemProps) => {
   const getStatusColor = () => {
@@ -146,7 +149,7 @@ const OrderItem = ({
       </View>
 
       <View style={styles.rightContainer}>
-        {status === "delivered" && (
+        {invitesReview && (
           <Text style={styles.reviewText} numberOfLines={1}>Leave your Review</Text>
         )}
         <View style={[styles.statusBadge, { backgroundColor: colors.bg }]}>

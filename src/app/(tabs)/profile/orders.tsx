@@ -18,7 +18,8 @@ import { useGetInfiniteCustomerOrders } from "@/src/hooks/useOrders";
 import { CONSTANTS } from "@/src/constants/constants";
 import { convertTimestamp } from "@/src/utils/firestoreUtils";
 import ErrorBanner from "@/src/components/common/ErrorBanner";
-import { getOrderRefundSummary } from "@/src/utils/refundUtils";
+import { getOrderRefundSummary, getRefundedQuantities } from "@/src/utils/refundUtils";
+import { useReviewedProductIds } from "@/src/hooks/useReviews";
 type OrderTab = "all" | OrderStatus;
 
 const OrdersScreen = () => {
@@ -26,6 +27,8 @@ const OrdersScreen = () => {
   const { data: user, isLoading: authLoading } = useAuthUser();
   const firebaseUid = user?.uid;
   const isAuthReady = !!firebaseUid;
+
+  const { data: reviewedProductIds } = useReviewedProductIds(firebaseUid);
 
   const ordersQuery = useGetInfiniteCustomerOrders(
     firebaseUid || "",
@@ -90,6 +93,17 @@ const OrdersScreen = () => {
   const renderOrderItem = ({ item }: { item: typeof filteredOrders[number] }) => {
     // Active refunds only; undefined keeps the row as it was
     const refundSummary = getOrderRefundSummary(item);
+    // Invite a review only while a refunded-or-not item of a delivered order has none yet.
+    // Hidden until the reviewed list is known, so the label does not flash and vanish.
+    const refundedQuantities = getRefundedQuantities(item);
+    const invitesReview =
+      item.status === "delivered" &&
+      !!reviewedProductIds &&
+      item.items.some(
+        (orderItem) =>
+          (refundedQuantities[orderItem.productId] || 0) < orderItem.quantity &&
+          !reviewedProductIds.includes(orderItem.productId),
+      );
     return (
       <OrderItem
         orderId={item.id}
@@ -100,6 +114,7 @@ const OrdersScreen = () => {
         )}
         price={item.total}
         status={item.status}
+        invitesReview={invitesReview}
         refund={
           refundSummary
             ? {

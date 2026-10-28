@@ -2,26 +2,30 @@ import { formatPrice } from "@/src/utils/formatPrice";
 import React, { useCallback, useEffect, useMemo, useState } from "react";
 import {
   FlatList,
-  Pressable,
   StyleSheet,
   Text,
   View,
 } from "react-native";
 import GeneralTopBar from "@/src/components/general/GeneralTopBar";
+import PrimaryButton from "@/src/components/general/PrimaryButton";
+import ScreenFooter from "@/src/components/general/ScreenFooter";
 import CartItem from "@/src/components/tabs/cart/CartItem";
 import EmptyCart from "@/src/components/tabs/cart/EmptyCart";
 import { theme } from "@/src/constants/theme";
 import { router } from "expo-router";
 import { useCart, useUpdateCartItem, useRemoveFromCart } from "@/src/hooks/useCart";
-import { useCartContext } from "@/src/contexts/CartContext";
-import Loading from "@/src/components/common/Loading";
+import { CartItemPriceUpdate, useCartContext } from "@/src/contexts/CartContext";
+import EmptyState from "@/src/components/common/EmptyState";
+import CartSkeleton from "@/src/components/tabs/cart/CartSkeleton";
 import { useRefreshCartItemsStock } from "@/src/hooks/useProducts";
 
 import { useAuth } from "@/src/contexts/AuthContext";
 import { useOrderSettings, useDeliverySettings } from "@/src/hooks/useSettings";
 import ErrorBanner from "@/src/components/common/ErrorBanner";
 import { useGetValidOrderDiscounts } from "@/src/hooks/useDiscounts";
-import { getBestOrderDiscount } from "@/src/utils/discountUtils";
+import { getBestProductDiscount, getDiscountedPrice } from "@/src/utils/discountUtils";
+import { getNextOfferHint, pickOrderOffer } from "@/src/utils/orderOffers";
+import OrderDiscountNotice from "@/src/components/tabs/cart/OrderDiscountNotice";
 import { useIsFocused } from "@react-navigation/native";
 import { Discount, ICartItem } from "@/src/types";
 import { DeliverySlotSelector, SelectedSlotData } from "@/src/components/tabs/cart/DeliverySlotSelector";
@@ -35,15 +39,21 @@ export default function CartScreen() {
   const [stockAdjustmentMessage, setStockAdjustmentMessage] = useState<string | null>(null);
   const [bestOrderDiscount, setBestOrderDiscount] = useState<Discount | null>(null);
   const [selectedSlot, setSelectedSlot] = useState<SelectedSlotData | null>(null);
+  // Free delivery never applies to Express, so the winning order offer depends on the slot type
+  const isExpress = selectedSlot?.id === "fast-delivery";
+  // Percentage of an order discount that has just started (or got higher), shown for a few seconds.
+  const [newDiscountPercentage, setNewDiscountPercentage] = useState<number | null>(null);
+  // null until the first calculation, so opening a cart that already has a discount shows no notice.
+  const lastDiscountPercentageRef = React.useRef<number | null>(null);
 
   // Fetch settings data and valid order discounts
-  const { data: orderSettings, isLoading: loadingOrderSettings } = useOrderSettings();
+  const { data: orderSettings, isLoading: loadingOrderSettings, isError: orderSettingsFailed, refetch: refetchOrderSettings } = useOrderSettings();
   const { data: deliverySettings } = useDeliverySettings();
-  const { data: validOrderDiscounts, isLoading: loadingValidOrderDiscounts } = useGetValidOrderDiscounts();
+  const { data: validOrderDiscounts, isLoading: loadingValidOrderDiscounts, isError: discountsFailed, refetch: refetchDiscounts } = useGetValidOrderDiscounts();
 
   // Fetch cart data
   const { cart, loading: loadingCart, isPending: isCartPending } = useCart();
-  const { updateAppliedOrderDiscount } = useCartContext();
+  const { updateAppliedOrderDiscount, updateCartItemPrices } = useCartContext();
 
   // Validate and auto-adjust cart items against fresh stock data
   const maxCartQuantity = orderSettings?.maxCartQuantityPerProduct || 50;
@@ -58,7 +68,7 @@ export default function CartScreen() {
     }));
   }, [cart?.items]);
 
-  const { data: stockData, isLoading: loadingStock } = useRefreshCartItemsStock(
+  const { data: stockData, isLoading: loadingStock, isError: stockFailed, refetch: refetchStock } = useRefreshCartItemsStock(
     // Only run the query and pass items when the cart screen is actively focused
     isFocused ? cartItemsForRefresh : [],
     maxCartQuantity
@@ -68,8 +78,15 @@ export default function CartScreen() {
   useEffect(() => {
     if (loadingValidOrderDiscounts || !validOrderDiscounts || !cart) return;
 
-    const best = getBestOrderDiscount(validOrderDiscounts, cart.itemsSubtotal);
+    // Only a percentage offer is applied to the cart; a free delivery win only changes the delivery fee
+    const offer = pickOrderOffer(validOrderDiscounts, cart.itemsSubtotal, { isExpress });
+    const best = offer?.kind === "percentage" ? offer.discount : null;
     setBestOrderDiscount(best);
+
+    const percentage = best?.percentage ?? 0;
+    const lastPercentage = lastDiscountPercentageRef.current;
+    if (lastPercentage !== null && percentage > lastPercentage) setNewDiscountPercentage(percentage);
+    lastDiscountPercentageRef.current = percentage;
 
     // Update context if best discount changed
     const currentApplied = cart.appliedOrderDiscount;
@@ -82,7 +99,14 @@ export default function CartScreen() {
       // Clear discount if none apply anymore
       updateAppliedOrderDiscount("", "", 0, 0);
     }
-  }, [validOrderDiscounts, cart?.itemsSubtotal, loadingValidOrderDiscounts]);
+  }, [validOrderDiscounts, cart?.itemsSubtotal, loadingValidOrderDiscounts, isExpress]);
+
+  // Hide the new-discount notice again after a few seconds (a higher discount restarts the time).
+  useEffect(() => {
+    if (newDiscountPercentage === null) return;
+    const timer = setTimeout(() => setNewDiscountPercentage(null), 4000);
+    return () => clearTimeout(timer);
+  }, [newDiscountPercentage]);
 
   // Cart mutations
   const updateCartItemMutation = useUpdateCartItem();
@@ -106,7 +130,7 @@ export default function CartScreen() {
     stockData.adjustments.forEach((adj) => {
       if (adj.maxAllowed === 0) {
         // Item is out of stock entirely or deactivated
-        messageLines.push(`â€¢ ${adj.name} is no longer available and has been removed from your cart.`);
+        messageLines.push(`• ${adj.name} is no longer available and has been removed from your cart.`);
         removeFromCart(adj.productId);
         hasChanges = true;
       } else if (adj.oldQuantity !== adj.maxAllowed) {
@@ -115,7 +139,7 @@ export default function CartScreen() {
           ? `You can only order a maximum of ${adj.maxAllowed} per order`
           : `Only ${adj.maxAllowed} left in stock`;
 
-        messageLines.push(`â€¢ ${adj.name}: ${reasonStr}. Your cart has been updated.`);
+        messageLines.push(`• ${adj.name}: ${reasonStr}. Your cart has been updated.`);
         updateCartItem({
           productId: adj.productId,
           quantity: adj.maxAllowed,
@@ -128,6 +152,56 @@ export default function CartScreen() {
       setStockAdjustmentMessage(`Some items in your cart were adjusted because of limited stock:\n\n${messageLines.join("\n")}`);
     }
   }, [stockData, removeFromCart, updateCartItem, isFocused]);
+
+  const processedPriceDataRef = React.useRef<any>(null);
+
+  // Items keep the price and discount they were added with. When the fresh products arrive, bring
+  // them up to date (a discount may have been added, changed or ended), so the cart and checkout
+  // show what the order will cost, and tell the customer about every price that changed.
+  useEffect(() => {
+    if (!isFocused || !stockData || !cart) return;
+    if (processedPriceDataRef.current === stockData) return;
+
+    processedPriceDataRef.current = stockData;
+
+    const updates: CartItemPriceUpdate[] = [];
+    const changedLines: string[] = [];
+
+    cart.items.forEach((item) => {
+      const product = stockData.freshProducts.find((p) => p.id === item.productId);
+      if (!product) return;
+
+      const bestDiscount = getBestProductDiscount(product.validApplicableDiscounts || []);
+      const percentage = bestDiscount?.percentage || 0;
+      const newPrice = getDiscountedPrice(product.price, percentage);
+      if (
+        product.price === item.unitPrice &&
+        percentage === item.discountPercentage &&
+        bestDiscount?.id === item.appliedDiscountId &&
+        newPrice === item.discountedUnitPrice
+      ) return;
+
+      updates.push({
+        productId: item.productId,
+        unitPrice: product.price,
+        discountPercentage: percentage,
+        appliedDiscountId: bestDiscount?.id,
+        appliedDiscountSource: bestDiscount?.source,
+      });
+
+      if (newPrice !== item.discountedUnitPrice) {
+        changedLines.push(`• ${item.productName}: now Rs. ${formatPrice(newPrice)} each (was Rs. ${formatPrice(item.discountedUnitPrice)})`);
+      }
+    });
+
+    if (updates.length === 0) return;
+    updateCartItemPrices(updates);
+
+    if (changedLines.length > 0) {
+      const text = `Some prices in your cart have changed:\n\n${changedLines.join("\n")}`;
+      setStockAdjustmentMessage((prev) => (prev ? `${prev}\n\n${text}` : text));
+    }
+  }, [stockData, cart, isFocused, updateCartItemPrices]);
 
   const handleQuantityChange = useCallback((productId: string, newQuantity: number) => {
     // Find the actual productId from the transformed item
@@ -175,7 +249,7 @@ export default function CartScreen() {
   const keyExtractor = useCallback((item: ICartItem) => item.productId, []);
 
 
-  const { minimumOrderAmount, orderDiscountAmount, finalSubtotal, canProceedToCheckout, isCartEmpty, totalProductDiscounts } = useMemo(() => {
+  const { minimumOrderAmount, orderDiscountAmount, finalSubtotal, nextOffer, freeDeliveryApplied, canProceedToCheckout, isCartEmpty, totalProductDiscounts } = useMemo(() => {
     const minimumOrderAmount = orderSettings?.minimumOrderAmount || 0;
     const itemsSubtotal = cart?.itemsSubtotal || 0;
 
@@ -189,16 +263,20 @@ export default function CartScreen() {
       ? Math.round((itemsSubtotal * bestOrderDiscount.percentage) / 100)
       : 0;
     const finalSubtotal = itemsSubtotal - orderDiscountAmount;
+    const appliedOffer = pickOrderOffer(validOrderDiscounts || [], itemsSubtotal, { isExpress });
+    const nextOffer = getNextOfferHint(validOrderDiscounts || [], itemsSubtotal, appliedOffer, { isExpress });
     return {
       minimumOrderAmount,
       itemsSubtotal,
       orderDiscountAmount,
       finalSubtotal,
+      nextOffer,
+      freeDeliveryApplied: appliedOffer?.kind === "free_delivery",
       canProceedToCheckout: finalSubtotal >= minimumOrderAmount,
       isCartEmpty: cart?.items.length === 0,
       totalProductDiscounts: productDiscounts,
     };
-  }, [orderSettings, cart?.itemsSubtotal, cart?.items, bestOrderDiscount]);
+  }, [orderSettings, validOrderDiscounts, cart?.itemsSubtotal, cart?.items, bestOrderDiscount, isExpress]);
 
 
   const handleProceed = useCallback(() => {
@@ -220,12 +298,39 @@ export default function CartScreen() {
     });
   }, [isLoggedIn, canProceedToCheckout, selectedSlot]);
 
-  if (loadingCart || loadingOrderSettings || loadingValidOrderDiscounts || loadingStock) {
+  // An empty cart needs none of the settings, discounts or stock, so it is shown right away.
+  const loadingDetails = loadingOrderSettings || loadingValidOrderDiscounts || loadingStock;
+  if (loadingCart || (!isCartEmpty && loadingDetails)) {
+    return (
+      <View style={styles.mainContainer}>
+        <GeneralTopBar text="My Cart" />
+        <CartSkeleton />
+      </View>
+    );
+  }
+
+  // Minimum order, discounts and stock limits decide what the customer sees and can order,
+  // so the cart is not shown with them missing (a total without them would be wrong).
+  const detailsFailed =
+    (orderSettingsFailed && !orderSettings) ||
+    (discountsFailed && !validOrderDiscounts) ||
+    (stockFailed && !stockData);
+  if (!isCartEmpty && detailsFailed) {
     return (
       <View style={styles.mainContainer}>
         <GeneralTopBar text="My Cart" />
         <View style={styles.centeringContainer}>
-          <Loading text="Loading cart..." />
+          <EmptyState
+            tone="error"
+            title="Couldn't load your cart"
+            message="Check your connection and try again."
+            actionText="Retry"
+            onAction={() => {
+              if (orderSettingsFailed) refetchOrderSettings();
+              if (discountsFailed) refetchDiscounts();
+              if (stockFailed) refetchStock();
+            }}
+          />
         </View>
       </View>
     );
@@ -266,7 +371,11 @@ export default function CartScreen() {
                 />
               </View>
             </View>
-            <View style={styles.summaryContainer}>
+            <View>
+              {newDiscountPercentage !== null && orderDiscountAmount > 0 && (
+                <OrderDiscountNotice percentage={newDiscountPercentage} amount={orderDiscountAmount} />
+              )}
+            <ScreenFooter>
               <View style={[styles.amountRow, styles.totalRow]}>
                 <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
                   <Text style={styles.totalLabel}>Total: <Text style={styles.totalValue}>Rs. {formatPrice(finalSubtotal)}</Text></Text>
@@ -289,22 +398,31 @@ export default function CartScreen() {
                 </View>
               )}
 
-              <Pressable
-                style={({ pressed }) => [
-                  styles.proceedButton,
-                  pressed && styles.proceedButtonPressed,
-                  (!canProceedToCheckout || !selectedSlot) && isLoggedIn && styles.proceedButtonDisabled
-                ]}
-                disabled={isCartPending || (isLoggedIn && !canProceedToCheckout)}
-                onPress={handleProceed}
-              >
-                <Text
-                  style={styles.proceedButtonText}>
-                  {isLoggedIn
-                    ? "Proceed to Checkout"
-                    : "Login / Create Account"}
-                </Text>
-              </Pressable>
+              {/* The minimum-order hint comes first; the offer hints wait until the order can go ahead. */}
+              {canProceedToCheckout && nextOffer && (
+                <View style={styles.minimumOrderRow}>
+                  <Text style={styles.nextDiscountText}>
+                    {nextOffer.kind === "free_delivery"
+                      ? `Add Rs. ${formatPrice(nextOffer.remaining)} more to get free delivery`
+                      : `Add Rs. ${formatPrice(nextOffer.remaining)} more to get ${nextOffer.percentage}% off your order`}
+                  </Text>
+                </View>
+              )}
+              {canProceedToCheckout && !nextOffer && freeDeliveryApplied && (
+                <View style={styles.minimumOrderRow}>
+                  <Text style={styles.nextDiscountText}>Free delivery unlocked</Text>
+                </View>
+              )}
+
+              <PrimaryButton
+                label={isLoggedIn ? "Proceed to Checkout" : "Login / Create Account"}
+                onPress={() => {
+                  if (!isCartPending) handleProceed();
+                }}
+                disabled={isLoggedIn && !canProceedToCheckout}
+                dimmed={isLoggedIn && !selectedSlot}
+              />
+            </ScreenFooter>
             </View>
           </>
         )}
@@ -351,6 +469,7 @@ const styles = StyleSheet.create({
   sectionsWrapper: {
     flex: 1,
     paddingHorizontal: 8,
+    paddingTop: 12, // keeps the delivery card's top border off the header's bottom edge
     gap: 16
   },
   deliverySection: {
@@ -415,14 +534,6 @@ const styles = StyleSheet.create({
     paddingBottom: 20,
   },
 
-  summaryContainer: {
-    backgroundColor: "#fff",
-    paddingHorizontal: 20,
-    paddingVertical: 12,
-    borderTopWidth: 1,
-    borderTopColor: "#f0f0f0",
-    gap: 4,
-  },
   minimumOrderRow: {
     flexDirection: "row",
     alignItems: "center",
@@ -432,6 +543,11 @@ const styles = StyleSheet.create({
     fontSize: 10,
     fontFamily: theme.fonts.medium,
     color: theme.colors.text_secondary,
+  },
+  nextDiscountText: {
+    fontSize: 11,
+    fontFamily: theme.fonts.semibold,
+    color: theme.colors.primary,
   },
   minimumOrderValueText: {
     fontFamily: theme.fonts.semibold,
@@ -502,24 +618,6 @@ const styles = StyleSheet.create({
     fontSize: 11,
     fontFamily: theme.fonts.semibold,
     color: theme.colors.red,
-  },
-  proceedButton: {
-    backgroundColor: theme.colors.primary,
-    paddingVertical: 10,
-    borderRadius: 30,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  proceedButtonDisabled: {
-    opacity: 0.5,
-  },
-  proceedButtonText: {
-    fontSize: 16,
-    fontFamily: theme.fonts.semibold,
-    color: "#fff",
-  },
-  proceedButtonPressed: {
-    opacity: 0.8,
   },
 
   centeringContainer: {

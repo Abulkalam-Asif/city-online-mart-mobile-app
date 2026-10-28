@@ -7,6 +7,8 @@ import { queryClient, queryKeys } from "@/src/lib/react-query";
 import { OrderSettings } from "@/src/types";
 
 import { useDeliverySettings } from "@/src/hooks/useSettings";
+import { useGetValidOrderDiscounts } from "@/src/hooks/useDiscounts";
+import { pickOrderOffer, resolveDeliveryFee } from "@/src/utils/orderOffers";
 
 interface BillingDetailsSectionProps {
   isOnlinePayment?: boolean;
@@ -16,6 +18,7 @@ interface BillingDetailsSectionProps {
 const BillingDetailsSection: React.FC<BillingDetailsSectionProps> = ({ isOnlinePayment = false, isExpress = false }) => {
   const { cart } = useCart();
   const { data: deliverySettings } = useDeliverySettings();
+  const { data: validOrderDiscounts } = useGetValidOrderDiscounts();
 
   const orderSettings = queryClient.getQueryData<OrderSettings>(
     queryKeys.settings.byDomain("order")
@@ -34,10 +37,12 @@ const BillingDetailsSection: React.FC<BillingDetailsSectionProps> = ({ isOnlineP
   const orderSubTotal = itemsSubtotal - orderDiscount;
   const orderDiscountPercentage = cart?.appliedOrderDiscount?.percentage || 0;
 
-  const deliveryFee = isExpress
-    ? (deliverySettings?.expressDeliveryFee ?? 250)
-    : (orderSettings?.deliveryFee || 0);
-
+  // Same rule as the order itself (OrderService.createOrder): standard fee, Express fee, or 0 when free delivery wins
+  const standardFee = orderSettings?.deliveryFee || 0;
+  const { deliveryFee, appliedFreeDelivery } = resolveDeliveryFee(
+    pickOrderOffer(validOrderDiscounts || [], itemsSubtotal, { isExpress }),
+    { isExpress, standardFee, expressFee: deliverySettings?.expressDeliveryFee ?? 250 }
+  );
   const onlineDiscountPercentage = orderSettings?.onlinePaymentDiscountPercentage || 0;
 
   let onlineDiscountAmount = 0;
@@ -101,6 +106,9 @@ const BillingDetailsSection: React.FC<BillingDetailsSectionProps> = ({ isOnlineP
             }
           </View>
           <View style={styles.rightSection}>
+            {appliedFreeDelivery && appliedFreeDelivery.waivedAmount > 0 && (
+              <Text style={styles.waivedAmount}>Rs. {formatPrice(appliedFreeDelivery.waivedAmount)}</Text>
+            )}
             <Text style={styles.amount}>Rs. {formatPrice(deliveryFee)}</Text>
           </View>
         </View>
@@ -125,7 +133,7 @@ const styles = StyleSheet.create({
     marginBottom: 12,
   },
   container: {
-    marginTop: 16,
+    marginTop: 12,
     padding: 14, // 14 + the 2 px outline = 16, so the text lines up with the other cards
     backgroundColor: theme.colors.background_3,
     borderRadius: 8,
@@ -145,7 +153,15 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   rightSection: {
-    alignItems: "flex-end",
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+  },
+  waivedAmount: {
+    fontSize: 12,
+    fontFamily: theme.fonts.regular,
+    color: theme.colors.text_secondary,
+    textDecorationLine: "line-through",
   },
   labelText: {
     fontSize: 12,

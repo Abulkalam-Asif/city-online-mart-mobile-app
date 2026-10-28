@@ -115,6 +115,16 @@ export function useProductById(productId: string) {
   });
 }
 
+// Hook to get several products at once (for example the items of one order)
+export function useProductsByIds(productIds: string[]) {
+  return useQuery({
+    queryKey: [...queryKeys.products.all, "byIds", [...productIds].sort()],
+    queryFn: () => productService.getProductsByIds(productIds),
+    enabled: productIds.length > 0,
+    staleTime: 1000 * 60 * 15,
+  });
+}
+
 /**
  * Hook to fetch fresh stock data for all items in a cart and
  * compare quantities against available limits and max limits.

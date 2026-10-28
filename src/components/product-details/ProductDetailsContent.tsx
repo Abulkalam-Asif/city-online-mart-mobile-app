@@ -9,6 +9,8 @@ import ProductDetailsTopBg from "./ProductDetailsTopBg";
 import ProductDetailsTopBar from "./ProductDetailsTopBar";
 import { useCart } from "@/src/hooks/useCart";
 import SimilarProductsSection from "./SimilarProductsSection";
+import ProductRatingRow from "./ProductRatingRow";
+import { getDiscountedPrice } from "@/src/utils/discountUtils";
 
 type ProductDetailsContentProps = {
   product: Product,
@@ -17,13 +19,13 @@ type ProductDetailsContentProps = {
 const getStockStatusColor = (status: StockStatus): string => {
   switch (status) {
     case "In Stock":
-      return "green";
+      return theme.colors.success;
     case "Out of Stock":
-      return "red";
+      return theme.colors.error;
     case "Low Stock":
-      return "orange";
+      return theme.colors.warning;
     default:
-      return "gray";
+      return theme.colors.placeholder;
   }
 };
 
@@ -51,7 +53,7 @@ const ProductDetailsContent = ({
 
   const { highestDiscount, discountedPrice, originalPrice, hasDiscount } = useMemo(() => {
     const highestDiscount = bestDiscount?.percentage || 0;
-    const discountedPrice = highestDiscount > 0 ? Math.floor(product.price * (1 - highestDiscount / 100)) : product.price;
+    const discountedPrice = getDiscountedPrice(product.price, highestDiscount);
     const originalPrice = product.price;
     const hasDiscount = product.validApplicableDiscounts.length > 0;
     return { highestDiscount, discountedPrice, originalPrice, hasDiscount };
@@ -77,7 +79,11 @@ const ProductDetailsContent = ({
       contentContainerStyle={styles.containerContent}>
       <ProductDetailsTopBg />
 
-      <ProductDetailsTopBar productId={product.id} />
+      <ProductDetailsTopBar
+        productId={product.id}
+        productName={product.info.name}
+        price={discountedPrice}
+      />
       <ImagesCarousel images={product.multimedia.images} />
 
       <View style={styles.productNameSection}>
@@ -87,29 +93,12 @@ const ProductDetailsContent = ({
           ellipsizeMode="tail">
           {product.info.name}
         </Text>
-        {/* TODO: Implement rating and review functionality */}
-        {/* <Pressable
-          style={({ pressed }) => [
-            styles.ratingSectionButton,
-            pressed && styles.ratingSectionButtonPressed,
-          ]}
-          onPress={() => {
-            router.push({
-              pathname: "/product-details/reviews",
-              params: { id: product.id },
-            });
-          }}>
-          <Entypo name="star" size={18} color={"#FFBB22"} />
-          <Text style={styles.ratingText}>
-            5 (12 Reviews)
-          </Text>
-          <FontAwesome6
-            name="chevron-right"
-            size={16}
-            color={theme.colors.text_secondary}
-          />
-        </Pressable> */}
       </View>
+
+      {/* Hidden when the shop switched reviews off for this product (a missing setting counts as on) */}
+      {product.info.allowCustomerReviews !== false && (
+        <ProductRatingRow productId={product.id} />
+      )}
 
       <View style={styles.topContentContainer}>
         {/* Price Section */}
@@ -151,34 +140,37 @@ const ProductDetailsContent = ({
         availableStock={availableStock}
       />
 
-      <View style={styles.descriptionContainer}>
-        <Text style={styles.descriptionTitleText}>Description</Text>
-        <Text style={styles.descriptionText}>
-          {isShowMoreDescription ? (
-            <>
-              {product.info.description}
-              <Text
-                style={styles.showLessMoreText}
-                onPress={() => setIsShowMoreDescription(false)}>
-                {" Show Less"}
-              </Text>
-            </>
-          ) : (
-            <>
-              {product.info.description.length > 100
-                ? product.info.description.substring(0, 100) + "... "
-                : product.info.description}
-              {product.info.description.length > 100 && (
+      {/* No description, no heading: an empty block only leaves a gap */}
+      {!!product.info.description?.trim() && (
+        <View style={styles.descriptionContainer}>
+          <Text style={styles.descriptionTitleText}>Description</Text>
+          <Text style={styles.descriptionText}>
+            {isShowMoreDescription ? (
+              <>
+                {product.info.description}
                 <Text
                   style={styles.showLessMoreText}
-                  onPress={() => setIsShowMoreDescription(true)}>
-                  Show More
+                  onPress={() => setIsShowMoreDescription(false)}>
+                  {" Show Less"}
                 </Text>
-              )}
-            </>
-          )}
-        </Text>
-      </View>
+              </>
+            ) : (
+              <>
+                {product.info.description.length > 100
+                  ? product.info.description.substring(0, 100) + "... "
+                  : product.info.description}
+                {product.info.description.length > 100 && (
+                  <Text
+                    style={styles.showLessMoreText}
+                    onPress={() => setIsShowMoreDescription(true)}>
+                    Show More
+                  </Text>
+                )}
+              </>
+            )}
+          </Text>
+        </View>
+      )}
 
       {/* TODO: Implement bought together products fetching functionality */}
       {/* Show bought together products only when quantity in cart > 0 */}
@@ -229,22 +221,6 @@ const styles = StyleSheet.create({
     fontFamily: theme.fonts.semibold,
     flex: 1,
   },
-  ratingSectionButton: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 6,
-    height: 28,
-    paddingHorizontal: 10,
-  },
-  ratingSectionButtonPressed: {
-    backgroundColor: "rgba(0, 0, 0, 0.05)",
-    borderRadius: 14,
-  },
-  ratingText: {
-    color: theme.colors.text,
-    fontFamily: theme.fonts.medium,
-    fontSize: 12,
-  },
 
   topContentContainer: {
     paddingHorizontal: 20,
@@ -279,6 +255,7 @@ const styles = StyleSheet.create({
   },
   stockText: {
     fontSize: 14,
+    lineHeight: 18, // same line height as the price, so both sit on one baseline
     fontFamily: theme.fonts.medium,
     flex: 1,
     textAlign: "right",

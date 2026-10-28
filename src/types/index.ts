@@ -12,3 +12,4 @@ export * from "./settings.types";
 export * from "./payment_method.types";
 export * from "./notification.types";
 export * from "./delivery_slot.types";
+export * from "./review.types";

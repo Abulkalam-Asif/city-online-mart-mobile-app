@@ -2,6 +2,16 @@ import React, { createContext, useContext, useEffect, useState, useCallback } fr
 import { Cart, ICartItem } from "../types";
 import { cartService } from "../services";
 import { useCityContext } from "./CityContext";
+import { getDiscountedPrice } from "../utils/discountUtils";
+
+/** Fresh price and discount of a product that is already in the cart. */
+export interface CartItemPriceUpdate {
+  productId: string;
+  unitPrice: number;
+  discountPercentage: number;
+  appliedDiscountId?: string;
+  appliedDiscountSource?: string;
+}
 
 interface CartContextType {
   cart: Cart | null;
@@ -18,6 +28,7 @@ interface CartContextType {
     appliedDiscountSource?: string
   ) => void;
   updateCartItem: (productId: string, quantity: number) => void;
+  updateCartItemPrices: (updates: CartItemPriceUpdate[]) => void;
   removeFromCart: (productId: string) => void;
   clearCart: () => void;
   updateAppliedOrderDiscount: (
@@ -102,10 +113,7 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
             ...items[existingItemIndex],
             quantity: items[existingItemIndex].quantity + quantity,
             discountPercentage,
-            discountedUnitPrice:
-              discountPercentage > 0
-                ? Math.round(unitPrice - (unitPrice * discountPercentage) / 100)
-                : unitPrice,
+            discountedUnitPrice: getDiscountedPrice(unitPrice, discountPercentage),
             appliedDiscountId,
             appliedDiscountSource,
           };
@@ -117,10 +125,7 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
             unitPrice,
             discountPercentage,
             imageUrl,
-            discountedUnitPrice:
-              discountPercentage > 0
-                ? Math.round(unitPrice - (unitPrice * discountPercentage) / 100)
-                : unitPrice,
+            discountedUnitPrice: getDiscountedPrice(unitPrice, discountPercentage),
             appliedDiscountId,
             appliedDiscountSource,
           };
@@ -150,6 +155,31 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
           items[itemIndex] = { ...items[itemIndex], quantity };
         }
 
+        const itemsSubtotal = calculateCartItemsSubtotal(items);
+        return { ...prevCart, items, itemsSubtotal };
+      });
+    },
+    [calculateCartItemsSubtotal]
+  );
+
+  // The cart keeps the price and discount an item was added with; this brings them up to date.
+  const updateCartItemPrices = useCallback(
+    (updates: CartItemPriceUpdate[]) => {
+      setCart((prevCart) => {
+        if (!prevCart) return prevCart;
+
+        const items = prevCart.items.map((item) => {
+          const update = updates.find((u) => u.productId === item.productId);
+          if (!update) return item;
+          return {
+            ...item,
+            unitPrice: update.unitPrice,
+            discountPercentage: update.discountPercentage,
+            discountedUnitPrice: getDiscountedPrice(update.unitPrice, update.discountPercentage),
+            appliedDiscountId: update.appliedDiscountId,
+            appliedDiscountSource: update.appliedDiscountSource,
+          };
+        });
         const itemsSubtotal = calculateCartItemsSubtotal(items);
         return { ...prevCart, items, itemsSubtotal };
       });
@@ -201,6 +231,7 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
         isPending,
         addToCart,
         updateCartItem,
+        updateCartItemPrices,
         removeFromCart,
         clearCart,
         updateAppliedOrderDiscount,

@@ -3,6 +3,7 @@ import React from "react";
 import { theme } from "@/src/constants/theme";
 import { CONSTANTS } from "@/src/constants/constants";
 import { getResponsiveValue } from "@/src/utils/getResponsiveValue";
+import { getCarouselCardWidth } from "@/src/utils/carouselCardWidth";
 import { SkeletonBox, SkeletonPulse } from "@/src/components/common/Skeleton";
 
 /**
@@ -100,7 +101,7 @@ export const ProductsHeaderSkeleton = () => (
 
 /** A whole ProductsSection (title row and coloured band), shown while the list of special categories loads. */
 export const ProductsSectionSkeleton = ({ colorIndex }: { colorIndex: number }) => {
-  const cardWidth = Math.max(150, Math.min(200, width * 0.4));
+  const cardWidth = getCarouselCardWidth(width);
   return (
     <View style={styles.productsSection}>
       <ProductsHeaderSkeleton />

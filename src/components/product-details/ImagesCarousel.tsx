@@ -23,7 +23,7 @@ const ImagesCarousel = ({ images }: ImagesCarouselProps) => {
           width={cardWidth}
           height={250}
           style={{ width: width }}
-          autoPlay={true}
+          autoPlay={images.length > 1}
           autoPlayInterval={10000}
           onProgressChange={(_, absoluteProgress) => {
             progressValue.value = absoluteProgress;
@@ -39,11 +39,14 @@ const ImagesCarousel = ({ images }: ImagesCarouselProps) => {
             </View>
           )}
         />
-        <CarouselAnimatedDots
-          bannersCount={images.length}
-          horizontalPosition="center"
-          progressValue={progressValue}
-        />
+        {/* dots only make sense when there is more than one picture */}
+        {images.length > 1 && (
+          <CarouselAnimatedDots
+            bannersCount={images.length}
+            horizontalPosition="center"
+            progressValue={progressValue}
+          />
+        )}
       </View>
     </>
   );
