@@ -468,8 +468,18 @@ const OrderDetailsContent = ({ orderId }: OrderDetailsContentProps) => {
               <View style={styles.billingRow}>
                 <View style={styles.leftSection}>
                   <Text style={styles.billingLabelText}>{orderData?.deliverySlot?.id === "fast-delivery" ? "Express Delivery Fee" : "Delivery Fee"}</Text>
+                  {orderData?.appliedFreeDelivery && (
+                    <View style={styles.savingsTag}>
+                      <Text style={styles.savingsText}>Free Delivery</Text>
+                    </View>
+                  )}
                 </View>
                 <View style={styles.rightSection}>
+                  {orderData?.appliedFreeDelivery && orderData.appliedFreeDelivery.waivedAmount > 0 && (
+                    <Text style={[styles.billingAmountText, { textDecorationLine: "line-through" }]}>
+                      Rs. {formatPrice(orderData.appliedFreeDelivery.waivedAmount)}
+                    </Text>
+                  )}
                   {deliveryFee > 0 && (
                     <Text style={styles.billingAmountText}>
                       Rs. {formatPrice(deliveryFee)}
@@ -509,6 +519,7 @@ const OrderDetailsContent = ({ orderId }: OrderDetailsContentProps) => {
         orderId={orderData.id}
         subtotal={orderData.subtotal}
         deliveryFee={orderData.deliveryFee}
+        isFreeDelivery={!!orderData.appliedFreeDelivery}
         totalAmount={orderData.total}
         appliedOrderDiscount={orderData.appliedOrderDiscount}
         appliedOnlinePaymentDiscount={orderData.appliedOnlinePaymentDiscount}

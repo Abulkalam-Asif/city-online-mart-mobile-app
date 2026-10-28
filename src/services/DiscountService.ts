@@ -25,6 +25,9 @@ export class DiscountService {
       percentage: data.percentage || 0,
       isActive: data.isActive !== undefined ? data.isActive : true,
       type: data.type,
+      // Only order discounts have a benefit; a document from before the field existed is a percentage discount
+      benefitType:
+        data.type === "order" ? (data.benefitType === "free_delivery" ? "free_delivery" : "percentage") : undefined,
       minPurchaseAmount: data.minPurchaseAmount || 0,
       startDate: convertTimestamp(data.startDate),
       endDate: convertTimestamp(data.endDate),

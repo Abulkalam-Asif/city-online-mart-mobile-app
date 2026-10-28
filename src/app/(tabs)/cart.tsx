@@ -23,7 +23,8 @@ import { useAuth } from "@/src/contexts/AuthContext";
 import { useOrderSettings, useDeliverySettings } from "@/src/hooks/useSettings";
 import ErrorBanner from "@/src/components/common/ErrorBanner";
 import { useGetValidOrderDiscounts } from "@/src/hooks/useDiscounts";
-import { getBestOrderDiscount, getBestProductDiscount, getDiscountedPrice, getNextOrderDiscountHint } from "@/src/utils/discountUtils";
+import { getBestProductDiscount, getDiscountedPrice } from "@/src/utils/discountUtils";
+import { getNextOfferHint, pickOrderOffer } from "@/src/utils/orderOffers";
 import OrderDiscountNotice from "@/src/components/tabs/cart/OrderDiscountNotice";
 import { useIsFocused } from "@react-navigation/native";
 import { Discount, ICartItem } from "@/src/types";
@@ -38,6 +39,8 @@ export default function CartScreen() {
   const [stockAdjustmentMessage, setStockAdjustmentMessage] = useState<string | null>(null);
   const [bestOrderDiscount, setBestOrderDiscount] = useState<Discount | null>(null);
   const [selectedSlot, setSelectedSlot] = useState<SelectedSlotData | null>(null);
+  // Free delivery never applies to Express, so the winning order offer depends on the slot type
+  const isExpress = selectedSlot?.id === "fast-delivery";
   // Percentage of an order discount that has just started (or got higher), shown for a few seconds.
   const [newDiscountPercentage, setNewDiscountPercentage] = useState<number | null>(null);
   // null until the first calculation, so opening a cart that already has a discount shows no notice.
@@ -75,7 +78,9 @@ export default function CartScreen() {
   useEffect(() => {
     if (loadingValidOrderDiscounts || !validOrderDiscounts || !cart) return;
 
-    const best = getBestOrderDiscount(validOrderDiscounts, cart.itemsSubtotal);
+    // Only a percentage offer is applied to the cart; a free delivery win only changes the delivery fee
+    const offer = pickOrderOffer(validOrderDiscounts, cart.itemsSubtotal, { isExpress });
+    const best = offer?.kind === "percentage" ? offer.discount : null;
     setBestOrderDiscount(best);
 
     const percentage = best?.percentage ?? 0;
@@ -94,7 +99,7 @@ export default function CartScreen() {
       // Clear discount if none apply anymore
       updateAppliedOrderDiscount("", "", 0, 0);
     }
-  }, [validOrderDiscounts, cart?.itemsSubtotal, loadingValidOrderDiscounts]);
+  }, [validOrderDiscounts, cart?.itemsSubtotal, loadingValidOrderDiscounts, isExpress]);
 
   // Hide the new-discount notice again after a few seconds (a higher discount restarts the time).
   useEffect(() => {
@@ -244,7 +249,7 @@ export default function CartScreen() {
   const keyExtractor = useCallback((item: ICartItem) => item.productId, []);
 
 
-  const { minimumOrderAmount, orderDiscountAmount, finalSubtotal, nextOrderDiscount, canProceedToCheckout, isCartEmpty, totalProductDiscounts } = useMemo(() => {
+  const { minimumOrderAmount, orderDiscountAmount, finalSubtotal, nextOffer, freeDeliveryApplied, canProceedToCheckout, isCartEmpty, totalProductDiscounts } = useMemo(() => {
     const minimumOrderAmount = orderSettings?.minimumOrderAmount || 0;
     const itemsSubtotal = cart?.itemsSubtotal || 0;
 
@@ -258,18 +263,20 @@ export default function CartScreen() {
       ? Math.round((itemsSubtotal * bestOrderDiscount.percentage) / 100)
       : 0;
     const finalSubtotal = itemsSubtotal - orderDiscountAmount;
-    const nextOrderDiscount = getNextOrderDiscountHint(validOrderDiscounts || [], itemsSubtotal, bestOrderDiscount?.percentage || 0);
+    const appliedOffer = pickOrderOffer(validOrderDiscounts || [], itemsSubtotal, { isExpress });
+    const nextOffer = getNextOfferHint(validOrderDiscounts || [], itemsSubtotal, appliedOffer, { isExpress });
     return {
       minimumOrderAmount,
       itemsSubtotal,
       orderDiscountAmount,
       finalSubtotal,
-      nextOrderDiscount,
+      nextOffer,
+      freeDeliveryApplied: appliedOffer?.kind === "free_delivery",
       canProceedToCheckout: finalSubtotal >= minimumOrderAmount,
       isCartEmpty: cart?.items.length === 0,
       totalProductDiscounts: productDiscounts,
     };
-  }, [orderSettings, validOrderDiscounts, cart?.itemsSubtotal, cart?.items, bestOrderDiscount]);
+  }, [orderSettings, validOrderDiscounts, cart?.itemsSubtotal, cart?.items, bestOrderDiscount, isExpress]);
 
 
   const handleProceed = useCallback(() => {
@@ -391,10 +398,19 @@ export default function CartScreen() {
                 </View>
               )}
 
-              {/* The minimum-order hint comes first; the discount hint waits until the order can go ahead. */}
-              {canProceedToCheckout && nextOrderDiscount && (
+              {/* The minimum-order hint comes first; the offer hints wait until the order can go ahead. */}
+              {canProceedToCheckout && nextOffer && (
                 <View style={styles.minimumOrderRow}>
-                  <Text style={styles.nextDiscountText}>Add Rs. {formatPrice(nextOrderDiscount.remaining)} more to get {nextOrderDiscount.percentage}% off your order</Text>
+                  <Text style={styles.nextDiscountText}>
+                    {nextOffer.kind === "free_delivery"
+                      ? `Add Rs. ${formatPrice(nextOffer.remaining)} more to get free delivery`
+                      : `Add Rs. ${formatPrice(nextOffer.remaining)} more to get ${nextOffer.percentage}% off your order`}
+                  </Text>
+                </View>
+              )}
+              {canProceedToCheckout && !nextOffer && freeDeliveryApplied && (
+                <View style={styles.minimumOrderRow}>
+                  <Text style={styles.nextDiscountText}>Free delivery unlocked</Text>
                 </View>
               )}
 
