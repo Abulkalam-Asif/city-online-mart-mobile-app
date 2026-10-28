@@ -20,7 +20,7 @@ import {
 } from "@react-native-firebase/storage";
 import { Order, OrderItem, OrderLog, OrderStatus, PaymentStatus } from "../types/order.types";
 import { Product } from "../types/product.types";
-import { Discount } from "../types/discount.types";
+import { pickOrderOffer, resolveDeliveryFee, type OrderOffer } from "../utils/orderOffers";
 import { OrderSettings, DeliverySettings } from "../types/settings.types";
 import { sanitizeForFirestore } from "../utils/firestoreUtils";
 import { logger } from "../utils/logger";
@@ -172,18 +172,22 @@ export class OrderService {
    *
    * Tiered Logic (per Business Rules):
    * 1. Product-level discounts applied first (highest % per item).
-   * 2. Order-level discount applied on the running subtotal (highest qualifying %).
+   * 2. The one order-level offer that applies (percentage discount or free delivery; the bigger
+   *    minimum wins, see utils/orderOffers.ts). Free delivery never applies to an Express order.
    *
    * @param items - Array of {productId, quantity} from the client
    * @returns Calculated pricing breakdown
    */
   async calculateOrderPricing(
-    items: { productId: string; quantity: number }[]
+    items: { productId: string; quantity: number }[],
+    options: { isExpress?: boolean } = {}
   ): Promise<{
     items: OrderItem[];
     subtotal: number;
     discount: number;
     appliedOrderDiscount?: Order["appliedOrderDiscount"];
+    /** The order-level offer that won; the caller turns a free delivery win into the fee. */
+    offer: OrderOffer | null;
   }> {
     const orderItems: OrderItem[] = [];
     let runningSubtotal = 0;
@@ -239,27 +243,19 @@ export class OrderService {
       itemDiscountsTotal += totalItemDiscount;
     }
 
-    // Fetch valid order-level discounts (1 query)
+    // Fetch valid order-level discounts (1 query) and pick the one offer that applies
     const orderDiscounts = await this._discountService.getValidOrderDiscounts();
-    let bestOrderDiscount: Discount | null = null;
-
-    for (const d of orderDiscounts) {
-      if (runningSubtotal >= (d.minPurchaseAmount || 0)) {
-        if (!bestOrderDiscount || d.percentage > bestOrderDiscount.percentage) {
-          bestOrderDiscount = d;
-        }
-      }
-    }
+    const offer = pickOrderOffer(orderDiscounts, runningSubtotal, { isExpress: options.isExpress ?? false });
 
     let orderDiscountAmount = 0;
     let appliedOrderDiscount: Order["appliedOrderDiscount"] = undefined;
 
-    if (bestOrderDiscount) {
-      orderDiscountAmount = Math.round((runningSubtotal * bestOrderDiscount.percentage) / 100);
+    if (offer?.kind === "percentage") {
+      orderDiscountAmount = Math.round((runningSubtotal * offer.discount.percentage) / 100);
       appliedOrderDiscount = {
-        id: bestOrderDiscount.id,
-        name: bestOrderDiscount.name,
-        percentage: bestOrderDiscount.percentage,
+        id: offer.discount.id,
+        name: offer.discount.name,
+        percentage: offer.discount.percentage,
         amount: orderDiscountAmount,
       };
     }
@@ -269,6 +265,7 @@ export class OrderService {
       subtotal: runningSubtotal,
       discount: itemDiscountsTotal + orderDiscountAmount,
       appliedOrderDiscount,
+      offer,
     };
   }
 
@@ -309,7 +306,8 @@ export class OrderService {
       const cutoffTimeMinutes = deliverySettings?.cutoffTimeMinutes || 30;
 
       // 2. Recalculate pricing server-side (N product reads + 1 discount query)
-      const pricing = await this.calculateOrderPricing(orderData.items);
+      const isExpress = orderData.deliverySlot?.id === "fast-delivery";
+      const pricing = await this.calculateOrderPricing(orderData.items, { isExpress });
 
       // 3. Stock Validation — check availableStock for each product
       for (const item of orderData.items) {
@@ -338,11 +336,12 @@ export class OrderService {
         );
       }
 
-      // 5. Calculate Delivery Fee & Online Payment Discount
-      const isExpress = orderData.deliverySlot?.id === "fast-delivery";
-      const applicableDeliveryFee = isExpress
-        ? (deliverySettings?.expressDeliveryFee ?? 250)
-        : orderSettings.deliveryFee;
+      // 5. Calculate Delivery Fee (waived when free delivery won) & Online Payment Discount
+      const { deliveryFee: applicableDeliveryFee, appliedFreeDelivery } = resolveDeliveryFee(pricing.offer, {
+        isExpress,
+        standardFee: orderSettings.deliveryFee,
+        expressFee: deliverySettings?.expressDeliveryFee ?? 250,
+      });
 
       let appliedOnlinePaymentDiscount = undefined;
       let finalTotal = finalOrderAmount + applicableDeliveryFee;
@@ -380,6 +379,7 @@ export class OrderService {
         subtotal: pricing.subtotal,
         discount: totalDiscount,
         appliedOrderDiscount: pricing.appliedOrderDiscount,
+        appliedFreeDelivery,
         appliedOnlinePaymentDiscount,
         deliveryFee: applicableDeliveryFee,
         total: finalTotal,
