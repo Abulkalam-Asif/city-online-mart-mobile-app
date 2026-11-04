@@ -1,5 +1,6 @@
 import { FirebaseFirestoreTypes } from "@react-native-firebase/firestore";
 import { PaymentMethod } from "./payment_method.types";
+import type { AppliedCoupon } from "./coupon.types";
 
 // Order Types
 export type OrderStatus =
@@ -53,6 +54,8 @@ export interface Order {
     percentage: number;
     amount: number;
   };
+  // The coupon used on this order (B-063): the last discount, never given back on cancel or refund
+  appliedCoupon?: AppliedCoupon;
   deliveryFee: number;
   total: number;
 
@@ -145,5 +148,6 @@ export interface OrderRefundEntry {
   deliveryFeeRefunded?: number;
   orderDiscountRecovered?: number;
   onlineDiscountRecovered?: number;
+  couponDiscountRecovered?: number;
   customAdjustment?: number;
 }

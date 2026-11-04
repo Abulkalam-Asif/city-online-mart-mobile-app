@@ -465,6 +465,18 @@ const OrderDetailsContent = ({ orderId }: OrderDetailsContentProps) => {
                 </View>
               )}
 
+              {orderData?.appliedCoupon && (
+                <View style={styles.billingRow}>
+                  <View style={styles.leftSection}>
+                    <Text style={styles.billingLabelText}>Coupon {orderData.appliedCoupon.code}</Text>
+                    <View style={styles.savingsTag}>
+                      <Text style={styles.savingsText}>{orderData.appliedCoupon.percentage}% off</Text>
+                    </View>
+                  </View>
+                  <Text style={styles.billingAmountText}>-Rs. {formatPrice(orderData.appliedCoupon.amount)}</Text>
+                </View>
+              )}
+
               <View style={styles.billingRow}>
                 <View style={styles.leftSection}>
                   <Text style={styles.billingLabelText}>{orderData?.deliverySlot?.id === "fast-delivery" ? "Express Delivery Fee" : "Delivery Fee"}</Text>
@@ -523,6 +535,7 @@ const OrderDetailsContent = ({ orderId }: OrderDetailsContentProps) => {
         totalAmount={orderData.total}
         appliedOrderDiscount={orderData.appliedOrderDiscount}
         appliedOnlinePaymentDiscount={orderData.appliedOnlinePaymentDiscount}
+        appliedCoupon={orderData.appliedCoupon}
         getStatusText={getStatusText}
         deliveryAddress={orderData.deliveryAddress}
         deliverySlot={orderData.deliverySlot}

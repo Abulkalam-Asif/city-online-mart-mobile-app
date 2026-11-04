@@ -6,6 +6,9 @@ import ScreenFooter from "@/src/components/general/ScreenFooter";
 import { theme } from "@/src/constants/theme";
 import ExpectedDeliveryTimeSection from "@/src/components/checkout-payment/checkout/ExpectedDeliveryTimeSection";
 import BillingDetailsSection from "@/src/components/checkout-payment/checkout/BillingDetailsSection";
+import CouponSection from "@/src/components/checkout-payment/checkout/CouponSection";
+import { getCouponMinimumError } from "@/src/utils/couponPricing";
+import type { ResolvedCoupon } from "@/src/services/couponRedemption";
 import { router, useLocalSearchParams } from "expo-router";
 import AddressInfoSection from "@/src/components/checkout-payment/checkout/AddressInfoSection";
 import ErrorBanner from "@/src/components/common/ErrorBanner";
@@ -66,6 +69,9 @@ export default function CheckoutScreen() {
   const { user } = useAuth();
   const [address, setAddress] = useState(deliveryAddressParam || user?.address || "");
   const [showAddressError, setShowAddressError] = useState(false);
+
+  // Coupon the customer applied on this screen (B-063)
+  const [coupon, setCoupon] = useState<ResolvedCoupon | null>(null);
 
   // Two-tier selection: type first, then specific account for bank_transfer
   const [selectedMethodType, setSelectedMethodType] = useState<PaymentMethodType | "">(
@@ -201,6 +207,13 @@ export default function CheckoutScreen() {
     return isCOD ? "Place Order" : "Finalize Order";
   }, [isCOD, placeOrderMutation.isPending, updateOrderMutation.isPending, existingOrderId]);
 
+  // The coupon is measured on the items after product and order discounts (same figure as the online discount)
+  const couponMinimumError = useMemo(() => {
+    if (!coupon || !cart) return null;
+    const orderSubTotal = (cart.itemsSubtotal || 0) - (cart.appliedOrderDiscount?.amount || 0);
+    return getCouponMinimumError(orderSubTotal, coupon.coupon);
+  }, [coupon, cart]);
+
   // Is proceed disabled?
   const isProceedDisabled = useMemo(() => {
     return (
@@ -208,10 +221,11 @@ export default function CheckoutScreen() {
       !isAddressValid ||
       !cart ||
       cart.items.length === 0 ||
+      !!couponMinimumError ||
       placeOrderMutation.isPending ||
       updateOrderMutation.isPending
     );
-  }, [isPaymentSelected, isAddressValid, cart, placeOrderMutation.isPending, updateOrderMutation.isPending]);
+  }, [isPaymentSelected, isAddressValid, cart, couponMinimumError, placeOrderMutation.isPending, updateOrderMutation.isPending]);
 
   const displayItems = useMemo<DisplayItem[]>(() => {
     if (!cart?.items) return [];
@@ -366,9 +380,10 @@ export default function CheckoutScreen() {
         paymentMethod: selectedPaymentMethod,
         deliveryAddress: address,
         deliverySlot: newSlot,
+        couponCode: coupon?.coupon.code,
       });
     },
-    [selectedPaymentMethod, cart, user, address, placeOrderMutation]
+    [selectedPaymentMethod, cart, user, address, placeOrderMutation, coupon]
   );
 
   // When user changes type, clear the bank sub-selection
@@ -415,9 +430,10 @@ export default function CheckoutScreen() {
           slotStartTimestamp: currentSlot.slotStartTimestamp,
           expressDurationMinutes: currentSlot.expressDurationMinutes,
         } : undefined,
+        couponCode: coupon?.coupon.code,
       });
     }
-  }, [selectedPaymentMethod, cart, user, address, existingOrderId, currentSlot, placeOrderMutation, updateOrderMutation]);
+  }, [selectedPaymentMethod, cart, user, address, existingOrderId, currentSlot, placeOrderMutation, updateOrderMutation, coupon]);
 
   const handleProceed = useCallback(() => {
     if (!isAddressValid) {
@@ -489,7 +505,15 @@ export default function CheckoutScreen() {
           {/* Expected Delivery Time Summary */}
           <ExpectedDeliveryTimeSection slot={currentSlot} />
           <OrderItemsList items={displayItems} />
-          <BillingDetailsSection isOnlinePayment={!!selectedMethodType && !isCOD} isExpress={currentSlot?.id === "fast-delivery"} />
+          {/* A coupon is applied when the order is placed; an order that already exists keeps what it was placed with */}
+          {!existingOrderId && (
+            <CouponSection coupon={coupon} onChange={setCoupon} minimumError={couponMinimumError} />
+          )}
+          <BillingDetailsSection
+            isOnlinePayment={!!selectedMethodType && !isCOD}
+            isExpress={currentSlot?.id === "fast-delivery"}
+            coupon={existingOrderId ? null : coupon}
+          />
         </ScrollView>
 
         <ScreenFooter>

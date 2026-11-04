@@ -9,13 +9,17 @@ import { OrderSettings } from "@/src/types";
 import { useDeliverySettings } from "@/src/hooks/useSettings";
 import { useGetValidOrderDiscounts } from "@/src/hooks/useDiscounts";
 import { pickOrderOffer, resolveDeliveryFee } from "@/src/utils/orderOffers";
+import { calculateCouponAmount, getCouponMinimumError } from "@/src/utils/couponPricing";
+import type { ResolvedCoupon } from "@/src/services/couponRedemption";
 
 interface BillingDetailsSectionProps {
   isOnlinePayment?: boolean;
   isExpress?: boolean;
+  /** The coupon the customer applied (B-063): the last discount. */
+  coupon?: ResolvedCoupon | null;
 }
 
-const BillingDetailsSection: React.FC<BillingDetailsSectionProps> = ({ isOnlinePayment = false, isExpress = false }) => {
+const BillingDetailsSection: React.FC<BillingDetailsSectionProps> = ({ isOnlinePayment = false, isExpress = false, coupon = null }) => {
   const { cart } = useCart();
   const { data: deliverySettings } = useDeliverySettings();
   const { data: validOrderDiscounts } = useGetValidOrderDiscounts();
@@ -50,7 +54,14 @@ const BillingDetailsSection: React.FC<BillingDetailsSectionProps> = ({ isOnlineP
     onlineDiscountAmount = Math.round((orderSubTotal * onlineDiscountPercentage) / 100);
   }
 
-  const finalBill = orderSubTotal - onlineDiscountAmount + deliveryFee;
+  // The coupon is the last discount, taken from the same figure as the online discount (so the payment
+  // method never moves it). A coupon whose minimum is not reached takes nothing off.
+  const couponAmount =
+    coupon && !getCouponMinimumError(orderSubTotal, coupon.coupon)
+      ? calculateCouponAmount(orderSubTotal, coupon.coupon, onlineDiscountAmount)
+      : 0;
+
+  const finalBill = orderSubTotal - onlineDiscountAmount - couponAmount + deliveryFee;
 
   return (
     <>
@@ -93,6 +104,18 @@ const BillingDetailsSection: React.FC<BillingDetailsSectionProps> = ({ isOnlineP
               </View>
             </View>
             <Text style={styles.discountAmount}>-Rs. {formatPrice(onlineDiscountAmount)}</Text>
+          </View>
+        )}
+
+        {coupon && couponAmount > 0 && (
+          <View style={styles.billingRow}>
+            <View style={styles.leftSection}>
+              <Text style={styles.labelText}>Coupon {coupon.coupon.code}</Text>
+              <View style={styles.tag}>
+                <Text style={styles.discountText}>{coupon.coupon.percentage}% off</Text>
+              </View>
+            </View>
+            <Text style={styles.discountAmount}>-Rs. {formatPrice(couponAmount)}</Text>
           </View>
         )}
 

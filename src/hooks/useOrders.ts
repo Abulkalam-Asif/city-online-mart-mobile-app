@@ -19,8 +19,15 @@ export function usePlaceOrder() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async (orderData: Parameters<typeof orderService.createOrder>[0]) => {
-      return await orderService.createOrder(orderData);
+    mutationFn: async ({
+      couponCode,
+      ...orderData
+    }: Parameters<typeof orderService.createOrder>[0] & { couponCode?: string }) => {
+      return await orderService.createOrder(orderData, { couponCode });
+    },
+    // A coupon is used by the order (or is still free if the order failed): refresh the customer's list
+    onSettled: () => {
+      queryClient.invalidateQueries({ queryKey: queryKeys.coupons.all });
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: queryKeys.user.orders() });

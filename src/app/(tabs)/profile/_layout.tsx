@@ -27,6 +27,8 @@ export default function RootLayout() {
       <Stack.Screen name="index" />
       <Stack.Screen name="orders" />
       <Stack.Screen name="my-favourites" />
+      <Stack.Screen name="coupons" />
+      <Stack.Screen name="share-earn" />
       <Stack.Screen name="settings" />
     </Stack>
   );

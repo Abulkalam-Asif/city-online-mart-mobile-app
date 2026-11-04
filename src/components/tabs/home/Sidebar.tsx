@@ -9,6 +9,9 @@ import Animated, {
 import { theme } from "@/src/constants/theme";
 import { AntDesign, FontAwesome6 } from "@expo/vector-icons";
 import { router } from "expo-router";
+import { useAuthUser } from "@/src/hooks/useAuthUser";
+import { referralService } from "@/src/services";
+import { buildShareMessage } from "@/src/utils/referralShare";
 
 type SidebarProps = {
   isOpen: boolean;
@@ -16,6 +19,7 @@ type SidebarProps = {
 };
 
 const Sidebar = ({ isOpen, closeSidebarHandler }: SidebarProps) => {
+  const { data: user } = useAuthUser();
   const translateX = useSharedValue(-300);
   const overlayOpacity = useSharedValue(0);
 
@@ -34,11 +38,17 @@ const Sidebar = ({ isOpen, closeSidebarHandler }: SidebarProps) => {
     },
     {
       title: "Share My App",
-      onPress: () => {
-        Share.share({
-          title: "City Online Mart",
-          message: "Check out this awesome app: [App Link Here]",
-        });
+      onPress: async () => {
+        // A signed-in customer shares their own referral code (B-063); anyone else shares the plain message
+        let code: string | null = null;
+        if (user?.uid) {
+          try {
+            code = await referralService.getMyReferralCode();
+          } catch {
+            // no network or server problem: share without a code
+          }
+        }
+        Share.share({ title: "City Online Mart", message: buildShareMessage(code) });
       },
     },
   ];
