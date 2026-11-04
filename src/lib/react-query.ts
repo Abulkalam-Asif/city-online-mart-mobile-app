@@ -120,6 +120,19 @@ export const queryKeys = {
   // ========================================
   // REVIEWS
   // ========================================
+  coupons: {
+    // Base key - invalidates ALL coupon queries (the customer's coupon list)
+    all: ["coupons"] as const,
+    mine: (customerId: string) => [...queryKeys.coupons.all, "mine", customerId] as const,
+  },
+
+  referrals: {
+    all: ["referrals"] as const,
+    code: () => [...queryKeys.referrals.all, "code"] as const,
+    invited: (customerId: string) => [...queryKeys.referrals.all, "invited", customerId] as const,
+    inviter: (customerId: string) => [...queryKeys.referrals.all, "inviter", customerId] as const,
+  },
+
   reviews: {
     // Base key - invalidates ALL review queries
     all: ["reviews"] as const,

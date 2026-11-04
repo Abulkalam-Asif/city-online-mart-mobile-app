@@ -2,20 +2,23 @@ import { Pressable, StyleSheet, Text, View } from "react-native";
 import React from "react";
 import { Image } from "expo-image";
 import { theme } from "@/src/constants/theme";
-import { FontAwesome6 } from "@expo/vector-icons";
+import { FontAwesome6, Ionicons } from "@expo/vector-icons";
 import { useSinglePress } from "@/src/hooks/useSinglePress";
 import { router } from "expo-router";
 
 type AccountSettingsButtonProps = {
   text: string;
   href: string;
-  imageSrc: number;
+  /** A picture for the button, or an icon name when there is no picture file. */
+  imageSrc?: number;
+  iconName?: keyof typeof Ionicons.glyphMap;
 };
 
 const AccountSettingsButton = ({
   text,
   href,
   imageSrc,
+  iconName,
 }: AccountSettingsButtonProps) => {
   const canPress = useSinglePress();
 
@@ -29,7 +32,11 @@ const AccountSettingsButton = ({
       onPress={pressHandler}
       style={({ pressed }) => [styles.button, pressed && styles.buttonPressed]}>
       <View style={styles.imageContainer}>
-        <Image source={imageSrc} style={styles.image} />
+        {imageSrc ? (
+          <Image source={imageSrc} style={styles.image} />
+        ) : iconName ? (
+          <Ionicons name={iconName} size={16} color={theme.colors.primary} />
+        ) : null}
       </View>
       <Text style={styles.text}>{text}</Text>
       <FontAwesome6

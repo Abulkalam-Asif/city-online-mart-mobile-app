@@ -1,5 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { authService } from "../services";
+import { authService, referralService } from "../services";
 import { queryKeys } from "../lib/react-query";
 
 /**
@@ -37,6 +37,10 @@ export function useVerifyOTP() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: queryKeys.user.profile() });
+      // A referral code typed on the login screen is linked now that the account exists (never blocks the sign-in)
+      referralService.applyPendingCode().then((result) => {
+        if (result === "applied") queryClient.invalidateQueries({ queryKey: queryKeys.referrals.all });
+      });
     },
   });
 }
@@ -51,6 +55,10 @@ export function useSignInWithoutOTP() {
     mutationFn: (phoneNumber: string) => authService.signInWithoutOTP(phoneNumber),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: queryKeys.user.profile() });
+      // A referral code typed on the login screen is linked now that the account exists (never blocks the sign-in)
+      referralService.applyPendingCode().then((result) => {
+        if (result === "applied") queryClient.invalidateQueries({ queryKey: queryKeys.referrals.all });
+      });
     },
   });
 }
