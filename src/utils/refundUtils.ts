@@ -15,6 +15,7 @@ export interface OrderRefundSummary {
   deliveryFeeRefunded: number;
   orderDiscountRecovered: number;
   onlineDiscountRecovered: number;
+  couponDiscountRecovered: number;
   customAdjustment: number;
   totalRefunded: number;
   /** Order total minus total refunded, never below 0. */
@@ -44,6 +45,7 @@ export const getOrderRefundSummary = (order: Pick<Order, "total" | "refunds" | "
     deliveryFeeRefunded: sumOf((r) => r.deliveryFeeRefunded),
     orderDiscountRecovered: sumOf((r) => r.orderDiscountRecovered),
     onlineDiscountRecovered: sumOf((r) => r.onlineDiscountRecovered),
+    couponDiscountRecovered: sumOf((r) => r.couponDiscountRecovered),
     customAdjustment: sumOf((r) => r.customAdjustment),
     totalRefunded,
     adjustedTotal: roundAmount(Math.max(0, order.total - totalRefunded)),

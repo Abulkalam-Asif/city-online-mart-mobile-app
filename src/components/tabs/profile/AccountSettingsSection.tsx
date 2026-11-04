@@ -23,6 +23,8 @@ const AccountSettingsSection = () => {
           href="/profile/my-favourites"
           imageSrc={require("@/src/assets/icons/profile/my-favourites.png")}
         />
+        <AccountSettingsButton text="My Coupons" href="/profile/coupons" iconName="ticket-outline" />
+        <AccountSettingsButton text="Share & Earn" href="/profile/share-earn" iconName="gift-outline" />
       </View>
     </View>
   );

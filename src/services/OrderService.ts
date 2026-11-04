@@ -21,6 +21,9 @@ import {
 import { Order, OrderItem, OrderLog, OrderStatus, PaymentStatus } from "../types/order.types";
 import { Product } from "../types/product.types";
 import { pickOrderOffer, resolveDeliveryFee, type OrderOffer } from "../utils/orderOffers";
+import { buildAppliedCoupon, calculateCouponAmount, getCouponMinimumError } from "../utils/couponPricing";
+import type { AppliedCoupon } from "../types/coupon.types";
+import { readCouponUse, resolveCouponForOrder, writeCouponUse, type ResolvedCoupon } from "./couponRedemption";
 import { OrderSettings, DeliverySettings } from "../types/settings.types";
 import { sanitizeForFirestore } from "../utils/firestoreUtils";
 import { logger } from "../utils/logger";
@@ -287,7 +290,9 @@ export class OrderService {
       paymentMethod: Order["paymentMethod"];
       deliveryAddress: string;
       deliverySlot?: Order["deliverySlot"];
-    }
+    },
+    /** A coupon code to use on this order (B-063): the last discount, marked used in the same transaction. */
+    options: { couponCode?: string } = {}
   ): Promise<string> {
     try {
       // 1. Fetch Order and Delivery Settings (2 reads)
@@ -360,6 +365,20 @@ export class OrderService {
         totalDiscount += discountAmount;
       }
 
+      // Coupon: the last discount. It is measured on the same figure as the online discount, so a later
+      // change of payment method never moves it (admin docs/business-rules/coupons.md).
+      let appliedCoupon: AppliedCoupon | undefined;
+      let resolvedCoupon: ResolvedCoupon | undefined;
+      if (options.couponCode?.trim()) {
+        resolvedCoupon = await resolveCouponForOrder(this.db, options.couponCode, orderData.customerId);
+        const minimumError = getCouponMinimumError(finalOrderAmount, resolvedCoupon.coupon);
+        if (minimumError) throw new Error(minimumError);
+        const couponAmount = calculateCouponAmount(finalOrderAmount, resolvedCoupon.coupon, appliedOnlinePaymentDiscount?.amount ?? 0);
+        appliedCoupon = buildAppliedCoupon(resolvedCoupon.coupon, couponAmount, resolvedCoupon.customerCouponId);
+        finalTotal -= couponAmount;
+        totalDiscount += couponAmount;
+      }
+
       // 6. Generate unique 7-char alphanumeric ID
       const orderId = await this.createUniqueOrderId();
 
@@ -381,6 +400,7 @@ export class OrderService {
         appliedOrderDiscount: pricing.appliedOrderDiscount,
         appliedFreeDelivery,
         appliedOnlinePaymentDiscount,
+        appliedCoupon,
         deliveryFee: applicableDeliveryFee,
         total: finalTotal,
         paymentMethod: orderData.paymentMethod,
@@ -402,6 +422,10 @@ export class OrderService {
         if (existing.exists()) {
           throw new Error(`Order ID ${orderId} already exists. Please try again.`);
         }
+
+        // The coupon must still be free when the order is written (two orders at once cannot both use it)
+        let couponRef: FirebaseFirestoreTypes.DocumentReference | undefined;
+        if (resolvedCoupon) couponRef = await readCouponUse(transaction, this.db, resolvedCoupon);
 
         // --- DELIVERY SLOT VALIDATION & UPDATES ---
         if (orderData.deliverySlot && orderData.deliverySlot.id !== "fast-delivery") {
@@ -445,6 +469,14 @@ export class OrderService {
 
         transaction.set(orderRef, sanitizeForFirestore(newOrder));
 
+        if (resolvedCoupon && couponRef && appliedCoupon) {
+          writeCouponUse(transaction, couponRef, resolvedCoupon, {
+            customerId: orderData.customerId,
+            orderId,
+            amount: appliedCoupon.amount,
+          });
+        }
+
         // Update user's latest address
         const userRef = doc(this.db, OrderService.CUSTOMERS_COLLECTION, orderData.customerId);
         transaction.update(userRef, { address: orderData.deliveryAddress });
@@ -461,6 +493,7 @@ export class OrderService {
             paymentMethod: newOrder.paymentMethod.type,
             deliverySlot: newOrder.deliverySlot ? { id: newOrder.deliverySlot.id, date: newOrder.deliverySlot.date } : null,
             items: summariseItems(newOrder.items),
+            coupon: appliedCoupon ? { code: appliedCoupon.code, type: appliedCoupon.type, amount: appliedCoupon.amount } : null,
           },
         });
       });

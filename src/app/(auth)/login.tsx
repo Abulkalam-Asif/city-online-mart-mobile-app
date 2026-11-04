@@ -17,11 +17,14 @@ import { useAuthSettings } from "@/src/hooks/useSettings";
 import { FontAwesome6 } from "@expo/vector-icons";
 import ErrorBanner from "@/src/components/common/ErrorBanner";
 import { getFriendlyErrorMessage } from "@/src/utils/errorUtils";
+import { referralService } from "@/src/services";
+import { isValidReferralCode, normalizeReferralCode } from "@/src/services/ReferralService";
 
 const LoginScreen = () => {
   const router = useRouter();
   const { redirect } = useLocalSearchParams<{ redirect?: string }>();
   const [phoneNumber, setPhoneNumber] = useState("");
+  const [referralCode, setReferralCode] = useState("");
   const [loading, setLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [errorTitle, setErrorTitle] = useState<string>("Login Failed");
@@ -45,8 +48,19 @@ const LoginScreen = () => {
       return;
     }
 
+    const code = normalizeReferralCode(referralCode);
+    if (code && !isValidReferralCode(code)) {
+      setErrorTitle("Invalid Referral Code");
+      setErrorMessage("The referral code should be letters and numbers only (for example K7M2QX). Clear the box if you do not have one.");
+      return;
+    }
+
     setLoading(true);
     try {
+      // Kept on the phone until the account exists; it is linked right after the first sign-in
+      if (code) await referralService.setPendingCode(code);
+      else await referralService.clearPendingCode();
+
       if (requireOTP) {
         await sendOTPMutation.mutateAsync(phoneNumber);
 
@@ -116,6 +130,23 @@ const LoginScreen = () => {
               onSubmitEditing={handleSendOTP}
               autoComplete="tel"
               textContentType="telephoneNumber"
+              placeholderTextColor={theme.colors.placeholder}
+              editable={!loading}
+            />
+          </View>
+
+          {/* Referral code (optional) */}
+          <View style={styles.inputContainer}>
+            <Text style={styles.inputLabel}>Referral code (optional)</Text>
+            <TextInput
+              style={styles.textInput}
+              placeholder="Got a code from a friend?"
+              value={referralCode}
+              onChangeText={(text) => setReferralCode(text.replace(/[^A-Za-z0-9]/g, "").toUpperCase())}
+              autoCapitalize="characters"
+              autoCorrect={false}
+              maxLength={12}
+              returnKeyType="done"
               placeholderTextColor={theme.colors.placeholder}
               editable={!loading}
             />

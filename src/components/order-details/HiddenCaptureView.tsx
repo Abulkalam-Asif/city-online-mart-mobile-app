@@ -28,6 +28,7 @@ type HiddenCaptureViewProps = {
   totalAmount: number;
   appliedOrderDiscount?: { percentage: number; amount: number };
   appliedOnlinePaymentDiscount?: { percentage: number; amount: number };
+  appliedCoupon?: { code: string; amount: number };
   getStatusText: () => string;
   deliveryAddress: string;
   deliverySlot?: {
@@ -59,6 +60,7 @@ const HiddenCaptureView = ({
   totalAmount,
   appliedOrderDiscount,
   appliedOnlinePaymentDiscount,
+  appliedCoupon,
   getStatusText,
   deliveryAddress,
   deliverySlot,
@@ -145,6 +147,12 @@ const HiddenCaptureView = ({
                   <Text style={styles.posText}>-{appliedOnlinePaymentDiscount.amount}</Text>
                 </View>
               )}
+              {appliedCoupon && (
+                <View style={styles.summaryRow}>
+                  <Text style={styles.posText}>Coupon ({appliedCoupon.code}):</Text>
+                  <Text style={styles.posText}>-{appliedCoupon.amount}</Text>
+                </View>
+              )}
             </View>
 
             <DottedLine />
@@ -189,6 +197,12 @@ const HiddenCaptureView = ({
                     <View style={styles.summaryRow}>
                       <Text style={[styles.posText, styles.refundLabel]}>- Online Discount No Longer Applies:</Text>
                       <Text style={styles.posText}>+Rs {refundSummary.onlineDiscountRecovered}</Text>
+                    </View>
+                  )}
+                  {refundSummary.couponDiscountRecovered > 0 && (
+                    <View style={styles.summaryRow}>
+                      <Text style={[styles.posText, styles.refundLabel]}>- Coupon Discount No Longer Applies:</Text>
+                      <Text style={styles.posText}>+Rs {refundSummary.couponDiscountRecovered}</Text>
                     </View>
                   )}
                   {refundSummary.customAdjustment !== 0 && (
