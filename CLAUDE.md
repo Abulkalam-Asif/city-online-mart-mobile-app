@@ -20,6 +20,8 @@ npm run lint ; npx tsc --noEmit     # run both before finishing a change
 ./release-apk.sh                    # Git Bash: build a release APK (not installed), signed with the debug key
 ```
 
+Both APK scripts take `--archs=a,b` (default `armeabi-v7a,arm64-v8a`); the usual commands and other variants are in `BUILD_COMMANDS.md`.
+
 No automated tests exist in this repo. Real-device setup: `../docs/ANDROID_WIRELESS_DEBUGGING.md`.
 
 ## Gotchas
