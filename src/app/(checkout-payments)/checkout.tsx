@@ -11,6 +11,12 @@ import { getCouponMinimumError } from "@/src/utils/couponPricing";
 import type { ResolvedCoupon } from "@/src/services/couponRedemption";
 import { router, useLocalSearchParams } from "expo-router";
 import AddressInfoSection from "@/src/components/checkout-payment/checkout/AddressInfoSection";
+import DeliveryAreaPicker, {
+  DeliveryAreaError,
+  DeliveryAreaLoading,
+} from "@/src/components/checkout-payment/checkout/DeliveryAreaPicker";
+import { useDeliveryAreas } from "@/src/hooks/useDeliveryAreas";
+import type { OrderDeliveryArea } from "@/src/types/delivery_area.types";
 import ErrorBanner from "@/src/components/common/ErrorBanner";
 import ConfirmationModal from "@/src/components/common/ConfirmationModal";
 import PlacingOrderModal from "@/src/components/checkout-payment/checkout/PlacingOrderModal";
@@ -43,6 +49,8 @@ export default function CheckoutScreen() {
   const {
     existingOrderId: existingOrderIdParam,
     deliveryAddress: deliveryAddressParam,
+    deliveryAreaId: deliveryAreaIdParam,
+    deliveryAreaName: deliveryAreaNameParam,
     paymentMethodType: paymentMethodTypeParam,
     paymentMethodId: paymentMethodIdParam,
     deliverySlotDate,
@@ -55,6 +63,8 @@ export default function CheckoutScreen() {
   } = useLocalSearchParams<{
     existingOrderId?: string;
     deliveryAddress?: string;
+    deliveryAreaId?: string;
+    deliveryAreaName?: string;
     paymentMethodType?: string;
     paymentMethodId?: string;
     deliverySlotDate?: string;
@@ -69,6 +79,25 @@ export default function CheckoutScreen() {
   const { user } = useAuth();
   const [address, setAddress] = useState(deliveryAddressParam || user?.address || "");
   const [showAddressError, setShowAddressError] = useState(false);
+
+  // Delivery area (B-072): picked from the city's list; the check is off when the city has no active area
+  const [area, setArea] = useState<OrderDeliveryArea | null>(
+    deliveryAreaIdParam && deliveryAreaNameParam
+      ? { id: deliveryAreaIdParam, name: deliveryAreaNameParam }
+      : user?.addressArea ?? null
+  );
+  const [areaNotListed, setAreaNotListed] = useState(false);
+  const {
+    data: deliveryAreas,
+    isLoading: loadingAreas,
+    isError: areasFailed,
+    refetch: refetchAreas,
+  } = useDeliveryAreas();
+  const areaCheckOn = (deliveryAreas?.length ?? 0) > 0;
+  // A failed or unfinished list read blocks the order: the check is never skipped by accident
+  const isAreaValid = !loadingAreas && !areasFailed && (!areaCheckOn || (!!area && !areaNotListed));
+  // The order carries the area only when the check is on
+  const orderArea = areaCheckOn && area && !areaNotListed ? area : undefined;
 
   // Coupon the customer applied on this screen (B-063)
   const [coupon, setCoupon] = useState<ResolvedCoupon | null>(null);
@@ -140,6 +169,13 @@ export default function CheckoutScreen() {
   }, [paymentMethods]);
 
 
+
+  // A remembered area that is no longer on the active list (switched off or deleted) must be picked again
+  useEffect(() => {
+    if (deliveryAreas && area && !deliveryAreas.some((a) => a.id === area.id)) {
+      setArea(null);
+    }
+  }, [deliveryAreas, area]);
 
   // Clean up selectedMethodType if it is no longer available/active
   useEffect(() => {
@@ -219,13 +255,14 @@ export default function CheckoutScreen() {
     return (
       !isPaymentSelected ||
       !isAddressValid ||
+      !isAreaValid ||
       !cart ||
       cart.items.length === 0 ||
       !!couponMinimumError ||
       placeOrderMutation.isPending ||
       updateOrderMutation.isPending
     );
-  }, [isPaymentSelected, isAddressValid, cart, couponMinimumError, placeOrderMutation.isPending, updateOrderMutation.isPending]);
+  }, [isPaymentSelected, isAddressValid, isAreaValid, cart, couponMinimumError, placeOrderMutation.isPending, updateOrderMutation.isPending]);
 
   const displayItems = useMemo<DisplayItem[]>(() => {
     if (!cart?.items) return [];
@@ -265,11 +302,13 @@ export default function CheckoutScreen() {
           orderId,
           paymentMethodId: selectedPaymentMethod?.id || "",
           deliveryAddress: address,
+          deliveryAreaId: orderArea?.id || "",
+          deliveryAreaName: orderArea?.name || "",
           deliverySlotId: currentSlot?.id || "",
         },
       });
     }
-  }, [placeOrderMutation.isSuccess, isCOD, placeOrderMutation.data, currentSlot, selectedPaymentMethod?.id, address]);
+  }, [placeOrderMutation.isSuccess, isCOD, placeOrderMutation.data, currentSlot, selectedPaymentMethod?.id, address, orderArea]);
 
   // Handle successful order update
   useEffect(() => {
@@ -290,11 +329,13 @@ export default function CheckoutScreen() {
           orderId: existingOrderId,
           paymentMethodId: selectedPaymentMethod?.id || "",
           deliveryAddress: address,
+          deliveryAreaId: orderArea?.id || "",
+          deliveryAreaName: orderArea?.name || "",
           deliverySlotId: currentSlot?.id || "",
         },
       });
     }
-  }, [updateOrderMutation.isSuccess, currentSlot, existingOrderId, isCOD, cartCleared, clearCartMutation, showModal, selectedPaymentMethod?.id, address]);
+  }, [updateOrderMutation.isSuccess, currentSlot, existingOrderId, isCOD, cartCleared, clearCartMutation, showModal, selectedPaymentMethod?.id, address, orderArea]);
 
   // Intercept hardware back button when an order has been created
   useEffect(() => {
@@ -379,11 +420,12 @@ export default function CheckoutScreen() {
         })),
         paymentMethod: selectedPaymentMethod,
         deliveryAddress: address,
+        deliveryArea: orderArea,
         deliverySlot: newSlot,
         couponCode: coupon?.coupon.code,
       });
     },
-    [selectedPaymentMethod, cart, user, address, placeOrderMutation, coupon]
+    [selectedPaymentMethod, cart, user, address, orderArea, placeOrderMutation, coupon]
   );
 
   // When user changes type, clear the bank sub-selection
@@ -406,6 +448,7 @@ export default function CheckoutScreen() {
         orderId: existingOrderId,
         updates: {
           deliveryAddress: address,
+          deliveryArea: orderArea,
           paymentMethod: cleanPaymentMethod,
         },
       });
@@ -421,6 +464,7 @@ export default function CheckoutScreen() {
         })),
         paymentMethod: selectedPaymentMethod,
         deliveryAddress: address,
+        deliveryArea: orderArea,
         deliverySlot: currentSlot ? {
           date: currentSlot.date,
           id: currentSlot.id,
@@ -433,9 +477,19 @@ export default function CheckoutScreen() {
         couponCode: coupon?.coupon.code,
       });
     }
-  }, [selectedPaymentMethod, cart, user, address, existingOrderId, currentSlot, placeOrderMutation, updateOrderMutation, coupon]);
+  }, [selectedPaymentMethod, cart, user, address, orderArea, existingOrderId, currentSlot, placeOrderMutation, updateOrderMutation, coupon]);
 
   const handleProceed = useCallback(() => {
+    if (!isAreaValid) {
+      setError(
+        areasFailed
+          ? "We could not load the delivery areas. Please check your internet connection and try again."
+          : areaNotListed
+            ? "Sorry, we are not available in your area yet. You can only order from the areas in our list."
+            : "Please choose your delivery area."
+      );
+      return;
+    }
     if (!isAddressValid) {
       setShowAddressError(true);
       return;
@@ -451,7 +505,7 @@ export default function CheckoutScreen() {
       // Online payment: create or update order directly
       executeOrder();
     }
-  }, [isAddressValid, isPaymentSelected, isCOD, executeOrder]);
+  }, [isAreaValid, areasFailed, areaNotListed, isAddressValid, isPaymentSelected, isCOD, executeOrder]);
 
   if (loadingPaymentMethods || loadingCart) {
     return (
@@ -477,6 +531,24 @@ export default function CheckoutScreen() {
           <Text style={styles.infoText}>
             Add your delivery address and select a payment method to proceed
           </Text>
+
+          {/* Delivery area (B-072): nothing is shown when the city has no active area */}
+          {loadingAreas ? (
+            <DeliveryAreaLoading />
+          ) : areasFailed ? (
+            <DeliveryAreaError onRetry={() => refetchAreas()} />
+          ) : areaCheckOn ? (
+            <DeliveryAreaPicker
+              areas={deliveryAreas ?? []}
+              selected={area}
+              notListed={areaNotListed}
+              onSelect={(a) => {
+                setArea(a);
+                setAreaNotListed(false);
+              }}
+              onNotListed={() => setAreaNotListed(true)}
+            />
+          ) : null}
 
           <AddressInfoSection
             address={address}
@@ -558,6 +630,8 @@ export default function CheckoutScreen() {
           clearCartMutation.mutate();
           setExistingOrderId(null);
           setAddress("");
+          setArea(null);
+          setAreaNotListed(false);
           setSelectedMethodType("");
           setSelectedBankMethodId("");
           setError("");

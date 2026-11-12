@@ -328,7 +328,12 @@ const OrderDetailsContent = ({ orderId }: OrderDetailsContentProps) => {
               size={20}
               color={theme.colors.text_secondary}
             />
-            <Text style={styles.addressText}>{orderData.deliveryAddress}</Text>
+            <View style={styles.addressTextBlock}>
+              {orderData.deliveryArea?.name ? (
+                <Text style={styles.areaText}>{orderData.deliveryArea.name}</Text>
+              ) : null}
+              <Text style={styles.addressText}>{orderData.deliveryAddress}</Text>
+            </View>
           </View>
         </View>
 
@@ -538,6 +543,7 @@ const OrderDetailsContent = ({ orderId }: OrderDetailsContentProps) => {
         appliedCoupon={orderData.appliedCoupon}
         getStatusText={getStatusText}
         deliveryAddress={orderData.deliveryAddress}
+        deliveryAreaName={orderData.deliveryArea?.name}
         deliverySlot={orderData.deliverySlot}
         paymentMethodLabel={paymentMethodLabel}
         paymentStatusLabel={getPaymentStatusLabel()}
@@ -648,6 +654,15 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "flex-start",
     gap: 8,
+  },
+  addressTextBlock: {
+    flex: 1,
+    gap: 2,
+  },
+  areaText: {
+    fontSize: 12,
+    fontFamily: theme.fonts.semibold,
+    color: theme.colors.text,
   },
   addressText: {
     flex: 1,
