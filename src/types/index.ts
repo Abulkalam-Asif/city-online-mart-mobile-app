@@ -15,3 +15,4 @@ export * from "./delivery_slot.types";
 export * from "./review.types";
 export * from "./coupon.types";
 export * from "./referral.types";
+export * from "./delivery_area.types";

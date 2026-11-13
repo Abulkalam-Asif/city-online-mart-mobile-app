@@ -1,4 +1,5 @@
 import { Timestamp } from "@react-native-firebase/firestore";
+import type { OrderDeliveryArea } from "./delivery_area.types";
 
 /**
  * User roles in the system
@@ -19,6 +20,7 @@ export interface User {
   isActive: boolean; // For soft delete
   notificationsEnabled?: boolean;
   address?: string; // Latest delivery address
+  addressArea?: OrderDeliveryArea; // Area picked with the latest delivery address (B-072)
   totalOrders?: number;
   totalSpent?: number;
   favouriteProductIds?: string[];
@@ -33,6 +35,7 @@ export interface AuthUser {
   displayName: string | null;
   role: UserRole | null;
   address?: string;
+  addressArea?: OrderDeliveryArea;
   favouriteProductIds?: string[];
 }
 

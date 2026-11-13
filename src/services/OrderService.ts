@@ -289,6 +289,8 @@ export class OrderService {
       items: { productId: string; quantity: number }[];
       paymentMethod: Order["paymentMethod"];
       deliveryAddress: string;
+      /** The area picked at checkout (B-072); left out when the city has no active areas. */
+      deliveryArea?: Order["deliveryArea"];
       deliverySlot?: Order["deliverySlot"];
     },
     /** A coupon code to use on this order (B-063): the last discount, marked used in the same transaction. */
@@ -406,6 +408,7 @@ export class OrderService {
         paymentMethod: orderData.paymentMethod,
         paymentStatus: "pending",
         deliveryAddress: orderData.deliveryAddress,
+        deliveryArea: orderData.deliveryArea,
         deliverySlot: finalDeliverySlot,
         status: "pending",
         logs: [
@@ -479,7 +482,10 @@ export class OrderService {
 
         // Update user's latest address
         const userRef = doc(this.db, OrderService.CUSTOMERS_COLLECTION, orderData.customerId);
-        transaction.update(userRef, { address: orderData.deliveryAddress });
+        transaction.update(userRef, {
+          address: orderData.deliveryAddress,
+          ...(orderData.deliveryArea ? { addressArea: orderData.deliveryArea } : {}),
+        });
 
         const actor = customerActor(newOrder);
         this.audit.addToTransaction(transaction, {
@@ -748,6 +754,7 @@ export class OrderService {
     orderId: string,
     updates: {
       deliveryAddress?: string;
+      deliveryArea?: Order["deliveryArea"];
       paymentMethod?: Order["paymentMethod"];
     }
   ): Promise<void> {
@@ -779,6 +786,10 @@ export class OrderService {
 
         if (updates.deliveryAddress !== undefined) {
           updateFields.deliveryAddress = updates.deliveryAddress;
+        }
+
+        if (updates.deliveryArea !== undefined) {
+          updateFields.deliveryArea = updates.deliveryArea;
         }
 
         if (updates.paymentMethod !== undefined) {
@@ -821,6 +832,9 @@ export class OrderService {
         if (updateFields.deliveryAddress !== undefined && updateFields.deliveryAddress !== order.deliveryAddress) {
           changes.deliveryAddress = fieldChange(order.deliveryAddress, updateFields.deliveryAddress);
         }
+        if (updateFields.deliveryArea !== undefined && updateFields.deliveryArea.id !== order.deliveryArea?.id) {
+          changes.deliveryArea = fieldChange(order.deliveryArea?.name ?? null, updateFields.deliveryArea.name);
+        }
         if (updateFields.paymentMethod !== undefined && updateFields.paymentMethod.type !== order.paymentMethod.type) {
           changes.paymentMethod = fieldChange(order.paymentMethod.type, updateFields.paymentMethod.type);
         }
@@ -839,7 +853,10 @@ export class OrderService {
 
         if (updates.deliveryAddress) {
           const userRef = doc(this.db, OrderService.CUSTOMERS_COLLECTION, order.customerId);
-          transaction.update(userRef, { address: updates.deliveryAddress });
+          transaction.update(userRef, {
+            address: updates.deliveryAddress,
+            ...(updates.deliveryArea ? { addressArea: updates.deliveryArea } : {}),
+          });
         }
       });
     } catch (error) {

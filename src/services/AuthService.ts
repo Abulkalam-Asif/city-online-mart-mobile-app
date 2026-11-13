@@ -212,6 +212,9 @@ export class AuthService {
         displayName: userData?.displayName || null,
         role: role,
         address: userData?.address || undefined,
+        addressArea: userData?.addressArea?.id
+          ? { id: userData.addressArea.id, name: userData.addressArea.name }
+          : undefined,
         favouriteProductIds: userData?.favouriteProductIds || [],
       };
 

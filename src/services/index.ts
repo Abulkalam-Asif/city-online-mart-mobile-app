@@ -11,6 +11,7 @@ import { AuditLogService } from "./AuditLogService";
 import { ReviewService } from "./ReviewService";
 import { CouponService } from "./CouponService";
 import { ReferralService } from "./ReferralService";
+import { DeliveryAreaService } from "./DeliveryAreaService";
 
 function createServices() {
   const db = getCityDb();
@@ -29,13 +30,14 @@ function createServices() {
   const reviewService = new ReviewService(db);
   const couponService = new CouponService(db);
   const referralService = new ReferralService(db, functions);
+  const deliveryAreaService = new DeliveryAreaService(db);
 
   orderService.discountService = discountService;
   orderService.auditLog = auditLogService;
   authService.auditLog = auditLogService;
 
   return {
-    authService, settingsService, discountService, paymentMethodService, orderService, productService, deliverySlotService, reviewService, couponService, referralService
+    authService, settingsService, discountService, paymentMethodService, orderService, productService, deliverySlotService, reviewService, couponService, referralService, deliveryAreaService
   };
 }
 
@@ -82,3 +84,4 @@ export const deliverySlotService = createProxy("deliverySlotService");
 export const reviewService = createProxy("reviewService");
 export const couponService = createProxy("couponService");
 export const referralService = createProxy("referralService");
+export const deliveryAreaService = createProxy("deliveryAreaService");

@@ -31,6 +31,8 @@ type HiddenCaptureViewProps = {
   appliedCoupon?: { code: string; amount: number };
   getStatusText: () => string;
   deliveryAddress: string;
+  /** Delivery area picked at checkout (B-072); the receipt shows a row only when there is one. */
+  deliveryAreaName?: string;
   deliverySlot?: {
     date: string;
     id: string;
@@ -63,6 +65,7 @@ const HiddenCaptureView = ({
   appliedCoupon,
   getStatusText,
   deliveryAddress,
+  deliveryAreaName,
   deliverySlot,
   paymentMethodLabel,
   paymentStatusLabel,
@@ -244,6 +247,12 @@ const HiddenCaptureView = ({
                 <Text style={styles.posText}>Payment Status:</Text>
                 <Text style={styles.posText}>{paymentStatusLabel}</Text>
               </View>
+              {!!deliveryAreaName && (
+                <View style={[styles.detailsRow, { alignItems: 'flex-start' }]}>
+                  <Text style={styles.posText}>Area:</Text>
+                  <Text style={[styles.posText, { flex: 1, textAlign: 'right', marginLeft: 16 }]}>{deliveryAreaName}</Text>
+                </View>
+              )}
               <View style={[styles.detailsRow, { alignItems: 'flex-start' }]}>
                 <Text style={styles.posText}>Delivery Address:</Text>
                 <Text style={[styles.posText, { flex: 1, textAlign: 'right', marginLeft: 16 }]}>{deliveryAddress || "N/A"}</Text>

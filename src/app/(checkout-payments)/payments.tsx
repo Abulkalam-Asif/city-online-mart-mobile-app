@@ -21,12 +21,15 @@ import { getPaymentMethodDisplayName, getPaymentMethodImage } from "@/src/utils/
 
 export default function PaymentsScreen() {
   // Receive orderId, paymentMethodId, paymentMethodType, and deliveryAddress from checkout screen
-  const { orderId, paymentMethodId, deliveryAddress, deliverySlotId } = useLocalSearchParams<{
-    orderId?: string;
-    paymentMethodId?: string;
-    deliveryAddress?: string;
-    deliverySlotId?: string;
-  }>();
+  const { orderId, paymentMethodId, deliveryAddress, deliveryAreaId, deliveryAreaName, deliverySlotId } =
+    useLocalSearchParams<{
+      orderId?: string;
+      paymentMethodId?: string;
+      deliveryAddress?: string;
+      deliveryAreaId?: string;
+      deliveryAreaName?: string;
+      deliverySlotId?: string;
+    }>();
 
   const isExpress = deliverySlotId === "fast-delivery";
 
@@ -91,12 +94,14 @@ export default function PaymentsScreen() {
       params: {
         existingOrderId: orderId || "",
         deliveryAddress: deliveryAddress || "",
+        deliveryAreaId: deliveryAreaId || "",
+        deliveryAreaName: deliveryAreaName || "",
         paymentMethodType: selectedPaymentMethod?.type || "",
         paymentMethodId: paymentMethodId || "",
         deliverySlotId: deliverySlotId || "",
       },
     });
-  }, [orderId, deliveryAddress, paymentMethodId, selectedPaymentMethod, deliverySlotId]);
+  }, [orderId, deliveryAddress, deliveryAreaId, deliveryAreaName, paymentMethodId, selectedPaymentMethod, deliverySlotId]);
 
   // Intercept hardware back button — go to checkout, not cart
   useEffect(() => {

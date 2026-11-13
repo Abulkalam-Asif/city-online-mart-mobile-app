@@ -1,6 +1,7 @@
 import { FirebaseFirestoreTypes } from "@react-native-firebase/firestore";
 import { PaymentMethod } from "./payment_method.types";
 import type { AppliedCoupon } from "./coupon.types";
+import type { OrderDeliveryArea } from "./delivery_area.types";
 
 // Order Types
 export type OrderStatus =
@@ -66,6 +67,8 @@ export interface Order {
 
   // Delivery
   deliveryAddress: string;
+  /** The delivery area the customer picked (B-072); absent on old orders and in cities with the check off. */
+  deliveryArea?: OrderDeliveryArea;
   deliveryNotes?: string;
   deliverySlot?: {
     date: string;
