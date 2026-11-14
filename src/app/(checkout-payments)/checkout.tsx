@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useMemo, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { BackHandler, ScrollView, StyleSheet, Text, View } from "react-native";
 import GeneralTopBar from "@/src/components/general/GeneralTopBar";
 import PrimaryButton from "@/src/components/general/PrimaryButton";
@@ -15,6 +15,7 @@ import DeliveryAreaPicker, {
   DeliveryAreaError,
   DeliveryAreaLoading,
 } from "@/src/components/checkout-payment/checkout/DeliveryAreaPicker";
+import TopToast, { type TopToastMessage } from "@/src/components/common/TopToast";
 import { useDeliveryAreas } from "@/src/hooks/useDeliveryAreas";
 import type { OrderDeliveryArea } from "@/src/types/delivery_area.types";
 import ErrorBanner from "@/src/components/common/ErrorBanner";
@@ -87,12 +88,19 @@ export default function CheckoutScreen() {
       : user?.addressArea ?? null
   );
   const [areaNotListed, setAreaNotListed] = useState(false);
+  // Set when the customer pressed the button without choosing an area (red outline + message)
+  const [showAreaRequired, setShowAreaRequired] = useState(false);
+  const [toast, setToast] = useState<TopToastMessage | null>(null);
+  const hideToast = useCallback(() => setToast(null), []);
+  const scrollRef = useRef<ScrollView>(null);
   const {
-    data: deliveryAreas,
+    data: areaCheck,
     isLoading: loadingAreas,
     isError: areasFailed,
     refetch: refetchAreas,
   } = useDeliveryAreas();
+  // Off when a super-admin switched the check off, or when no area is active (the list is then empty)
+  const deliveryAreas = areaCheck?.enabled ? areaCheck.areas : undefined;
   const areaCheckOn = (deliveryAreas?.length ?? 0) > 0;
   // A failed or unfinished list read blocks the order: the check is never skipped by accident
   const isAreaValid = !loadingAreas && !areasFailed && (!areaCheckOn || (!!area && !areaNotListed));
@@ -250,19 +258,18 @@ export default function CheckoutScreen() {
     return getCouponMinimumError(orderSubTotal, coupon.coupon);
   }, [coupon, cart]);
 
-  // Is proceed disabled?
+  // Is proceed disabled? Missing fields do NOT disable it: the button stays green and pressing it shows
+  // what is missing (the area, the address or the payment method), so the customer is never left
+  // guessing why nothing happens.
   const isProceedDisabled = useMemo(() => {
     return (
-      !isPaymentSelected ||
-      !isAddressValid ||
-      !isAreaValid ||
       !cart ||
       cart.items.length === 0 ||
       !!couponMinimumError ||
       placeOrderMutation.isPending ||
       updateOrderMutation.isPending
     );
-  }, [isPaymentSelected, isAddressValid, isAreaValid, cart, couponMinimumError, placeOrderMutation.isPending, updateOrderMutation.isPending]);
+  }, [cart, couponMinimumError, placeOrderMutation.isPending, updateOrderMutation.isPending]);
 
   const displayItems = useMemo<DisplayItem[]>(() => {
     if (!cart?.items) return [];
@@ -481,13 +488,19 @@ export default function CheckoutScreen() {
 
   const handleProceed = useCallback(() => {
     if (!isAreaValid) {
-      setError(
-        areasFailed
-          ? "We could not load the delivery areas. Please check your internet connection and try again."
-          : areaNotListed
-            ? "Sorry, we are not available in your area yet. You can only order from the areas in our list."
-            : "Please choose your delivery area."
-      );
+      // The area field is the first one on the screen: bring it into view, outline it and say why
+      scrollRef.current?.scrollTo({ y: 0, animated: true });
+      if (!areasFailed && !areaNotListed && !loadingAreas) setShowAreaRequired(true);
+      setToast({
+        id: Date.now(),
+        message: loadingAreas
+          ? "Loading the delivery areas, please wait a moment."
+          : areasFailed
+            ? "We could not load the delivery areas. Please check your internet connection and tap Retry."
+            : areaNotListed
+              ? "Sorry, we are not available in your area yet. You can only order from the areas in our list."
+              : "Please select your delivery area to place your order.",
+      });
       return;
     }
     if (!isAddressValid) {
@@ -505,7 +518,7 @@ export default function CheckoutScreen() {
       // Online payment: create or update order directly
       executeOrder();
     }
-  }, [isAreaValid, areasFailed, areaNotListed, isAddressValid, isPaymentSelected, isCOD, executeOrder]);
+  }, [isAreaValid, areasFailed, areaNotListed, loadingAreas, isAddressValid, isPaymentSelected, isCOD, executeOrder]);
 
   if (loadingPaymentMethods || loadingCart) {
     return (
@@ -525,7 +538,9 @@ export default function CheckoutScreen() {
           text="Checkout"
           onBackPress={existingOrderId ? () => setShowLeaveWarning(true) : undefined}
         />
+        <TopToast toast={toast} onHide={hideToast} />
         <ScrollView
+          ref={scrollRef}
           style={styles.container}
           contentContainerStyle={styles.contentContainer}>
           <Text style={styles.infoText}>
@@ -545,8 +560,13 @@ export default function CheckoutScreen() {
               onSelect={(a) => {
                 setArea(a);
                 setAreaNotListed(false);
+                setShowAreaRequired(false);
               }}
-              onNotListed={() => setAreaNotListed(true)}
+              onNotListed={() => {
+                setAreaNotListed(true);
+                setShowAreaRequired(false);
+              }}
+              showRequiredError={showAreaRequired}
             />
           ) : null}
 

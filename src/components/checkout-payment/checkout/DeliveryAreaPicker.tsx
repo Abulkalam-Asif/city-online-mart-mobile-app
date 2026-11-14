@@ -25,6 +25,8 @@ type DeliveryAreaPickerProps = {
   notListed: boolean;
   onSelect: (area: OrderDeliveryArea) => void;
   onNotListed: () => void;
+  /** The customer tried to continue without choosing an area: red outline and a "required" line. */
+  showRequiredError?: boolean;
   disabled?: boolean;
 };
 
@@ -32,7 +34,16 @@ type DeliveryAreaPickerProps = {
  * The delivery area field of the checkout address step (B-072): a box that opens a searchable
  * list. The last row, "My area is not listed", shows the not-available message and blocks the order.
  */
-const DeliveryAreaPicker = ({ areas, selected, notListed, onSelect, onNotListed, disabled }: DeliveryAreaPickerProps) => {
+const DeliveryAreaPicker = ({
+  areas,
+  selected,
+  notListed,
+  onSelect,
+  onNotListed,
+  showRequiredError = false,
+  disabled,
+}: DeliveryAreaPickerProps) => {
+  const missing = showRequiredError && !selected && !notListed;
   const [open, setOpen] = useState(false);
   const [search, setSearch] = useState("");
   const visible = useMemo(() => searchAreas(areas, search), [areas, search]);
@@ -52,7 +63,11 @@ const DeliveryAreaPicker = ({ areas, selected, notListed, onSelect, onNotListed,
         accessibilityLabel={`Delivery area: ${label}`}
         disabled={disabled}
         onPress={() => setOpen(true)}
-        style={[styles.field, selected && !notListed && styles.fieldSelected, notListed && styles.fieldError]}>
+        style={[
+          styles.field,
+          selected && !notListed && styles.fieldSelected,
+          (notListed || missing) && styles.fieldError,
+        ]}>
         <Text
           numberOfLines={1}
           style={[styles.fieldText, !selected && !notListed && styles.fieldPlaceholder]}>
@@ -60,6 +75,8 @@ const DeliveryAreaPicker = ({ areas, selected, notListed, onSelect, onNotListed,
         </Text>
         <Ionicons name="chevron-down" size={18} color={theme.colors.text_secondary} />
       </Pressable>
+
+      {missing && <Text style={styles.requiredText}>Please select your delivery area to continue.</Text>}
 
       {notListed && (
         <View style={styles.notice}>
@@ -205,6 +222,11 @@ const styles = StyleSheet.create({
     color: theme.colors.placeholder,
     fontSize: 14,
     fontFamily: theme.fonts.regular,
+  },
+  requiredText: {
+    fontSize: 12,
+    fontFamily: theme.fonts.medium,
+    color: theme.colors.error,
   },
   notice: {
     flexDirection: "row",
