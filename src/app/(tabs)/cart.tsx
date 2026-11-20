@@ -404,7 +404,7 @@ export default function CartScreen() {
                   <Text style={styles.nextDiscountText}>
                     {nextOffer.kind === "free_delivery"
                       ? `Add Rs. ${formatPrice(nextOffer.remaining)} more to get free delivery`
-                      : `Add Rs. ${formatPrice(nextOffer.remaining)} more to get ${nextOffer.percentage}% off your order`}
+                      : `Add Rs. ${formatPrice(nextOffer.remaining)} more to get ${nextOffer.percentage}% discount on your order`}
                   </Text>
                 </View>
               )}

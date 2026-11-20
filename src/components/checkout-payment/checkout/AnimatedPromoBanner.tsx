@@ -225,7 +225,7 @@ export const AnimatedPromoBanner: React.FC<AnimatedPromoBannerProps> = ({
       >
         {isSelectedOnline
           ? `Congratulations! You are getting an extra ${onlineDiscountPercentage}% discount!`
-          : `Get an extra ${onlineDiscountPercentage}% off by paying in advance with JazzCash, Easypaisa, or Bank Transfer!`}
+          : `Get an extra ${onlineDiscountPercentage}% discount by paying in advance with JazzCash, Easypaisa, or Bank Transfer!`}
       </Animated.Text>
 
       {isSelectedOnline && <PulsingSparkle />}
