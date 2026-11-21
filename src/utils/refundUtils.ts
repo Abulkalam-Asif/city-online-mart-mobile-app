@@ -13,14 +13,19 @@ export interface OrderRefundSummary {
   /** Active refunds without a breakdown (older data): shown as one amount line each. */
   refundsWithoutDetails: OrderRefundEntry[];
   deliveryFeeRefunded: number;
+  /** Delivery fee the admin charged by hand (B-074). */
+  deliveryFeeCharged: number;
   orderDiscountRecovered: number;
   onlineDiscountRecovered: number;
   couponDiscountRecovered: number;
   customAdjustment: number;
+  /** Net of the active refunds. Below 0 when the admin charged more than was refunded (extra charge). */
   totalRefunded: number;
-  /** Order total minus total refunded, never below 0. */
+  /** What the customer owes now: order total minus total refunded (higher than the total after an extra charge), never below 0. */
   adjustedTotal: number;
   isFullyRefunded: boolean;
+  /** True when the net is below 0: the customer owes extra money. Shown as "Extra Charge", not "Refunded". */
+  isExtraCharge: boolean;
 }
 
 /** Rounds to paisa, so sums of item prices like 114.333 don't show long decimals. */
@@ -36,13 +41,15 @@ export const getOrderRefundSummary = (order: Pick<Order, "total" | "refunds" | "
 
   // order.totalRefunded is kept by the admin in the same transaction (net of voided refunds)
   const totalRefunded = roundAmount(order.totalRefunded ?? sumOf((r) => r.amount));
-  if (activeRefunds.length === 0 || totalRefunded <= 0) return null;
+  // A net of 0 or below still shows: refunds and extra charges can cancel each other out (B-074)
+  if (activeRefunds.length === 0) return null;
 
   return {
     activeRefunds,
     refundedItems: activeRefunds.flatMap((r) => r.refundedItems ?? []),
     refundsWithoutDetails: activeRefunds.filter((r) => !r.refundedItems),
     deliveryFeeRefunded: sumOf((r) => r.deliveryFeeRefunded),
+    deliveryFeeCharged: sumOf((r) => r.deliveryFeeCharged),
     orderDiscountRecovered: sumOf((r) => r.orderDiscountRecovered),
     onlineDiscountRecovered: sumOf((r) => r.onlineDiscountRecovered),
     couponDiscountRecovered: sumOf((r) => r.couponDiscountRecovered),
@@ -50,6 +57,7 @@ export const getOrderRefundSummary = (order: Pick<Order, "total" | "refunds" | "
     totalRefunded,
     adjustedTotal: roundAmount(Math.max(0, order.total - totalRefunded)),
     isFullyRefunded: order.total > 0 && totalRefunded >= order.total,
+    isExtraCharge: totalRefunded < 0,
   };
 };
 
