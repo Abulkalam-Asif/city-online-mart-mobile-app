@@ -99,6 +99,7 @@ export interface Order {
 
   // Refunds
   refunds?: OrderRefundEntry[];
+  /** Net of all refunds and extra charges that are not voided. Below 0 means an extra charge: the customer owes money (B-074). */
   totalRefunded?: number;
   hasActiveRefunds?: boolean;
 }
@@ -149,6 +150,8 @@ export interface OrderRefundEntry {
   status?: RefundStatus;
   refundedItems?: OrderRefundItem[];
   deliveryFeeRefunded?: number;
+  /** A delivery fee the admin charged by hand (B-074). Missing on older entries, counts as 0. */
+  deliveryFeeCharged?: number;
   orderDiscountRecovered?: number;
   onlineDiscountRecovered?: number;
   couponDiscountRecovered?: number;

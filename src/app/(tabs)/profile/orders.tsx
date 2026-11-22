@@ -119,7 +119,11 @@ const OrdersScreen = () => {
           refundSummary
             ? {
               adjustedPrice: refundSummary.adjustedTotal,
-              label: refundSummary.isFullyRefunded ? "Refunded" : "Partly refunded",
+              label: refundSummary.isExtraCharge
+                ? "Extra charge"
+                : refundSummary.isFullyRefunded
+                  ? "Refunded"
+                  : "Partly refunded",
             }
             : undefined
         }

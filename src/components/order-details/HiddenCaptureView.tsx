@@ -171,7 +171,9 @@ const HiddenCaptureView = ({
               <>
                 <DottedLine />
                 <View style={styles.summaryContainer}>
-                  <Text style={[styles.posTextBold, styles.refundsTitle]}>Refunds Applied:</Text>
+                  <Text style={[styles.posTextBold, styles.refundsTitle]}>
+                    {refundSummary.isExtraCharge ? "Refunds and Extra Charges:" : "Refunds Applied:"}
+                  </Text>
                   {refundSummary.refundedItems.map((item, index) => (
                     <View key={`refund-item-${index}`} style={styles.summaryRow}>
                       <Text style={[styles.posText, styles.refundLabel]}>- {item.quantity}x {item.productName}:</Text>
@@ -188,6 +190,12 @@ const HiddenCaptureView = ({
                     <View style={styles.summaryRow}>
                       <Text style={[styles.posText, styles.refundLabel]}>- Delivery Fee Refunded:</Text>
                       <Text style={styles.posText}>-Rs {refundSummary.deliveryFeeRefunded}</Text>
+                    </View>
+                  )}
+                  {refundSummary.deliveryFeeCharged > 0 && (
+                    <View style={styles.summaryRow}>
+                      <Text style={[styles.posText, styles.refundLabel]}>- Delivery Fee Charged:</Text>
+                      <Text style={styles.posText}>+Rs {refundSummary.deliveryFeeCharged}</Text>
                     </View>
                   )}
                   {refundSummary.orderDiscountRecovered > 0 && (
@@ -217,8 +225,10 @@ const HiddenCaptureView = ({
                     </View>
                   )}
                   <View style={[styles.summaryRow, styles.totalRefundedRow]}>
-                    <Text style={styles.posTextBold}>TOTAL REFUNDED:</Text>
-                    <Text style={styles.posTextBold}>-Rs {refundSummary.totalRefunded}</Text>
+                    <Text style={styles.posTextBold}>{refundSummary.isExtraCharge ? "EXTRA CHARGE:" : "TOTAL REFUNDED:"}</Text>
+                    <Text style={styles.posTextBold}>
+                      {refundSummary.isExtraCharge ? "+" : "-"}Rs {Math.abs(refundSummary.totalRefunded)}
+                    </Text>
                   </View>
                 </View>
                 <DottedLine />

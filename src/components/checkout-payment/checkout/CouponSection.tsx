@@ -54,7 +54,7 @@ const CouponSection: React.FC<CouponSectionProps> = ({ coupon, onChange, minimum
           <View style={styles.appliedInfo}>
             <Text style={styles.appliedCode}>{coupon.coupon.code}</Text>
             <Text style={styles.appliedTerms}>
-              {coupon.coupon.percentage}% off
+              {coupon.coupon.percentage}% discount
               {coupon.coupon.minPurchaseAmount ? ` · min order Rs. ${formatPrice(coupon.coupon.minPurchaseAmount)}` : ""}
               {coupon.coupon.maxDiscountAmount ? ` · up to Rs. ${formatPrice(coupon.coupon.maxDiscountAmount)}` : ""}
             </Text>

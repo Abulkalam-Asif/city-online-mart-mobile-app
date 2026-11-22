@@ -515,9 +515,17 @@ const OrderDetailsContent = ({ orderId }: OrderDetailsContentProps) => {
               {/* Active refunds only, never the reason */}
               {refundSummary && (
                 <>
+                  {refundSummary.deliveryFeeCharged > 0 && (
+                    <View style={styles.refundRow}>
+                      <Text style={styles.billingLabelText}>Delivery Fee Charged</Text>
+                      <Text style={styles.billingAmountText}>+Rs. {formatPrice(refundSummary.deliveryFeeCharged)}</Text>
+                    </View>
+                  )}
                   <View style={styles.refundRow}>
-                    <Text style={styles.billingLabelText}>Refunded</Text>
-                    <Text style={styles.refundAmountText}>-Rs. {formatPrice(refundSummary.totalRefunded)}</Text>
+                    <Text style={styles.billingLabelText}>{refundSummary.isExtraCharge ? "Extra Charge" : "Refunded"}</Text>
+                    <Text style={refundSummary.isExtraCharge ? styles.extraChargeAmountText : styles.refundAmountText}>
+                      {refundSummary.isExtraCharge ? "+" : "-"}Rs. {formatPrice(Math.abs(refundSummary.totalRefunded))}
+                    </Text>
                   </View>
                   <View style={styles.refundRow}>
                     <Text style={styles.adjustedTotalText}>Adjusted Total</Text>
@@ -828,6 +836,11 @@ const styles = StyleSheet.create({
     fontSize: 12,
     fontFamily: theme.fonts.medium,
     color: theme.colors.error,
+  },
+  extraChargeAmountText: {
+    fontSize: 12,
+    fontFamily: theme.fonts.medium,
+    color: theme.colors.refunded, // orange: the customer owes this
   },
   adjustedTotalText: {
     fontSize: 12,

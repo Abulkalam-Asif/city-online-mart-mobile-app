@@ -16,7 +16,7 @@ const formatDate = (date: Date) =>
 const isExpired = (coupon: CustomerCoupon, now: Date) => !!coupon.expiresAt && coupon.expiresAt < now;
 
 const termsText = (c: CustomerCoupon) => {
-  const parts = [`${c.percentage}% off`];
+  const parts = [`${c.percentage}% discount`];
   if (c.minPurchaseAmount) parts.push(`min order Rs. ${formatPrice(c.minPurchaseAmount)}`);
   if (c.maxDiscountAmount) parts.push(`up to Rs. ${formatPrice(c.maxDiscountAmount)}`);
   return parts.join(" · ");
