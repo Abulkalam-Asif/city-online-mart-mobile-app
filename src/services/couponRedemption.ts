@@ -62,6 +62,11 @@ export async function resolveCouponForOrder(
         (b.data.expiresAt ? convertTimestamp(b.data.expiresAt).getTime() : Infinity)
     )[0];
   if (held) {
+    // Switching a coupon off stops every use of it, also by customers who already hold it
+    const definition = await getDoc(doc(db, COUPONS_COLLECTION, couponId));
+    if (definition.exists() && definition.data()?.isActive === false) {
+      throw new Error("This coupon is not active.");
+    }
     return {
       mode: "held",
       customerCouponId: held.id,
