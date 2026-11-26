@@ -22,14 +22,18 @@ export interface SelectedSlotData {
 interface DeliverySlotSelectorProps {
   onSelectSlot: (slot: SelectedSlotData | null) => void;
   selectedSlot: SelectedSlotData | null;
+  /** True after the customer tried to check out with no slot: the box turns red. */
+  highlightMissing?: boolean;
 }
 
-export const DeliverySlotSelector: React.FC<DeliverySlotSelectorProps> = ({ onSelectSlot, selectedSlot }) => {
+export const DeliverySlotSelector: React.FC<DeliverySlotSelectorProps> = ({ onSelectSlot, selectedSlot, highlightMissing = false }) => {
   const { data: days, isLoading, error, refetch } = useDeliverySlots();
   const { data: deliverySettings } = useDeliverySettings();
   const [selectedDate, setSelectedDate] = useState<string | null>(null);
   const [dropdownVisible, setDropdownVisible] = useState(false);
   const [showExpressUnavailableBanner, setShowExpressUnavailableBanner] = useState(false);
+  // Shown when Express closes while it is the chosen option.
+  const [showExpressClosedBanner, setShowExpressClosedBanner] = useState(false);
 
   const isExpressAvailable = useMemo(() => {
     if (!deliverySettings?.expressDeliveryEnabled) return false;
@@ -94,64 +98,31 @@ export const DeliverySlotSelector: React.FC<DeliverySlotSelectorProps> = ({ onSe
       } else {
         setSelectedDate(selectedSlot.date);
       }
+    } else {
+      // Nothing was chosen: no day may stay highlighted, or it would look like a choice.
+      setSelectedDate(null);
     }
   };
 
-  // Auto-assign first available slot when data loads and no slot is selected
+  // No slot is chosen for the customer: they must pick one themselves.
+  // This only keeps the highlighted day in step with the chosen slot.
   useEffect(() => {
-    if (selectedSlot?.id === 'fast-delivery' && !isExpressAvailable && validDays && validDays.length > 0) {
-      for (const day of validDays) {
-        const available = day.slots.find(s => !isSlotPastCutoff(day.date, s) && !isSlotFullyBooked(s));
-        if (available) {
-          const parsedDate = parse(day.date, "yyyy-MM-dd", new Date());
-          const [hours, minutes] = available.startTime.split(':').map(Number);
-          const slotStartTimeDate = new Date(parsedDate);
-          slotStartTimeDate.setHours(hours, minutes, 0, 0);
+    if (!selectedSlot) return;
 
-          setSelectedDate(day.date);
-          onSelectSlot({
-            date: day.date,
-            id: available.id,
-            name: available.name,
-            startTime: available.startTime,
-            endTime: available.endTime,
-            slotStartTimestamp: slotStartTimeDate.getTime()
-          });
-          return;
-        }
-      }
-    }
-
-    if (validDays && validDays.length > 0 && !selectedSlot) {
-      for (const day of validDays) {
-        const available = day.slots.find(s => !isSlotPastCutoff(day.date, s) && !isSlotFullyBooked(s));
-        if (available) {
-          const parsedDate = parse(day.date, "yyyy-MM-dd", new Date());
-          const [hours, minutes] = available.startTime.split(':').map(Number);
-          const slotStartTimeDate = new Date(parsedDate);
-          slotStartTimeDate.setHours(hours, minutes, 0, 0);
-
-          setSelectedDate(day.date);
-          onSelectSlot({
-            date: day.date,
-            id: available.id,
-            name: available.name,
-            startTime: available.startTime,
-            endTime: available.endTime,
-            slotStartTimestamp: slotStartTimeDate.getTime()
-          });
-          return;
-        }
-      }
-      setSelectedDate(validDays[0].date);
-    } else if (selectedSlot) {
-      if (selectedSlot.id === 'fast-delivery' && isExpressAvailable) {
+    if (selectedSlot.id === 'fast-delivery') {
+      if (isExpressAvailable) {
         setSelectedDate('fast');
       } else {
-        setSelectedDate(selectedSlot.date);
+        // Express closed while it was chosen. Clear it instead of picking another time for them.
+        setSelectedDate(null);
+        onSelectSlot(null);
+        setShowExpressClosedBanner(true);
       }
+      return;
     }
-  }, [validDays, selectedSlot, isSlotPastCutoff, isExpressAvailable, onSelectSlot]);
+
+    setSelectedDate(selectedSlot.date);
+  }, [selectedSlot, isExpressAvailable, onSelectSlot]);
 
   const activeDay = useMemo(() => {
     return validDays?.find(d => d.date === selectedDate) || null;
@@ -212,17 +183,27 @@ export const DeliverySlotSelector: React.FC<DeliverySlotSelectorProps> = ({ onSe
     }
   };
 
+  // The customer has options to pick from but has not picked yet.
+  const needsChoice = !selectedSlot && !loadFailed && (!noScheduledSlots || hasExpress);
+  const showMissing = needsChoice && highlightMissing;
+
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, showMissing && styles.containerMissing]}>
       <View style={styles.headerRow}>
-        <Text style={styles.sectionTitle}>Delivery Time</Text>
-        {selectedSlot && (
+        <Text style={styles.sectionTitle}>Choose Delivery Time</Text>
+        {selectedSlot ? (
           <View style={styles.selectedSlotChip}>
             <Text style={styles.selectedSlotChipText} numberOfLines={1} ellipsizeMode="tail">
               {getSelectedSlotChipText(selectedSlot)}
             </Text>
           </View>
-        )}
+        ) : needsChoice ? (
+          <View style={[styles.selectPromptChip, showMissing && styles.selectPromptChipMissing]}>
+            <Text style={[styles.selectPromptChipText, showMissing && styles.selectPromptChipTextMissing]}>
+              Select a time
+            </Text>
+          </View>
+        ) : null}
       </View>
 
       {loadFailed ? (
@@ -320,6 +301,12 @@ export const DeliverySlotSelector: React.FC<DeliverySlotSelectorProps> = ({ onSe
       </View>
       )}
 
+      {needsChoice && (
+        <Text style={[styles.chooseHint, showMissing && styles.chooseHintMissing]}>
+          Tap a day, then choose a time
+        </Text>
+      )}
+
       {/* Tooltip Backdrop & Content */}
       <Modal visible={dropdownVisible} transparent animationType="fade" onRequestClose={handleCloseDropdown}>
         <View style={[StyleSheet.absoluteFill, { backgroundColor: 'rgba(0,0,0,0.6)' }]}>
@@ -390,6 +377,17 @@ export const DeliverySlotSelector: React.FC<DeliverySlotSelectorProps> = ({ onSe
           onDismiss={() => setShowExpressUnavailableBanner(false)}
         />
       )}
+
+      {showExpressClosedBanner && (
+        <ErrorBanner
+          title="Express Delivery Closed"
+          message="Express Delivery has closed. Please choose another time."
+          iconName="time-outline"
+          iconColor={theme.colors.express}
+          buttonText="OK"
+          onDismiss={() => setShowExpressClosedBanner(false)}
+        />
+      )}
     </View>
   );
 };
@@ -398,6 +396,42 @@ const styles = StyleSheet.create({
   container: {
     backgroundColor: '#fff',
     borderRadius: 12,
+    borderWidth: 1,
+    borderColor: "transparent",
+  },
+  containerMissing: {
+    borderColor: theme.colors.error,
+  },
+  selectPromptChip: {
+    backgroundColor: theme.colors.warning_light,
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 14,
+    borderWidth: 1,
+    borderColor: theme.colors.warning,
+  },
+  selectPromptChipMissing: {
+    backgroundColor: theme.colors.error_light,
+    borderColor: theme.colors.error,
+  },
+  selectPromptChipText: {
+    fontSize: 10,
+    fontFamily: theme.fonts.semibold,
+    color: theme.colors.warning,
+  },
+  selectPromptChipTextMissing: {
+    color: theme.colors.error,
+  },
+  chooseHint: {
+    fontFamily: theme.fonts.regular,
+    fontSize: 11,
+    color: theme.colors.text_secondary,
+    paddingHorizontal: 12,
+    paddingBottom: 10,
+  },
+  chooseHintMissing: {
+    color: theme.colors.error,
+    fontFamily: theme.fonts.medium,
   },
   loadingContainer: {
     padding: 20,

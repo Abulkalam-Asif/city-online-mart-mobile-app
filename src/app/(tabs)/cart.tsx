@@ -36,6 +36,8 @@ export default function CartScreen() {
   const isLoggedIn = !!user;
   const [showMinOrderError, setShowMinOrderError] = useState(false);
   const [showSlotError, setShowSlotError] = useState(false);
+  // Stays on after the banner is closed, so the slot box keeps its red border until a time is chosen.
+  const [slotMissingHighlight, setSlotMissingHighlight] = useState(false);
   const [stockAdjustmentMessage, setStockAdjustmentMessage] = useState<string | null>(null);
   const [bestOrderDiscount, setBestOrderDiscount] = useState<Discount | null>(null);
   const [selectedSlot, setSelectedSlot] = useState<SelectedSlotData | null>(null);
@@ -282,7 +284,7 @@ export default function CartScreen() {
   const handleProceed = useCallback(() => {
     if (!isLoggedIn) { router.push({ pathname: "/login", params: { redirect: "/cart" } }); return; }
     if (!canProceedToCheckout) { setShowMinOrderError(true); return; }
-    if (!selectedSlot) { setShowSlotError(true); return; }
+    if (!selectedSlot) { setShowSlotError(true); setSlotMissingHighlight(true); return; }
 
     router.push({
       pathname: "/checkout",
@@ -350,9 +352,13 @@ export default function CartScreen() {
                 <DeliverySlotSelector
                   onSelectSlot={(slot) => {
                     setSelectedSlot(slot);
-                    if (slot) setShowSlotError(false);
+                    if (slot) {
+                      setShowSlotError(false);
+                      setSlotMissingHighlight(false);
+                    }
                   }}
                   selectedSlot={selectedSlot}
+                  highlightMissing={slotMissingHighlight}
                 />
               </View>
 
@@ -440,8 +446,8 @@ export default function CartScreen() {
       {/* Error Banner for missing slot */}
       {showSlotError && (
         <ErrorBanner
-          title="Delivery Slot Required"
-          message={`Please select a delivery time slot before proceeding to checkout.`}
+          title="Choose a Delivery Time"
+          message="Tap a day, then choose a time for your order."
           onDismiss={() => setShowSlotError(false)}
         />
       )}
