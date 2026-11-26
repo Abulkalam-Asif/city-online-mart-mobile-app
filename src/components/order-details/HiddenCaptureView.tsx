@@ -227,7 +227,7 @@ const HiddenCaptureView = ({
                   <View style={[styles.summaryRow, styles.totalRefundedRow]}>
                     <Text style={styles.posTextBold}>{refundSummary.isExtraCharge ? "EXTRA CHARGE:" : "TOTAL REFUNDED:"}</Text>
                     <Text style={styles.posTextBold}>
-                      {refundSummary.isExtraCharge ? "+" : "-"}Rs {Math.abs(refundSummary.totalRefunded)}
+                      {refundSummary.isExtraCharge ? "+" : refundSummary.totalRefunded > 0 ? "-" : ""}Rs {Math.abs(refundSummary.totalRefunded)}
                     </Text>
                   </View>
                 </View>
