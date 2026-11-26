@@ -524,7 +524,7 @@ const OrderDetailsContent = ({ orderId }: OrderDetailsContentProps) => {
                   <View style={styles.refundRow}>
                     <Text style={styles.billingLabelText}>{refundSummary.isExtraCharge ? "Extra Charge" : "Refunded"}</Text>
                     <Text style={refundSummary.isExtraCharge ? styles.extraChargeAmountText : styles.refundAmountText}>
-                      {refundSummary.isExtraCharge ? "+" : "-"}Rs. {formatPrice(Math.abs(refundSummary.totalRefunded))}
+                      {refundSummary.isExtraCharge ? "+" : refundSummary.totalRefunded > 0 ? "-" : ""}Rs. {formatPrice(Math.abs(refundSummary.totalRefunded))}
                     </Text>
                   </View>
                   <View style={styles.refundRow}>
